@@ -1,0 +1,439 @@
+@import "tailwindcss";
+
+/* ============================================
+   MA Construction — iOS-Style Design System
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  height: 100dvh;
+  height: 100%; /* fallback */
+  overflow: hidden;
+  font-size: 18px;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  font-feature-settings: 'kern', 'liga', 'calt';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  overflow: hidden;
+  background: #f2f2f7;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Mobile safe-area: 60px fallback for browser chrome */
+:root {
+  --safe-top: 60px;
+}
+
+/* Native app feel */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+button, a, select, label, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* ===== Page transition ===== */
+@keyframes viewFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.view-fade {
+  animation: viewFadeIn 200ms ease;
+  height: 100%;
+}
+
+/* ===== Scroll container ===== */
+.app-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.app-scroll::-webkit-scrollbar { display: none; }
+.app-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Button press feel */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Prevent zoom on input focus (iOS) */
+input, select, textarea {
+  font-size: max(1rem, 16px) !important;
+}
+
+input, textarea, select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-radius: 12px;
+}
+
+/* iOS-style input */
+.ios-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 12px !important;
+  border: 0.5px solid rgba(0,0,0,0.1);
+  color: #000;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.ios-input:focus {
+  border-color: rgba(124,58,237,0.4);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.08), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+/* ===== Tab Bar — Frosted Glass ===== */
+.tab-bar {
+  flex-shrink: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  padding: 8px 0 0;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: rgba(249, 249, 249, 0.88);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 0.5px solid rgba(0, 0, 0, 0.12);
+  min-height: 83px;
+  overflow: visible;
+  border-radius: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.tab-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 0;
+  transition: opacity 0.15s ease;
+  overflow: visible;
+}
+
+.tab-bar-item .tab-icon {
+  color: #8e8e93;
+  transition: color 0.15s ease;
+}
+
+.tab-bar-item .tab-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #8e8e93;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+  overflow: visible;
+  line-height: 1.2;
+}
+
+.tab-bar-item.active .tab-icon {
+  color: #7C3AED;
+}
+
+.tab-bar-item.active .tab-label {
+  color: #7C3AED;
+}
+
+/* ===== Widget Card (iOS style) ===== */
+.widget-card {
+  background: white;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease;
+}
+
+.widget-card:active {
+  transform: scale(0.97);
+}
+
+/* ===== Widget Icon ===== */
+.widget-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ===== Quick Action Pills ===== */
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 100px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  white-space: nowrap;
+}
+
+.quick-action:active {
+  transform: scale(0.95);
+}
+
+/* ===== iOS Compact Header (for sub-views) ===== */
+.ios-compact-header {
+  background: rgba(249, 249, 249, 0.88);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.12);
+  padding: 12px 16px;
+  padding-top: calc(var(--safe-top) + 12px);
+}
+
+/* ============================================
+   DEVICE FRAME
+   Mobile: full screen, no decoration
+   Desktop: centered iPhone simulation
+   ============================================ */
+
+.device-wrapper {
+  height: 100%;
+}
+
+.device-frame {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.device-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  position: relative;
+}
+
+.device-statusbar,
+.device-home-bar {
+  display: none;
+}
+
+/* ===== Desktop: iPhone Simulation ===== */
+@media (min-width: 640px) {
+  body {
+    background: #08060e;
+  }
+
+  .device-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse at 25% 40%, rgba(124,58,237,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse at 75% 25%, rgba(139,92,246,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 85%, rgba(80,30,120,0.06) 0%, transparent 50%),
+      linear-gradient(180deg, #0c0816 0%, #08060e 100%);
+    padding: 24px;
+  }
+
+  .device-frame {
+    width: 393px;
+    height: min(852px, calc(100vh - 48px));
+    border-radius: 54px;
+    background: #f2f2f7;
+    position: relative;
+    transform: translateZ(0);
+    border: 8px solid #1c1c1e;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.04),
+      0 0 0 1px #3a3a3c,
+      0 0 0 2px rgba(255,255,255,0.03),
+      0 20px 60px rgba(0,0,0,0.7),
+      0 8px 20px rgba(0,0,0,0.4),
+      0 0 100px rgba(124,58,237,0.06);
+  }
+
+  .device-frame::before {
+    content: '';
+    position: absolute;
+    right: -11px;
+    top: 180px;
+    width: 3px;
+    height: 64px;
+    background: #2c2c2e;
+    border-radius: 0 2px 2px 0;
+    box-shadow: 1px 0 0 rgba(255,255,255,0.05);
+  }
+  .device-frame::after {
+    content: '';
+    position: absolute;
+    left: -11px;
+    top: 140px;
+    width: 3px;
+    height: 36px;
+    background: #2c2c2e;
+    border-radius: 2px 0 0 2px;
+    box-shadow:
+      -1px 0 0 rgba(255,255,255,0.05),
+      0 52px 0 #2c2c2e,
+      -1px 52px 0 rgba(255,255,255,0.05);
+  }
+
+  /* iOS Status Bar */
+  .device-statusbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 18px 32px 12px;
+    background: #f2f2f7;
+    border-radius: 46px 46px 0 0;
+    position: relative;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .device-time {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    letter-spacing: 0.3px;
+    z-index: 1;
+    min-width: 42px;
+  }
+
+  .device-notch {
+    width: 126px;
+    height: 36px;
+    background: #1c1c1e;
+    border-radius: 20px;
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+
+  .device-notch::after {
+    content: '';
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    background: radial-gradient(circle, #1a365d 30%, #0f1f3a 50%, #1c1c1e 55%);
+    border-radius: 50%;
+    box-shadow: inset 0 0 2px rgba(255,255,255,0.1);
+  }
+
+  .device-indicators {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 1;
+  }
+
+  /* Home Indicator */
+  .device-home-bar {
+    display: flex;
+    justify-content: center;
+    padding: 6px 0 8px;
+    background: #f2f2f7;
+    border-radius: 0 0 46px 46px;
+    flex-shrink: 0;
+  }
+
+  .device-home-pill {
+    width: 140px;
+    height: 5px;
+    background: #1a1a1a;
+    border-radius: 100px;
+    opacity: 0.2;
+  }
+
+  /* On desktop, minimal scroll padding */
+  .app-scroll {
+    padding-bottom: 8px;
+  }
+
+  /* Label below device */
+  .device-label {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* On desktop inside device frame, statusbar provides the top space */
+  :root {
+    --safe-top: 0px;
+  }
+
+  .ios-compact-header {
+    padding-top: 12px;
+  }
+
+  /* Tab bar inside device frame */
+  .tab-bar {
+    padding-bottom: 10px;
+  }
+}
+
+/* Hide label on mobile */
+@media (max-width: 639px) {
+  .device-label {
+    display: none;
+  }
+}
