@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vite --host 2>&1)",
+      "Bash(npm run build 2>&1 | tail -15)",
+      "Bash(npm install -D tailwindcss @tailwindcss/vite)",
+      "Bash(npm run build 2>&1)",
+      "Bash(npx vite build 2>&1 | tail -30)",
+      "Bash(npx vite build 2>&1 | tail -15)",
+      "Bash(npx vite build 2>&1 | tail -10)",
+      "Bash(npx vite build 2>&1 | tail -5)",
+      "Bash(npx vite build 2>&1 | tail -20)",
+      "Bash(ls -lh /Users/tini/Desktop/malici-app/*.jsx /Users/tini/Desktop/malici-app/src/*.jsx 2>/dev/null)",
+      "WebFetch(domain:localhost)",
+      "Bash(git init)"
+    ]
+  }
+}
