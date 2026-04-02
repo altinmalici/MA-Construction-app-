@@ -12,7 +12,13 @@
       "Bash(npx vite build 2>&1 | tail -20)",
       "Bash(ls -lh /Users/tini/Desktop/malici-app/*.jsx /Users/tini/Desktop/malici-app/src/*.jsx 2>/dev/null)",
       "WebFetch(domain:localhost)",
-      "Bash(git init)"
+      "Bash(git init)",
+      "Bash(node transform.mjs)",
+      "Bash(npx vite build 2>&1 | head -30)",
+      "Bash(lsof /Users/tini/Desktop/malici-app/src/App.jsx 2>/dev/null | head -20)",
+      "Bash(npx eslint src/App.jsx 2>&1 | head -80)",
+      "Bash(npx prettier --write src/App.jsx 2>&1)",
+      "Bash(npx vite build 2>&1)"
     ]
   }
 }
