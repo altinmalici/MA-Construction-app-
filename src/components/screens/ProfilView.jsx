@@ -13,15 +13,14 @@ const ProfilView = () => {
     show,
     chef,
     goBack,
-    nav,
     prevV,
     setHistory,
     setVRaw,
   } = useApp();
-  if (!cu) return null;
   const [editMode, setEditMode] = useState(false);
-  const [name, setName] = useState(cu.name);
+  const [name, setName] = useState(cu?.name || "");
   const [pin, setPin] = useState("");
+  if (!cu) return null;
   const meineStd = data.stundeneintraege.filter(
     (e) => e.mitarbeiterId === cu.id,
   );

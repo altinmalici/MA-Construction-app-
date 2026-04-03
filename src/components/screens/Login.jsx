@@ -252,7 +252,7 @@ const Login = () => {
       ) : err ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>{err}</p>
       ) : checking ? (
-        <p style={{ color: P, fontSize: 14, fontWeight: 600 }}>Pr\u00fcfe...</p>
+        <p style={{ color: P, fontSize: 14, fontWeight: 600 }}>Prüfe...</p>
       ) : null}
     </div>
   );
@@ -488,7 +488,7 @@ const Login = () => {
                 </span>
               </div>
               <p style={{ fontSize: 15, color: "#8e8e93", marginBottom: 4 }}>
-                Willkommen zur\u00fcck
+                Willkommen zurück
               </p>
               <h1 style={{ fontSize: 26, fontWeight: 700, color: "#000" }}>
                 {lastUser.name}

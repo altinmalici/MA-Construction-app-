@@ -167,7 +167,7 @@ const MitView = () => {
         ) : (
           ma.map((m) => {
             const bs = data.baustellen.filter((b) =>
-              b.mitarbeiter.includes(m.id),
+              (b.mitarbeiter || []).includes(m.id),
             );
             const st = getStatus(m);
             return (

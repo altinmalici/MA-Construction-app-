@@ -31,13 +31,14 @@ const SteView = () => {
     material: "",
     fotos: [],
     personTyp: "mitarbeiter",
-    mitarbeiterId: chef ? "" : cu.id,
+    mitarbeiterId: chef ? "" : cu?.id || "",
     subId: "",
     personName: "",
   };
   const [fd, sFd] = useState(initFd);
   const [saved, setSaved] = useState(false);
   const [showList, setShowList] = useState(false);
+  if (!cu) return null;
   const mb = chef
     ? data.baustellen
     : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));

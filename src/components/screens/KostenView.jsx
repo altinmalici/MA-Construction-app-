@@ -77,7 +77,7 @@ const KostenView = () => {
         beschreibung: kf.beschreibung,
         betrag: Number(kf.betrag),
         datum: kf.datum,
-        ersteller: cu.id,
+        ersteller: cu?.id,
       });
       addN(
         "info",

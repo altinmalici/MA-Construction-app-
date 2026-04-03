@@ -1,6 +1,6 @@
 import { AlertCircle, Clock, Bell, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { P, RED, CS } from "../../utils/helpers";
+import { RED, CS } from "../../utils/helpers";
 import { Empty, ScreenLayout } from "../ui";
 
 const NotifView = () => {
@@ -30,7 +30,6 @@ const NotifView = () => {
     }
   };
   const ti = { mangel: AlertCircle, stunden: Clock, info: Bell };
-  const tc = { mangel: RED, stunden: P, info: P };
   return (
     <ScreenLayout
       title="Mitteilungen"
@@ -108,7 +107,7 @@ const NotifView = () => {
                       {n.text}
                     </p>
                     <p style={{ fontSize: 13, color: "#8e8e93" }}>
-                      {bs?.kunde} ·{" "}
+                      {bs?.kunde || "Unbekannt"} ·{" "}
                       {new Date(n.datum).toLocaleString("de-DE", {
                         day: "2-digit",
                         month: "2-digit",

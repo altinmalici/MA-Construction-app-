@@ -14,9 +14,9 @@ const BtbView = () => {
     baustelleId:
       sb?.id ||
       (chef
-        ? data.baustellen[0]?.id
-        : data.baustellen.find((b) => b.mitarbeiter.includes(cu.id))?.id) ||
-      "",
+        ? data.baustellen[0]?.id || ""
+        : data.baustellen.find((b) => b.mitarbeiter?.includes(cu?.id))?.id ||
+          ""),
     datum: new Date().toISOString().split("T")[0],
     anwesende: [],
     arbeiten: "",
@@ -108,7 +108,7 @@ const BtbView = () => {
             (() => {
               const myBs = chef
                 ? data.baustellen
-                : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
+                : data.baustellen.filter((b) => b.mitarbeiter?.includes(cu?.id));
               return (
                 <select
                   value={bf.baustelleId}

@@ -35,7 +35,7 @@ const StundenUebersicht = () => {
   const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
   const allUsers = [
     ...data.users.filter((u) => u.role === "mitarbeiter"),
-    cu,
+    ...(cu ? [cu] : []),
   ].filter((u, i, a) => a.findIndex((x) => x.id === u.id) === i);
   const byUser = allUsers
     .map((u) => {

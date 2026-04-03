@@ -14,7 +14,7 @@ const MatView = () => {
     mp[k].push({
       m: e.material,
       d: e.datum,
-      v: data.users.find((u) => u.id === e.mitarbeiterId)?.name,
+      v: data.users.find((u) => u.id === e.mitarbeiterId)?.name || "Unbekannt",
     });
   });
   return (

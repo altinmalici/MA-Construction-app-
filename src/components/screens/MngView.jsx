@@ -13,9 +13,9 @@ const MngView = () => {
     baustelleId:
       sb?.id ||
       (chef
-        ? data.baustellen[0]?.id
-        : data.baustellen.find((b) => b.mitarbeiter.includes(cu.id))?.id) ||
-      "",
+        ? data.baustellen[0]?.id || ""
+        : data.baustellen.find((b) => b.mitarbeiter?.includes(cu?.id))?.id ||
+          ""),
     titel: "",
     beschreibung: "",
     prioritaet: "mittel",

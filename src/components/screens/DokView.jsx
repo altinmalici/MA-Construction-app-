@@ -1,6 +1,6 @@
 import { Plus, FileText, FileUp, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fK, P, BTN, CS } from "../../utils/helpers";
+import { fK, BTN, CS } from "../../utils/helpers";
 import { Empty, ScreenLayout } from "../ui";
 
 const DokView = () => {
@@ -13,7 +13,7 @@ const DokView = () => {
     if (!n) return;
     try {
       await actions.dokumente.create({
-        baustelleId: sb?.id || data.baustellen[0]?.id,
+        baustelleId: sb?.id || data.baustellen[0]?.id || "",
         name: n,
         typ: "dokument",
         groesse: "–",
@@ -32,7 +32,6 @@ const DokView = () => {
       show("Fehler", "error");
     }
   };
-  const tc = { plan: P, gutachten: P, konzept: P, dokument: P };
   return (
     <ScreenLayout
       title="Dokumente"

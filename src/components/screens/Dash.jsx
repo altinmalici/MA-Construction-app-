@@ -10,7 +10,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { G, P, BTN, RED, GREEN, CS, COLORS } from "../../utils/helpers";
+import { G, RED, CS, COLORS } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 
 const Dash = () => {
@@ -323,7 +323,7 @@ const Dash = () => {
           paddingBottom: 8,
         }}
       >
-        \u00dcbersicht
+        Übersicht
       </p>
 
       {/* KPI stats row */}

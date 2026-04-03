@@ -7,7 +7,7 @@ import { ScreenLayout, SigPad } from "../ui";
 const RegView = () => {
   const { data, goBack, show, eName } = useApp();
   const [sd, setSd] = useState(new Date().toISOString().split("T")[0]);
-  const [bi, sBi] = useState(data.baustellen[0]?.id);
+  const [bi, sBi] = useState(data.baustellen[0]?.id || "");
   const [sig, sSig] = useState(null);
   const [edits, setEdits] = useState({});
   const [showPdf, setShowPdf] = useState(false);

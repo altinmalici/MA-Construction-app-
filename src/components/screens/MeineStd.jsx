@@ -9,6 +9,7 @@ const MeineStd = () => {
   const h = new Date();
   const [mo, setMo] = useState(h.getMonth());
   const [jr, setJr] = useState(h.getFullYear());
+  if (!cu) return null;
   const pv = () => {
     setMo((m) => {
       if (m === 0) {

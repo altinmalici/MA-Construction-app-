@@ -8,6 +8,7 @@ const BstList = () => {
   const { data, cu, chef, sq, setSq, nav, setSb, setEm, prevV, goBack } =
     useApp();
   const [fl, setFl] = useState("alle");
+  if (!cu) return null;
   let ls = chef
     ? data.baustellen
     : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
