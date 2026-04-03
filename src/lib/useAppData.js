@@ -102,11 +102,23 @@ export function useAppData() {
         await api.auth.completeOnboarding(userId, newPin);
         await reload('users');
       },
+      signOut: async () => {
+        await api.auth.signOut();
+      },
+      getCurrentUser: async () => {
+        return await api.auth.getCurrentUser();
+      },
+      reAuthWithPin: async (username, newPin) => {
+        await api.auth.reAuthWithPin(username, newPin);
+      },
+      onAuthStateChange: (callback) => {
+        return api.auth.onAuthStateChange(callback);
+      },
     },
 
     users: {
-      create: async ({ name, role, pin, stundensatz }) => {
-        await api.users.create({ name, role, pin, stundensatz });
+      create: async ({ name, role, pin, stundensatz, username }) => {
+        await api.users.create({ name, role, pin, stundensatz, username });
         await reload('users');
       },
       update: async (id, { name, pin, stundensatz }) => {

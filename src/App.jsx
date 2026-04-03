@@ -653,7 +653,7 @@ const Login = () => {
         return;
       }
       await actions.auth.completeOnboarding(obUser.id, newPin);
-      const u = await actions.auth.login(newPin);
+      const u = await actions.auth.getCurrentUser();
       if (u) {
         setCu(u);
         nav("dash");
@@ -7738,6 +7738,14 @@ const ProfilView = () => {
         pin: pin || null,
         stundensatz: cu.stundensatz,
       });
+      // Re-auth wenn PIN geändert wurde
+      if (pin && cu.username) {
+        try {
+          await actions.auth.reAuthWithPin(cu.username, pin);
+        } catch (e) {
+          console.error('Re-auth nach PIN-Änderung fehlgeschlagen:', e);
+        }
+      }
       setCu((p) => ({ ...p, name: name.trim() }));
       setEditMode(false);
       setPin("");
@@ -8073,7 +8081,10 @@ const ProfilView = () => {
           <>
             <div style={{ flex: 1 }} />
             <button
-              onClick={() => {
+              onClick={async () => {
+                try {
+                  await actions.auth.signOut();
+                } catch {}
                 setCu(null);
                 setHistory([]);
                 setVRaw("login");
@@ -8746,14 +8757,8 @@ const TabBar = () => {
 
 export default function MAConstructionApp() {
   const { data, loading, error: dataError, actions } = useAppData();
-  const [cu, setCu] = useState(() => {
-    try {
-      const saved = localStorage.getItem("ma_construction_user");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [cu, setCu] = useState(null);
+  const [authChecking, setAuthChecking] = useState(true);
   const [v, setVRaw] = useState(() => {
     try {
       const saved = localStorage.getItem("ma_construction_view");
@@ -8789,13 +8794,37 @@ export default function MAConstructionApp() {
     return () => clearInterval(t);
   }, []);
 
-  // Persist user and view in localStorage (for session persistence)
+  // Auth session init: Prüfe ob Supabase Session existiert
+  useEffect(() => {
+    let cancelled = false;
+    actions.auth.getCurrentUser().then(user => {
+      if (cancelled) return;
+      if (user) {
+        setCu(user);
+        setVRaw("dash");
+      }
+      setAuthChecking(false);
+    }).catch(() => {
+      if (!cancelled) setAuthChecking(false);
+    });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // onAuthStateChange: Bei SIGNED_OUT → zurück zum Login
+  useEffect(() => {
+    const { data: { subscription } } = actions.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setCu(null);
+        setHistory([]);
+        setVRaw("login");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist last_user in localStorage (for login screen greeting)
   useEffect(() => {
     try {
-      localStorage.setItem(
-        "ma_construction_user",
-        cu ? JSON.stringify(cu) : "",
-      );
       if (cu)
         localStorage.setItem(
           "ma_construction_last_user",
@@ -8810,11 +8839,11 @@ export default function MAConstructionApp() {
   }, [v]);
   // Safety: if not logged in, show login
   useEffect(() => {
-    if (!cu && v !== "login") {
+    if (!authChecking && !cu && v !== "login") {
       setHistory([]);
       setVRaw("login");
     }
-  }, [cu, v]);
+  }, [cu, v, authChecking]);
   // Seed: Testbaustelle einfügen wenn keine existieren
   const seededRef = useRef(false);
   useEffect(() => {
@@ -8888,8 +8917,8 @@ export default function MAConstructionApp() {
     return u?.name || "?";
   };
 
-  // Loading screen
-  if (loading)
+  // Loading screen (data loading OR auth checking)
+  if (loading || authChecking)
     return (
       <div className="device-wrapper font-sans">
         <div

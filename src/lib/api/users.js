@@ -18,13 +18,14 @@ export async function getAll() {
   }));
 }
 
-export async function create({ name, role, pin, stundensatz }) {
-  // Hash the PIN server-side via RPC
-  const { data, error } = await supabase.rpc('create_user_with_pin', {
-    user_name: name,
-    user_role: role,
-    user_pin: pin,
-    user_stundensatz: stundensatz || 45,
+export async function create({ name, role, pin, stundensatz, username }) {
+  // v2: Erstellt auth + public User synchron
+  const { data, error } = await supabase.rpc('create_user_with_pin_v2', {
+    p_name: name,
+    p_role: role,
+    p_pin: pin,
+    p_stundensatz: stundensatz || 45,
+    p_username: username,
   });
   if (error) throw error;
   return data;
@@ -32,7 +33,7 @@ export async function create({ name, role, pin, stundensatz }) {
 
 export async function createForOnboarding({ name, username, stundensatz, onboardingPin }) {
   const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data, error } = await supabase.rpc('create_user_for_onboarding', {
+  const { data, error } = await supabase.rpc('create_user_with_auth', {
     p_name: name,
     p_username: username,
     p_stundensatz: stundensatz || 45,
@@ -44,11 +45,11 @@ export async function createForOnboarding({ name, username, stundensatz, onboard
 }
 
 export async function update(id, { name, pin, stundensatz }) {
-  // If PIN changed, update hash via RPC
+  // If PIN changed, update hash via v2 RPC (auth + public)
   if (pin) {
-    const { error: pinErr } = await supabase.rpc('update_user_pin', {
-      user_id: id,
-      new_pin: pin,
+    const { error: pinErr } = await supabase.rpc('update_user_pin_v2', {
+      p_user_id: id,
+      p_new_pin: pin,
     });
     if (pinErr) throw pinErr;
   }
@@ -63,7 +64,10 @@ export async function update(id, { name, pin, stundensatz }) {
 }
 
 export async function remove(id) {
-  const { error } = await supabase.from('users').delete().eq('id', id);
+  // v2: Löscht auth + public User synchron
+  const { error } = await supabase.rpc('delete_user_with_auth', {
+    p_user_id: id,
+  });
   if (error) throw error;
 }
 
@@ -78,19 +82,19 @@ export async function checkPinExists(pin, excludeUserId = null) {
 
 export async function resetOnboardingPin(id, newPin, username = null) {
   const expiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { error } = await supabase.rpc('reset_onboarding_pin', {
+  const { error } = await supabase.rpc('reset_onboarding_v2', {
     p_user_id: id,
     p_new_pin: newPin,
-    p_onboarding_pin_expiry: expiry,
+    p_expiry: expiry,
     p_username: username,
   });
   if (error) throw error;
 }
 
 export async function toggleActive(id, isActive) {
-  const { error } = await supabase
-    .from('users')
-    .update({ is_active: isActive })
-    .eq('id', id);
+  const { error } = await supabase.rpc('toggle_user_active_v2', {
+    p_user_id: id,
+    p_is_active: isActive,
+  });
   if (error) throw error;
 }
