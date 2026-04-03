@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Save, LogOut } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, P, G, RED, CS, IC } from "../../utils/helpers";
+import { bStd, P, G, RED, GREEN, CS, IC } from "../../utils/helpers";
 import { ScreenLayout, Bdg } from "../ui";
 
 const ProfilView = () => {
@@ -18,6 +18,7 @@ const ProfilView = () => {
     setHistory,
     setVRaw,
   } = useApp();
+  if (!cu) return null;
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState(cu.name);
   const [pin, setPin] = useState("");

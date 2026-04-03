@@ -15,6 +15,7 @@ import { ScreenLayout } from "../ui";
 
 const Dash = () => {
   const { data, cu, chef, nav, unread, setSb, setEm } = useApp();
+  if (!cu) return null;
   const mb = chef
     ? data.baustellen
     : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
