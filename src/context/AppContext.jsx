@@ -18,14 +18,7 @@ export function AppProvider({ children }) {
   const { data, loading, error: dataError, actions } = useAppData();
   const [cu, setCu] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
-  const [v, setVRaw] = useState(() => {
-    try {
-      const saved = localStorage.getItem("ma_construction_view");
-      return saved || "login";
-    } catch {
-      return "login";
-    }
-  });
+  const [v, setVRaw] = useState("login");
   const [history, setHistory] = useState([]);
   const prevV = history.length > 0 ? history[history.length - 1] : null;
   const nav = (newView) => {
@@ -91,11 +84,6 @@ export function AppProvider({ children }) {
         );
     } catch {}
   }, [cu]);
-  useEffect(() => {
-    try {
-      localStorage.setItem("ma_construction_view", v);
-    } catch {}
-  }, [v]);
   // Safety: if not logged in, show login
   useEffect(() => {
     if (!authChecking && !cu && v !== "login") {
