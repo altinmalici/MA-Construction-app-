@@ -4,8 +4,7 @@ import { useAppData } from "../lib/useAppData.js";
 import { G, P } from "../utils/helpers";
 import { Toast } from "../components/ui";
 
-const TIMEOUT_MS = 30 * 1000;
-const ACTIVITY_EVENTS = ["mousemove", "touchstart", "keydown", "click", "scroll"];
+const BACKGROUND_LOCK_MS = 120 * 1000;
 
 const AppContext = createContext(null);
 
@@ -104,29 +103,36 @@ export function AppProvider({ children }) {
     }
   }, [cu, v, authChecking]);
 
-  // Idle-Lock: nach TIMEOUT_MS ohne Aktivität zurück zum Login-Screen.
-  // Supabase-Session bleibt aktiv (kein signOut) — sessionUser bleibt
-  // gesetzt, damit der "Willkommen zurück"-Screen direkt erscheint und
-  // PIN-Re-Entry den User auf das Dashboard zurückbringt.
+  // Background-Lock: nur wenn die App >= BACKGROUND_LOCK_MS im Hintergrund
+  // war (Homescreen, andere App, Screen gesperrt). Aktivität in der App
+  // selbst löst keinen Lock aus. Supabase-Session bleibt aktiv (kein
+  // signOut) — sessionUser bleibt gesetzt, damit der "Willkommen zurück"-
+  // Screen direkt erscheint und PIN-Re-Entry den User auf das Dashboard
+  // zurückbringt.
+  const backgroundSinceRef = useRef(null);
   useEffect(() => {
     if (!cu) return;
-    let timer;
-    const lock = () => {
-      setCu(null);
-      setHistory([]);
-      setVRaw("login");
+    // Login während Tab schon hidden ist (z.B. PWA-Launch in den Hintergrund):
+    // Hintergrundzeit ab jetzt zählen, sonst lockt der erste "visible"
+    // nach langer Hidden-Phase nicht.
+    if (document.hidden) backgroundSinceRef.current = Date.now();
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        backgroundSinceRef.current = Date.now();
+      } else {
+        const since = backgroundSinceRef.current;
+        backgroundSinceRef.current = null;
+        if (since && Date.now() - since >= BACKGROUND_LOCK_MS) {
+          setCu(null);
+          setHistory([]);
+          setVRaw("login");
+        }
+      }
     };
-    const reset = () => {
-      clearTimeout(timer);
-      timer = setTimeout(lock, TIMEOUT_MS);
-    };
-    ACTIVITY_EVENTS.forEach((ev) =>
-      window.addEventListener(ev, reset, { passive: true }),
-    );
-    reset();
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
-      clearTimeout(timer);
-      ACTIVITY_EVENTS.forEach((ev) => window.removeEventListener(ev, reset));
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      backgroundSinceRef.current = null;
     };
   }, [cu]);
   // Seed: Testbaustelle
