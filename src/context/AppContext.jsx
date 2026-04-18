@@ -80,17 +80,22 @@ export function AppProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist last_user + sync sessionUser nach Login
+  // Persist last_user nach Login. sessionUser wird unten direkt aus cu
+  // abgeleitet — kein zusätzlicher setState im Effect nötig.
   useEffect(() => {
     if (!cu) return;
-    setSessionUser({ name: cu.name, username: cu.username });
     try {
       localStorage.setItem(
         "ma_construction_last_user",
         JSON.stringify({ name: cu.name, username: cu.username }),
       );
-    } catch {}
+    } catch {
+      /* localStorage nicht verfügbar */
+    }
   }, [cu]);
+  const effectiveSessionUser = cu
+    ? { name: cu.name, username: cu.username }
+    : sessionUser;
   // Safety: if not logged in, show login
   useEffect(() => {
     if (!authChecking && !cu && v !== "login") {
@@ -267,7 +272,7 @@ export function AppProvider({ children }) {
     actions,
     cu,
     setCu,
-    sessionUser,
+    sessionUser: effectiveSessionUser,
     v,
     nav,
     goBack,
