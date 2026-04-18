@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Printer } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Printer, Share2, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, fDat, escHtml, G, BTN, IC, CS } from "../../utils/helpers";
 import { ScreenLayout, SigPad } from "../ui";
@@ -113,65 +113,174 @@ const RegView = () => {
   const print = () => {
     setShowPdf(true);
   };
+  // Druckt nur den Bericht (nicht die App-UI). Hidden iframe statt window.open
+  // — letzteres lässt sich auf iOS in der PWA praktisch nicht mehr schließen.
   const doPrint = () => {
-    const w = window.open("", "_blank");
-    if (!w) {
-      show("Popup-Blocker!", "error");
-      return;
-    }
-    w.document.write(pdfHtml());
-    w.document.close();
-    setTimeout(() => w.print(), 300);
-    show("Druckvorschau geöffnet");
+    const html = pdfHtml();
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+    const win = iframe.contentWindow;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    const cleanup = () => {
+      setTimeout(() => document.body.removeChild(iframe), 500);
+    };
+    win.onafterprint = cleanup;
+    setTimeout(() => {
+      try {
+        win.focus();
+        win.print();
+      } catch {
+        cleanup();
+        show("Drucken nicht möglich", "error");
+        return;
+      }
+      // Fallback falls onafterprint nicht feuert (Safari).
+      setTimeout(cleanup, 60000);
+    }, 200);
   };
+  const doShare = async () => {
+    const title = `Regiebericht ${fDat(sd)}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text: `${title} — ${bs?.kunde || ""}\nGesamt: ${fH(gh)}`,
+        });
+      } catch {
+        /* User abgebrochen */
+      }
+    } else {
+      doPrint();
+    }
+  };
+
+  // ESC schließt Modal
+  useEffect(() => {
+    if (!showPdf) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setShowPdf(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showPdf]);
 
   if (showPdf)
     return (
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Regiebericht-Vorschau"
+        onClick={() => setShowPdf(false)}
         style={{
           position: "fixed",
           inset: 0,
-          background: "white",
+          background: "rgba(0,0,0,0.5)",
           zIndex: 100,
-          overflowY: "auto",
-        }}
-        onTouchStart={(e) => (touchY.current = e.touches[0].clientY)}
-        onTouchEnd={(e) => {
-          if (e.changedTouches[0].clientY - touchY.current > 80)
-            setShowPdf(false);
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 16,
         }}
       >
-        <div style={{ padding: "16px 20px 32px" }}>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => (touchY.current = e.touches[0].clientY)}
+          onTouchEnd={(e) => {
+            if (e.changedTouches[0].clientY - touchY.current > 80)
+              setShowPdf(false);
+          }}
+          style={{
+            background: "white",
+            borderRadius: 16,
+            width: "100%",
+            maxWidth: 600,
+            maxHeight: "90vh",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
+          }}
+        >
           <div
             style={{
               display: "flex",
-              justifyContent: "center",
-              marginBottom: 12,
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 16px",
+              borderBottom: "0.5px solid rgba(0,0,0,0.1)",
             }}
           >
-            <div
+            <span style={{ fontWeight: 600, fontSize: 17, color: "#000" }}>
+              Regiebericht
+            </span>
+            <button
+              onClick={() => setShowPdf(false)}
+              aria-label="Schließen"
               style={{
-                width: 40,
-                height: 5,
-                borderRadius: 3,
-                background: "#c7c7cc",
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                background: "rgba(0,0,0,0.06)",
+                border: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
               }}
-            />
+            >
+              <X size={18} style={{ color: "#3c3c43" }} />
+            </button>
           </div>
           <div
+            style={{ overflowY: "auto", padding: "16px 20px", flex: 1 }}
             dangerouslySetInnerHTML={{ __html: pdfHtml() }}
-            style={{ fontSize: 14 }}
           />
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              padding: "12px 16px",
+              borderTop: "0.5px solid rgba(0,0,0,0.1)",
+              background: "white",
+            }}
+          >
+            <button
+              onClick={doShare}
+              style={{
+                flex: 1,
+                padding: "14px 20px",
+                borderRadius: 12,
+                color: "#3c3c43",
+                fontWeight: 600,
+                fontSize: 16,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                background: "rgba(0,0,0,0.06)",
+                border: "none",
+              }}
+            >
+              <Share2 size={18} />
+              Teilen
+            </button>
             <button
               onClick={doPrint}
               style={{
                 flex: 1,
-                padding: "16px 24px",
-                borderRadius: 14,
+                padding: "14px 20px",
+                borderRadius: 12,
                 color: "white",
                 fontWeight: 600,
-                fontSize: 17,
+                fontSize: 16,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -183,20 +292,6 @@ const RegView = () => {
             >
               <Printer size={18} />
               Drucken
-            </button>
-            <button
-              onClick={() => setShowPdf(false)}
-              style={{
-                padding: "16px 20px",
-                borderRadius: 14,
-                color: "#8e8e93",
-                fontWeight: 600,
-                fontSize: 17,
-                background: "rgba(0,0,0,0.05)",
-                border: "none",
-              }}
-            >
-              Schließen
             </button>
           </div>
         </div>
