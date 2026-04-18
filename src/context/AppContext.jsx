@@ -4,6 +4,9 @@ import { useAppData } from "../lib/useAppData.js";
 import { G, P } from "../utils/helpers";
 import { Toast } from "../components/ui";
 
+const TIMEOUT_MS = 30 * 1000;
+const ACTIVITY_EVENTS = ["mousemove", "touchstart", "keydown", "click", "scroll"];
+
 const AppContext = createContext(null);
 
 export { AppContext };
@@ -95,6 +98,32 @@ export function AppProvider({ children }) {
       setVRaw("login");
     }
   }, [cu, v, authChecking]);
+
+  // Idle-Lock: nach TIMEOUT_MS ohne Aktivität zurück zum Login-Screen.
+  // Supabase-Session bleibt aktiv (kein signOut) — sessionUser bleibt
+  // gesetzt, damit der "Willkommen zurück"-Screen direkt erscheint und
+  // PIN-Re-Entry den User auf das Dashboard zurückbringt.
+  useEffect(() => {
+    if (!cu) return;
+    let timer;
+    const lock = () => {
+      setCu(null);
+      setHistory([]);
+      setVRaw("login");
+    };
+    const reset = () => {
+      clearTimeout(timer);
+      timer = setTimeout(lock, TIMEOUT_MS);
+    };
+    ACTIVITY_EVENTS.forEach((ev) =>
+      window.addEventListener(ev, reset, { passive: true }),
+    );
+    reset();
+    return () => {
+      clearTimeout(timer);
+      ACTIVITY_EVENTS.forEach((ev) => window.removeEventListener(ev, reset));
+    };
+  }, [cu]);
   // Seed: Testbaustelle
   const seededRef = useRef(false);
   useEffect(() => {
