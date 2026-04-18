@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Save, Edit3, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { CS, BTN, RED, IC, fDat, bStd } from "../../utils/helpers";
-import { ScreenLayout, PhotoGrid } from "../ui";
+import { ScreenLayout, PhotoGrid, TimePicker } from "../ui";
 
 const SteView = () => {
   const {
@@ -490,11 +490,9 @@ const SteView = () => {
                   >
                     Beginn
                   </label>
-                  <input
-                    type="time"
+                  <TimePicker
                     value={fd.beginn}
-                    onChange={(e) => sFd({ ...fd, beginn: e.target.value })}
-                    className={IC}
+                    onChange={(v) => sFd({ ...fd, beginn: v })}
                   />
                 </div>
                 <div>
@@ -508,11 +506,9 @@ const SteView = () => {
                   >
                     Ende
                   </label>
-                  <input
-                    type="time"
+                  <TimePicker
                     value={fd.ende}
-                    onChange={(e) => sFd({ ...fd, ende: e.target.value })}
-                    className={IC}
+                    onChange={(v) => sFd({ ...fd, ende: v })}
                   />
                 </div>
               </div>

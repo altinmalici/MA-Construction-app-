@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Printer, Share2, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, fDat, escHtml, G, BTN, IC, CS } from "../../utils/helpers";
-import { ScreenLayout, SigPad } from "../ui";
+import { ScreenLayout, SigPad, TimePicker } from "../ui";
 
 const RegView = () => {
   const { data, goBack, show, eName } = useApp();
@@ -423,61 +423,60 @@ const RegView = () => {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "1fr 1fr 1fr",
-                        gap: 4,
-                        marginBottom: 4,
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 8,
+                        marginBottom: 8,
                       }}
                     >
-                      <input
-                        value={v.beginn}
-                        onChange={(x) =>
-                          updEdit(e.id, "beginn", x.target.value)
-                        }
-                        inputMode="numeric"
-                        placeholder="HH:MM"
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 10,
-                          border: "none",
-                          fontSize: 12,
-                          background: "rgba(118,118,128,0.12)",
-                          width: "100%",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                      <input
-                        value={v.ende}
-                        onChange={(x) => updEdit(e.id, "ende", x.target.value)}
-                        inputMode="numeric"
-                        placeholder="HH:MM"
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 10,
-                          border: "none",
-                          fontSize: 12,
-                          background: "rgba(118,118,128,0.12)",
-                          width: "100%",
-                          boxSizing: "border-box",
-                        }}
-                      />
-                      <input
-                        value={v.pause}
-                        onChange={(x) =>
-                          updEdit(e.id, "pause", Number(x.target.value) || 0)
-                        }
-                        type="number"
-                        placeholder="Pause"
-                        style={{
-                          padding: "10px 12px",
-                          borderRadius: 10,
-                          border: "none",
-                          fontSize: 12,
-                          background: "rgba(118,118,128,0.12)",
-                          width: "100%",
-                          boxSizing: "border-box",
-                        }}
-                      />
+                      <div>
+                        <p
+                          style={{
+                            fontSize: 11,
+                            color: "#8e8e93",
+                            marginBottom: 2,
+                          }}
+                        >
+                          Beginn
+                        </p>
+                        <TimePicker
+                          value={v.beginn}
+                          onChange={(nv) => updEdit(e.id, "beginn", nv)}
+                        />
+                      </div>
+                      <div>
+                        <p
+                          style={{
+                            fontSize: 11,
+                            color: "#8e8e93",
+                            marginBottom: 2,
+                          }}
+                        >
+                          Ende
+                        </p>
+                        <TimePicker
+                          value={v.ende}
+                          onChange={(nv) => updEdit(e.id, "ende", nv)}
+                        />
+                      </div>
                     </div>
+                    <input
+                      value={v.pause}
+                      onChange={(x) =>
+                        updEdit(e.id, "pause", Number(x.target.value) || 0)
+                      }
+                      type="number"
+                      placeholder="Pause (Min)"
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        border: "none",
+                        fontSize: 12,
+                        background: "rgba(118,118,128,0.12)",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        marginBottom: 4,
+                      }}
+                    />
                     <input
                       value={v.bemerkung}
                       onChange={(x) =>
