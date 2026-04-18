@@ -17,6 +17,7 @@ export function useApp() {
 export function AppProvider({ children }) {
   const { data, loading, error: dataError, actions } = useAppData();
   const [cu, setCu] = useState(null);
+  const [sessionUser, setSessionUser] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [v, setVRaw] = useState("login");
   const [history, setHistory] = useState([]);
@@ -46,14 +47,15 @@ export function AppProvider({ children }) {
     return () => clearInterval(t);
   }, []);
 
-  // Auth session init
+  // Auth session init: Session bleibt erhalten (für schnelles PIN-Re-Entry),
+  // aber UI startet immer im Login-Screen. sessionUser füttert das
+  // "Willkommen zurück"-Greeting.
   useEffect(() => {
     let cancelled = false;
     actions.auth.getCurrentUser().then(user => {
       if (cancelled) return;
       if (user) {
-        setCu(user);
-        setVRaw("dash");
+        setSessionUser({ name: user.name, username: user.username });
       }
       setAuthChecking(false);
     }).catch(() => {
@@ -67,6 +69,7 @@ export function AppProvider({ children }) {
     const { data: { subscription } } = actions.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         setCu(null);
+        setSessionUser(null);
         setHistory([]);
         setVRaw("login");
       }
@@ -74,14 +77,15 @@ export function AppProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Persist last_user
+  // Persist last_user + sync sessionUser nach Login
   useEffect(() => {
+    if (!cu) return;
+    setSessionUser({ name: cu.name, username: cu.username });
     try {
-      if (cu)
-        localStorage.setItem(
-          "ma_construction_last_user",
-          JSON.stringify({ name: cu.name, username: cu.username }),
-        );
+      localStorage.setItem(
+        "ma_construction_last_user",
+        JSON.stringify({ name: cu.name, username: cu.username }),
+      );
     } catch {}
   }, [cu]);
   // Safety: if not logged in, show login
@@ -234,6 +238,7 @@ export function AppProvider({ children }) {
     actions,
     cu,
     setCu,
+    sessionUser,
     v,
     nav,
     goBack,

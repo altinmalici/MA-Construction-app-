@@ -5,7 +5,7 @@ import { P, BTN, RED, GREEN, IC, G } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 
 const Login = () => {
-  const { actions, setCu, nav } = useApp();
+  const { actions, setCu, nav, sessionUser } = useApp();
   const [mode, setMode] = useState("C"); // A=first time, B=set PIN, C=returning
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
@@ -29,6 +29,9 @@ const Login = () => {
       return null;
     }
   });
+  // sessionUser (aktive Supabase-Session) ist die zuverlässigere Quelle als
+  // localStorage — z.B. nach App-Resume oder Idle-Timeout (Bug 4).
+  const displayedUser = sessionUser || lastUser;
 
   useEffect(() => {
     if (!lockedUntil) {
@@ -465,7 +468,7 @@ const Login = () => {
         }}
       >
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          {lastUser ? (
+          {displayedUser ? (
             <>
               <div
                 style={{
@@ -480,7 +483,7 @@ const Login = () => {
                 }}
               >
                 <span style={{ color: "white", fontSize: 24, fontWeight: 700 }}>
-                  {lastUser.name
+                  {displayedUser.name
                     .split(" ")
                     .map((w) => w[0])
                     .join("")
@@ -491,7 +494,7 @@ const Login = () => {
                 Willkommen zurück
               </p>
               <h1 style={{ fontSize: 26, fontWeight: 700, color: "#000" }}>
-                {lastUser.name}
+                {displayedUser.name}
               </h1>
             </>
           ) : (
@@ -551,13 +554,16 @@ const Login = () => {
           >
             Erster Zugang?
           </button>
-          {lastUser && (
+          {displayedUser && (
             <button
-              onClick={() => {
+              onClick={async () => {
                 localStorage.removeItem("ma_construction_last_user");
                 setLastUser(null);
                 setPin("");
                 setErr("");
+                if (sessionUser) {
+                  try { await actions.auth.signOut(); } catch {}
+                }
               }}
               style={{
                 fontSize: 13,
@@ -566,7 +572,7 @@ const Login = () => {
                 border: "none",
               }}
             >
-              Nicht {lastUser.name.split(" ")[0]}?
+              Nicht {displayedUser.name.split(" ")[0]}?
             </button>
           )}
         </div>
