@@ -109,6 +109,7 @@ const BtbView = () => {
               const myBs = chef
                 ? data.baustellen
                 : data.baustellen.filter((b) => b.mitarbeiter?.includes(cu?.id));
+              if (myBs.length <= 1) return null;
               return (
                 <select
                   value={bf.baustelleId}
