@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import TimePicker, {
+import TimePicker from './TimePicker.jsx';
+import {
   parseTime,
   formatTime,
   minuteOptions,
   snapMinute,
-} from './TimePicker.jsx';
+} from './TimePicker.helpers.js';
 
 describe('TimePicker helpers', () => {
   it('minuteOptions(30) returns [0, 30]', () => {

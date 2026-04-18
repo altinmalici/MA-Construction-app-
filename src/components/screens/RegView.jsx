@@ -115,7 +115,10 @@ const RegView = () => {
   };
   // Druckt nur den Bericht (nicht die App-UI). Hidden iframe statt window.open
   // — letzteres lässt sich auf iOS in der PWA praktisch nicht mehr schließen.
+  const printingRef = useRef(false);
   const doPrint = () => {
+    if (printingRef.current) return;
+    printingRef.current = true;
     const html = pdfHtml();
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
@@ -129,8 +132,14 @@ const RegView = () => {
     win.document.open();
     win.document.write(html);
     win.document.close();
+    let cleaned = false;
     const cleanup = () => {
-      setTimeout(() => document.body.removeChild(iframe), 500);
+      if (cleaned) return;
+      cleaned = true;
+      setTimeout(() => {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+        printingRef.current = false;
+      }, 500);
     };
     win.onafterprint = cleanup;
     setTimeout(() => {
