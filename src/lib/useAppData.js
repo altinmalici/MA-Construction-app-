@@ -95,6 +95,9 @@ export function useAppData() {
       login: async (pin) => {
         return await api.auth.login(pin);
       },
+      loginAsUser: async (username, pin) => {
+        return await api.auth.loginAsUser(username, pin);
+      },
       loginWithUsername: async (username, onboardingPin) => {
         return await api.auth.loginWithUsername(username, onboardingPin);
       },

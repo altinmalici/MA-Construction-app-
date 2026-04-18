@@ -39,6 +39,34 @@ export async function login(pin) {
 }
 
 /**
+ * Targeted Mode C Login: erwartet Username (vom "Willkommen zurück"-Screen)
+ * und versucht direkt signInWithPassword. Schließt aus, dass ein PIN
+ * eines anderen Users zufällig auf den falschen Account einloggt.
+ * Gibt User-Profil zurück oder null bei falschem PIN.
+ */
+export async function loginAsUser(username, pin) {
+  const email = username + '@ma-construction.local';
+  const { error: signInErr } = await supabase.auth.signInWithPassword({
+    email,
+    password: pin,
+  });
+  if (signInErr) return null;
+
+  const { data: profile, error: profileErr } = await supabase.rpc('get_user_by_auth_id');
+  if (profileErr || !profile || profile.length === 0) return null;
+
+  const user = profile[0];
+  return {
+    id: user.id,
+    name: user.name,
+    role: user.role,
+    stundensatz: user.stundensatz,
+    username: user.username,
+    isOnboarded: user.is_onboarded,
+  };
+}
+
+/**
  * Mode A Login: Username + Onboarding-PIN → lookup → signInWithPassword
  */
 export async function loginWithUsername(username, onboardingPin) {

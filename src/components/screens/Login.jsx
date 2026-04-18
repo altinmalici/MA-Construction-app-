@@ -69,7 +69,12 @@ const Login = () => {
     if (code.length !== 4 || checking || isLocked) return;
     setChecking(true);
     try {
-      const u = await actions.auth.login(code);
+      // Wenn wir wissen, wer einloggen soll, prüfe PIN gezielt gegen
+      // diesen User — verhindert dass eine globale PIN-Suche einen
+      // fremden Account auf dem "Willkommen zurück"-Screen einloggt.
+      const u = displayedUser?.username
+        ? await actions.auth.loginAsUser(displayedUser.username, code)
+        : await actions.auth.login(code);
       if (u) {
         if (u.isOnboarded === false) {
           setObUser(u);
