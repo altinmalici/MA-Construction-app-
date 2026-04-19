@@ -312,8 +312,15 @@ const BstForm = () => {
           </label>
           <input
             type="number"
+            min="0"
+            inputMode="decimal"
             value={f.budget}
-            onChange={(e) => sF({ ...f, budget: e.target.value })}
+            onChange={(e) =>
+              sF({
+                ...f,
+                budget: e.target.value.startsWith("-") ? "" : e.target.value,
+              })
+            }
             placeholder="z.B. 50000"
             className={IC}
           />

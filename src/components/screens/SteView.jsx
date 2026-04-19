@@ -539,9 +539,14 @@ const SteView = () => {
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    inputMode="numeric"
                     value={fd.pause}
                     onChange={(e) =>
-                      sFd({ ...fd, pause: Number(e.target.value) })
+                      sFd({
+                        ...fd,
+                        pause: Math.max(0, parseInt(e.target.value, 10) || 0),
+                      })
                     }
                     className={IC}
                   />
@@ -559,9 +564,17 @@ const SteView = () => {
                   </label>
                   <input
                     type="number"
+                    min="0"
+                    inputMode="numeric"
                     value={fd.fahrtzeit}
                     onChange={(e) =>
-                      sFd({ ...fd, fahrtzeit: Number(e.target.value) })
+                      sFd({
+                        ...fd,
+                        fahrtzeit: Math.max(
+                          0,
+                          parseInt(e.target.value, 10) || 0,
+                        ),
+                      })
                     }
                     className={IC}
                   />

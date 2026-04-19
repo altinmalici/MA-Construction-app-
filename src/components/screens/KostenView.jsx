@@ -644,8 +644,17 @@ const KostenView = () => {
               </span>
               <input
                 type="number"
+                min="0"
+                inputMode="decimal"
                 value={kf.betrag}
-                onChange={(e) => sKf({ ...kf, betrag: e.target.value })}
+                onChange={(e) =>
+                  sKf({
+                    ...kf,
+                    betrag: e.target.value.startsWith("-")
+                      ? ""
+                      : e.target.value,
+                  })
+                }
                 placeholder="Betrag *"
                 className={IC}
                 style={{ background: "rgba(118,118,128,0.12)", border: "none" }}

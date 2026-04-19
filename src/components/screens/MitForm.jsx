@@ -277,8 +277,12 @@ const MitForm = () => {
             </label>
             <input
               type="number"
+              min="0"
+              inputMode="decimal"
               value={ss}
-              onChange={(e) => setSs(e.target.value)}
+              onChange={(e) =>
+                setSs(e.target.value.startsWith("-") ? "" : e.target.value)
+              }
               placeholder="45"
               className={IC}
               style={{ background: "rgba(118,118,128,0.12)", border: "none" }}

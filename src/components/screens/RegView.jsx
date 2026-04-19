@@ -471,9 +471,15 @@ const RegView = () => {
                     <input
                       value={v.pause}
                       onChange={(x) =>
-                        updEdit(e.id, "pause", Number(x.target.value) || 0)
+                        updEdit(
+                          e.id,
+                          "pause",
+                          Math.max(0, parseInt(x.target.value, 10) || 0),
+                        )
                       }
                       type="number"
+                      min="0"
+                      inputMode="numeric"
                       placeholder="Pause (Min)"
                       style={{
                         padding: "10px 12px",
