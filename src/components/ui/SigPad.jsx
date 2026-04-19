@@ -9,19 +9,55 @@ const SigPad = ({ onSave, onClear, sig }) => {
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
-    const x = c.getContext("2d");
-    c.width = c.offsetWidth * 2;
-    c.height = c.offsetHeight * 2;
-    x.scale(2, 2);
-    x.strokeStyle = "#374151";
-    x.lineWidth = 2;
-    x.lineCap = "round";
-    if (sig) {
-      const img = new window.Image();
-      img.onload = () => x.drawImage(img, 0, 0, c.offsetWidth, c.offsetHeight);
-      img.src = sig;
+    const initStyles = (ctx) => {
+      ctx.strokeStyle = "#374151";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+    };
+    const setCanvasSize = (preserveSnapshot) => {
+      const ctx = c.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = c.offsetWidth;
+      const cssH = c.offsetHeight;
+      let snapshot = null;
+      if (preserveSnapshot && c.width > 0 && c.height > 0) {
+        try {
+          snapshot = c.toDataURL();
+        } catch {
+          snapshot = null;
+        }
+      }
+      // setTransform statt scale, damit wiederholter Resize nicht kumuliert.
+      c.width = cssW * dpr;
+      c.height = cssH * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initStyles(ctx);
+      if (snapshot) {
+        const img = new window.Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, cssW, cssH);
+        img.src = snapshot;
+      } else if (sig) {
+        const img = new window.Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, cssW, cssH);
+        img.src = sig;
+      }
+    };
+    setCanvasSize(false);
+    let ro;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => setCanvasSize(true));
+      ro.observe(c);
+      return () => ro.disconnect();
     }
-  }, []);
+    // Fallback für Browser ohne ResizeObserver
+    const onResize = () => setCanvasSize(true);
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, [sig]);
   const gp = (e) => {
     const r = ref.current.getBoundingClientRect();
     const t = e.touches ? e.touches[0] : e;
@@ -102,18 +138,22 @@ const SigPad = ({ onSave, onClear, sig }) => {
       {(hd || sig) && (
         <button
           onClick={cl}
+          aria-label="Unterschrift löschen"
           style={{
             marginTop: 4,
+            padding: "6px 8px",
             fontSize: 13,
             color: "#8e8e93",
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: 4,
             background: "none",
             border: "none",
+            minHeight: 32,
+            cursor: "pointer",
           }}
         >
-          <Trash2 size={10} />
+          <Trash2 size={14} />
           Löschen
         </button>
       )}
