@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Check, Save } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { CS, BTN, IC, parseDecimal } from "../../utils/helpers";
-import { ScreenLayout, Spinner } from "../ui";
+import { ScreenLayout, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const BstForm = () => {
@@ -32,6 +32,24 @@ const BstForm = () => {
     rechnungEmail: ex?.details?.rechnungEmail || "",
     rechnungUid: ex?.details?.rechnungUid || "",
   });
+  // Initial-Snapshot für Dirty-Check; useRef weil unveränderlich nach Mount.
+  const initialRef = useRef(null);
+  if (initialRef.current === null) initialRef.current = JSON.stringify(f);
+  const isDirty = () => JSON.stringify(f) !== initialRef.current;
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const handleBack = () => {
+    if (isDirty()) {
+      setConfirmDiscard(true);
+    } else {
+      setEm(false);
+      goBack();
+    }
+  };
+  const doDiscard = () => {
+    setConfirmDiscard(false);
+    setEm(false);
+    goBack();
+  };
   const tg = (k, id) =>
     sF((p) => ({
       ...p,
@@ -77,10 +95,7 @@ const BstForm = () => {
   return (
     <ScreenLayout
       title={ex ? "Bearbeiten" : "Neue Baustelle"}
-      onBack={() => {
-        setEm(false);
-        goBack();
-      }}
+      onBack={handleBack}
     >
       {/* Card: Grunddaten */}
       <div
@@ -668,6 +683,16 @@ const BstForm = () => {
         {saving ? <Spinner size={20} color="white" /> : <Save size={20} />}
         {saving ? "Speichere..." : ex ? "Speichern" : "Anlegen"}
       </button>
+      <ConfirmModal
+        open={confirmDiscard}
+        title="Änderungen verwerfen?"
+        message="Deine nicht gespeicherten Änderungen gehen verloren."
+        confirmLabel="Verwerfen"
+        cancelLabel="Weiter bearbeiten"
+        destructive
+        onConfirm={doDiscard}
+        onCancel={() => setConfirmDiscard(false)}
+      />
     </ScreenLayout>
   );
 };
