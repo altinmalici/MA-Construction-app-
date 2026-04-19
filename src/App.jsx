@@ -1,27 +1,49 @@
+import { lazy, Suspense } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
+import { Spinner } from "./components/ui";
+
+// Eager: kritischer Pfad — Login direkt nach Start, Dash direkt danach,
+// TabBar dauerhaft sichtbar. Alles andere wird on-demand geladen.
 import Login from "./components/screens/Login";
 import Dash from "./components/screens/Dash";
-import BstList from "./components/screens/BstList";
-import BstDet from "./components/screens/BstDet";
-import BstForm from "./components/screens/BstForm";
-import SteView from "./components/screens/SteView";
-import MeineStd from "./components/screens/MeineStd";
-import MngView from "./components/screens/MngView";
-import BtbView from "./components/screens/BtbView";
-import DokView from "./components/screens/DokView";
-import MatView from "./components/screens/MatView";
-import NotifView from "./components/screens/NotifView";
-import KalView from "./components/screens/KalView";
-import TagView from "./components/screens/TagView";
-import RegView from "./components/screens/RegView";
-import KostenView from "./components/screens/KostenView";
-import MitView from "./components/screens/MitView";
-import MitForm from "./components/screens/MitForm";
-import SubView from "./components/screens/SubView";
-import ProfilView from "./components/screens/ProfilView";
-import StundenUebersicht from "./components/screens/StundenUebersicht";
-import MehrView from "./components/screens/MehrView";
 import TabBar from "./components/screens/TabBar";
+
+// Lazy: 20 Screens. React lädt den Chunk beim ersten Aufruf der Route nach
+// und behält ihn dann im Memory; zweiter Besuch ist sofort.
+const BstList = lazy(() => import("./components/screens/BstList"));
+const BstDet = lazy(() => import("./components/screens/BstDet"));
+const BstForm = lazy(() => import("./components/screens/BstForm"));
+const SteView = lazy(() => import("./components/screens/SteView"));
+const MeineStd = lazy(() => import("./components/screens/MeineStd"));
+const MngView = lazy(() => import("./components/screens/MngView"));
+const BtbView = lazy(() => import("./components/screens/BtbView"));
+const DokView = lazy(() => import("./components/screens/DokView"));
+const MatView = lazy(() => import("./components/screens/MatView"));
+const NotifView = lazy(() => import("./components/screens/NotifView"));
+const KalView = lazy(() => import("./components/screens/KalView"));
+const TagView = lazy(() => import("./components/screens/TagView"));
+const RegView = lazy(() => import("./components/screens/RegView"));
+const KostenView = lazy(() => import("./components/screens/KostenView"));
+const MitView = lazy(() => import("./components/screens/MitView"));
+const MitForm = lazy(() => import("./components/screens/MitForm"));
+const SubView = lazy(() => import("./components/screens/SubView"));
+const ProfilView = lazy(() => import("./components/screens/ProfilView"));
+const StundenUebersicht = lazy(() => import("./components/screens/StundenUebersicht"));
+const MehrView = lazy(() => import("./components/screens/MehrView"));
+
+const ScreenLoader = () => (
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      height: "100%",
+      width: "100%",
+    }}
+  >
+    <Spinner size={28} />
+  </div>
+);
 
 function AppRouter() {
   const { v, cu } = useApp();
@@ -29,28 +51,30 @@ function AppRouter() {
     <>
       <div style={{ flex: 1, minHeight: 0 }}>
         <div key={v} className="view-fade">
-          {v === "login" && <Login />}
-          {v === "dash" && <Dash />}
-          {v === "profil" && <ProfilView />}
-          {v === "bst" && <BstList />}
-          {v === "bsd" && <BstDet />}
-          {v === "bsf" && <BstForm />}
-          {v === "ste" && <SteView />}
-          {v === "mst" && <MeineStd />}
-          {v === "mng" && <MngView />}
-          {v === "btb" && <BtbView />}
-          {v === "dok" && <DokView />}
-          {v === "mat" && <MatView />}
-          {v === "notif" && <NotifView />}
-          {v === "kal" && <KalView />}
-          {v === "suo" && <StundenUebersicht />}
-          {v === "tag" && <TagView />}
-          {v === "reg" && <RegView />}
-          {v === "kos" && <KostenView />}
-          {v === "mit" && <MitView />}
-          {v === "mitf" && <MitForm />}
-          {v === "sub" && <SubView />}
-          {v === "mehr" && <MehrView />}
+          <Suspense fallback={<ScreenLoader />}>
+            {v === "login" && <Login />}
+            {v === "dash" && <Dash />}
+            {v === "profil" && <ProfilView />}
+            {v === "bst" && <BstList />}
+            {v === "bsd" && <BstDet />}
+            {v === "bsf" && <BstForm />}
+            {v === "ste" && <SteView />}
+            {v === "mst" && <MeineStd />}
+            {v === "mng" && <MngView />}
+            {v === "btb" && <BtbView />}
+            {v === "dok" && <DokView />}
+            {v === "mat" && <MatView />}
+            {v === "notif" && <NotifView />}
+            {v === "kal" && <KalView />}
+            {v === "suo" && <StundenUebersicht />}
+            {v === "tag" && <TagView />}
+            {v === "reg" && <RegView />}
+            {v === "kos" && <KostenView />}
+            {v === "mit" && <MitView />}
+            {v === "mitf" && <MitForm />}
+            {v === "sub" && <SubView />}
+            {v === "mehr" && <MehrView />}
+          </Suspense>
         </div>
       </div>
       {cu && <TabBar />}
