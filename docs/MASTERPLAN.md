@@ -151,7 +151,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | 3c-SAVING | Zentraler `useSaving`-Hook bauen, dann app-weit in Save-Handlern integrieren (`BstForm`, `SteView`, `MngView`, `BtbView`, `KalView`, `MitForm`, `KostenView`, `SubView`) inkl. `disabled={saving}` + Spinner | neuer Hook + 8 Screens | mittel | 🟢 DONE |
 | 3c-MODAL | `ConfirmModal` + `PromptModal` (iOS-Style) bauen und alle `window.confirm()` / `window.prompt()` Aufrufe ersetzen | neue Komponenten + alle Screens mit confirm/prompt | mittel | 🟢 DONE |
 | 3c-DIRTY | `BstForm` Dirty-Check vor Zurück-Tap (Confirm-Modal "Änderungen verwerfen?") | `BstForm.jsx:11-32` | klein | 🟢 DONE |
-| 3c-SLIDER | `BstDet` Fortschritts-Slider: lokaler Optimistic-State + Debounce 300-500ms vor `updateField` | `BstDet.jsx:128-148` | klein | 🔴 TODO |
+| 3c-SLIDER | `BstDet` Fortschritts-Slider: lokaler Optimistic-State + Debounce 300-500ms vor `updateField` | `BstDet.jsx:128-148` | klein | 🟢 DONE |
 | 3c-TOUCH | Touch-Targets app-weit auf ≥44px | audit-weit | mittel | 🔴 TODO |
 | 3c-TOAST | Toast-Queue mit X-Close, Errors länger anzeigen | `Toast`-Komponente + `AppContext` | klein | 🔴 TODO |
 | 3c-SAFEAREA | `ScreenLayout` um `safe-area-inset-bottom` erweitern | `ScreenLayout.jsx` | klein | 🔴 TODO |
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 3c-SLIDER · a0a979e · BstDet Fortschritts-Slider: lokaler Optimistic-State + 400ms Debounce auf DB-Update; Rollback bei Fehler; spart ~99% der Request-Last beim Drag (1 statt N Requests). Hooks-Order vor early-return (rules-of-hooks-Fix).
 - 2026-04-20 · 3c-DIRTY · 5ffd5f9 · BstForm Dirty-Check via JSON-Snapshot-Vergleich; ConfirmModal bei Back-Tap verhindert ungewollten Verlust von Eingaben; Save-Pfad bleibt unberührt
 - 2026-04-20 · 3c-MODAL · b60e08e · PromptModal neu (für Phase 4 bereit); ConfirmModal app-weit ausgerollt; 9 window.confirm()-Aufrufe ersetzt (KalView/NotifView/BtbView/SteView/KostenView/MitView/MngView/SubView/BstDet); BstDet mit konkreter Folgenwarnung; einheitliche iOS-Style-Dialoge
 - 2026-04-19 · 3c-SAVING · 2e7b48f+7fa2d1f · useSaving-Hook (re-entrant-safe) + Spinner-Komponente; 8 Screens gehärtet (BstForm/SteView/MngView/BtbView/KalView/MitForm/KostenView/SubView) gegen Doppel-Save-Duplikate; informative catch-Messages app-weit; +5 vitest-Szenarien
