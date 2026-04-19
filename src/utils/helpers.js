@@ -78,8 +78,21 @@ export const genUsername = (fullName, existing) => {
   return u;
 };
 
-// Zufälligen 4-stelligen PIN generieren
-export const genPin = () => String(Math.floor(1000 + Math.random() * 9000));
+// Kryptografisch sicherer 4-stelliger PIN (0000–9999, mit führender Null).
+// Modulo-Bias bei Uint32 % 10000 ist < 2^-22 — für User-PINs vernachlässigbar.
+export const genPin = () => {
+  if (
+    typeof crypto === "undefined" ||
+    typeof crypto.getRandomValues !== "function"
+  ) {
+    throw new Error(
+      "crypto.getRandomValues not available — cannot generate secure PIN",
+    );
+  }
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return String(buf[0] % 10000).padStart(4, "0");
+};
 
 // Modul-Farben
 export const COLORS = {
