@@ -181,7 +181,22 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 
 ---
 
-### 🎯 Phase 5 — PWA-Versprechen einlösen · Status: 🟡 IN PROGRESS · geschätzt ~6-10h
+### 🎯 Phase 5 — PWA-Versprechen einlösen · Status: 🟢 DONE · geschätzt ~6-10h
+
+**Bilanz Phase 5 (10/10):** App ist installierbare PWA mit Offline-Shell, App-Shell-Caching, Vendor-Splitting und schlankem Erst-Load. iPhone-Smoke-Test 5-10 grün.
+
+| Stats | Vorher | Nachher |
+|---|---:|---:|
+| Main-Bundle | 546 KB | **53 KB** |
+| Erst-Load gzip | 148 KB | **~124 KB** |
+| Chunks (JS) | 1 | 24 (3 vendor + main + 20 lazy) |
+| PWA-Status | nicht installierbar | installierbar (iOS + Android) |
+| Service-Worker | — | aktiv mit 4 Runtime-Strategien |
+| Pre-Cache | — | 46 entries / 636 KB |
+
+Neue Deps: `vite-plugin-pwa`, `sharp` (dev), `rollup-plugin-visualizer` (dev).
+Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts/gen-icons.mjs`.
+18 Commits (10 Code + 8 Docs/Polish).
 
 **Ziel:** App ist installierbar auf iPhone/Android. Basis-Offline-Fähigkeit. Schnelleres Laden.
 
@@ -196,7 +211,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | 5-07 | `vite` `manualChunks` für Vendor-Chunks (lucide-react, supabase, recharts falls drin) | klein | 🟢 DONE |
 | 5-08 | `key={v}` aus `<Screen>`-Rendering entfernen (unnötige Remounts) | klein | 🟢 DONE |
 | 5-09 | Bundle-Analyzer einmal laufen lassen, Low-Hanging-Fruit entfernen | klein | 🟢 DONE |
-| 5-10 | Auf iPhone "Zum Home-Screen hinzufügen" testen | klein | 🔴 TODO |
+| 5-10 | Auf iPhone "Zum Home-Screen hinzufügen" testen | klein | 🟢 DONE |
 
 **Abschluss-Kriterium:** App öffnet sich offline auf iPhone (letzter Stand sichtbar), Install-Prompt erscheint, Bundle-Size < 350KB gzipped.
 
@@ -292,6 +307,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 5-10 · — · iPhone PWA-Smoke erfolgreich: Icon scharf, Standalone-Modus läuft, Offline-Shell zeigt Error-Screen korrekt. **Phase 5 komplett (10/10).**
 - 2026-04-20 · 5-09 · 5cc5921 · rollup-plugin-visualizer für dist/stats.html; Erst-Load gzip ~124 KB (Ziel <350 erreicht); kein Wildcard-Lucide-Import, keine Module-Duplikate, keine Source-Maps in Prod; pg-Removal in F-08; stats.html aus PWA-Precache ausgeschlossen
 - 2026-04-20 · 5-08 · 42d81ba · key={v} aus view-fade-Wrapper entfernt; keine Remounts mehr bei Tab-Wechsel; lokaler Screen-State (Monats-Navigation, Form-State, useSaving-mountedRef) bleibt erhalten; Fade triggert nur bei First-Mount
 - 2026-04-20 · 5-07 · 15efd70 · vendor-react/vendor-supabase/vendor-icons als separate Chunks (Function-Variante); Main-Chunk 422→53KB (gzip 123→17KB); Long-Term-Caching für Vendors über mehrere Deploys
