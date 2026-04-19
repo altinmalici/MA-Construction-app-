@@ -43,6 +43,13 @@ body {
 :root {
   --safe-top: 60px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Brand-Farben — Single Source of Truth.
+     Bei Änderung auch src/utils/helpers.js (P/PL/PD)
+     und index.html <meta name="theme-color"> aktualisieren. */
+  --brand-primary: #7C3AED;
+  --brand-light:   #8B5CF6;
+  --brand-dark:    #6D28D9;
 }
 
 /* Native app feel */

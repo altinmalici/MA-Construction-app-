@@ -67,7 +67,9 @@ export const escHtml = (s) => {
     .replace(/'/g, "&#39;");
 };
 
-// Design System — iOS Colors
+// Design System — iOS Colors.
+// Brand-Farben: Single-Source-of-Truth in src/index.css (--brand-primary/-light/-dark).
+// Bei Änderung auch index.html <meta name="theme-color"> und src/index.css anpassen.
 export const P = "#7C3AED";
 export const PL = "#8B5CF6";
 export const PD = "#6D28D9";
