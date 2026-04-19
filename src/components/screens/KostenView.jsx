@@ -30,6 +30,11 @@ const KostenView = () => {
   };
   const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
 
+  const bsList =
+    fl === "alle"
+      ? data.baustellen
+      : data.baustellen.filter((b) => b.status === fl);
+
   // Lohnkosten berechnen pro Baustelle
   const calcLohn = (bid) => {
     const ei = data.stundeneintraege.filter(
@@ -95,7 +100,7 @@ const KostenView = () => {
     const rows = [
       ["Baustelle", "Kategorie", "Beschreibung", "Betrag", "Datum"],
     ];
-    data.baustellen.forEach((b) => {
+    bsList.forEach((b) => {
       // Lohnkosten pro Mitarbeiter
       const ei = data.stundeneintraege.filter(
         (e) => e.baustelleId === b.id && isMitarbeiterEntry(e),
@@ -137,14 +142,12 @@ const KostenView = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `Kostenübersicht_${new Date().toISOString().split("T")[0]}.csv`;
+    const flSuffix = fl === "alle" ? "" : `_${fl}`;
+    a.download = `Kostenübersicht${flSuffix}_${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     show("CSV exportiert");
   };
-
-  let bsList = data.baustellen;
-  if (fl !== "alle") bsList = bsList.filter((b) => b.status === fl);
 
   // Detail-Ansicht einer Baustelle
   if (selBs) {
