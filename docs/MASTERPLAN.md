@@ -189,7 +189,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 |---|---|---|---|
 | 5-01 | `vite-plugin-pwa` installieren + konfigurieren | klein | 🟢 DONE |
 | 5-02 | `manifest.webmanifest` erstellen (name, icons, theme_color, display) | klein | 🟢 DONE |
-| 5-03 | `apple-touch-icon` + iOS Splash-Screens | klein | 🔴 TODO |
+| 5-03 | `apple-touch-icon` + iOS Splash-Screens | klein | 🟢 DONE |
 | 5-04 | `viewport`-Meta-Tag: `user-scalable=no` entfernen (WCAG) | klein | 🔴 TODO |
 | 5-05 | Service Worker: Cache-First für statische Assets, Stale-While-Revalidate für Daten | mittel | 🔴 TODO |
 | 5-06 | `React.lazy` für alle Screens außer Login/Dash | klein | 🔴 TODO |
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 5-03 · d69728e · PWA-Icons (192/512/512-maskable) + apple-touch-icon 180 + favicon-32 aus ma-logo.svg via sharp generiert; scripts/gen-icons.mjs für Re-Runs; iOS-Splash-Screens bewusst weggelassen (iOS 15+ generiert automatisch); Build pre-cached 16 entries
 - 2026-04-20 · 5-02 · 3a277b2 · Manifest mit name/short_name/theme_color #7C3AED/standalone/portrait/lang=de; iOS apple-mobile-web-app-* Meta-Tags (status-bar default, title, touch-icon); Icons als Referenzen (Dateien folgen in 5-03)
 - 2026-04-20 · 5-01 · b442e9d · vite-plugin-pwa installiert; Minimal-Konfig mit registerType=autoUpdate und manifest=false; Service-Worker cached Build-Assets (5 entries, 574 KiB); dev-mode SW deaktiviert
 - 2026-04-20 · 3c-SPINNER · 47e3472 · App-Level-Error-Screen mit Retry bei useAppData-Fail; MngView Frist-Warnung (überfällig=rot, ≤3 Tage=orange); Splash-Spinner auf Spinner-Komponente konsolidiert. **Phase 3c komplett (13/13).**
