@@ -1,65 +1,52 @@
-import { Plus, FileText, FileUp, Trash2 } from "lucide-react";
+import { AlertTriangle, FileText, FileUp } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fK, BTN, CS } from "../../utils/helpers";
+import { fK, CS } from "../../utils/helpers";
 import { Empty, ScreenLayout } from "../ui";
 
 const DokView = () => {
-  const { sb, chef, data, actions, show, goBack } = useApp();
+  const { sb, data, goBack } = useApp();
   const ds = sb
     ? data.dokumente.filter((d) => d.baustelleId === sb.id)
     : data.dokumente;
-  const add = async () => {
-    const n = prompt("Dokumentenname:");
-    if (!n) return;
-    try {
-      await actions.dokumente.create({
-        baustelleId: sb?.id || data.baustellen[0]?.id || "",
-        name: n,
-        typ: "dokument",
-        groesse: "–",
-        datum: new Date().toISOString().split("T")[0],
-      });
-      show("Hinzugefügt");
-    } catch (e) {
-      show("Fehler", "error");
-    }
-  };
-  const del = async (id) => {
-    try {
-      await actions.dokumente.remove(id);
-      show("Gelöscht");
-    } catch (e) {
-      show("Fehler", "error");
-    }
-  };
   return (
-    <ScreenLayout
-      title="Dokumente"
-      onBack={goBack}
-      right={
-        chef && (
-          <button
-            onClick={add}
+    <ScreenLayout title="Dokumente" onBack={goBack}>
+      <div
+        role="status"
+        style={{
+          display: "flex",
+          gap: 12,
+          padding: 16,
+          borderRadius: 12,
+          background: "#FFF8E1",
+          border: "0.5px solid #F0C674",
+          marginBottom: 16,
+        }}
+      >
+        <AlertTriangle
+          size={20}
+          style={{ color: "#B8860B", flexShrink: 0, marginTop: 2 }}
+        />
+        <div>
+          <p
             style={{
-              padding: 8,
-              borderRadius: 10,
-              color: "white",
-              background: BTN,
-              border: "none",
-              cursor: "pointer",
+              fontSize: 15,
+              fontWeight: 600,
+              color: "#000",
+              marginBottom: 4,
             }}
           >
-            <Plus size={18} />
-          </button>
-        )
-      }
-    >
+            Dokumente-Upload in Entwicklung
+          </p>
+          <p style={{ fontSize: 13, color: "#3c3c43", lineHeight: 1.4 }}>
+            Echtes Hochladen von Dateien kommt in Kürze. Bestehende Einträge
+            unten sind nur Platzhalter-Namen ohne Datei-Inhalt. Bitte nach
+            Feature-Start neu hochladen.
+          </p>
+        </div>
+      </div>
       <div className="space-y-2">
         {ds.length === 0 ? (
-          <Empty
-            icon={FileUp}
-            text="Tippe auf + um ein Dokument hinzuzufügen"
-          />
+          <Empty icon={FileUp} text="Noch keine Einträge. Feature kommt bald." />
         ) : (
           ds.map((d) => (
             <div
@@ -94,22 +81,9 @@ const DokView = () => {
                   {d.name}
                 </p>
                 <p style={{ fontSize: 13, color: "#8e8e93" }}>
-                  {d.groesse} · {fK(d.datum)}
+                  Platzhalter · {fK(d.datum)}
                 </p>
               </div>
-              {chef && (
-                <button
-                  onClick={() => del(d.id)}
-                  style={{
-                    padding: 8,
-                    color: "#c7c7cc",
-                    background: "none",
-                    border: "none",
-                  }}
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
             </div>
           ))
         )}
