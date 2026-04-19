@@ -1,0 +1,298 @@
+# MA Construction App — Masterplan
+
+*Letzte Aktualisierung: 2026-04-19 · Dokument ist lebend, Status-Felder werden pro Task gepflegt*
+
+---
+
+## 0. Wie dieses Dokument zu lesen ist
+
+Dieser Masterplan ist die **Single Source of Truth** für die Weiterentwicklung der MA Construction App. Er ersetzt keinen anderen Plan im Projekt — er fasst sie alle zusammen und verschmilzt den Audit-Report (`AUDIT_REPORT_2026-04.md`) mit dem ursprünglichen Phasen-Plan (Phase 3-8).
+
+**Konventionen:**
+- Jeder Task hat ein Status-Feld: 🔴 TODO · 🟡 IN PROGRESS · 🟢 DONE · ⚪ DEFERRED · ❌ CANCELLED
+- Wenn Claude Code einen Task abschließt, updatet er den Status auf 🟢 DONE + fügt Datum + Commit-Hash an
+- Phasen werden der Reihe nach abgearbeitet — innerhalb einer Phase können Tasks parallelisiert werden, wenn die Abhängigkeits-Graphen es erlauben
+- **Ein Task = ein Prompt = ein Commit** (Superpowers-Workflow)
+
+---
+
+## 1. Resume-Protokoll (für neue Claude-Sessions)
+
+Wenn Altin in einer neuen Chat-Session das Projekt wiederaufnimmt, liest Claude Chat diesen Masterplan zuerst und arbeitet nach folgendem Muster:
+
+1. **State-Check:** Welche Phase ist IN PROGRESS? Welcher Task ist der nächste mit Status TODO?
+2. **Abhängigkeits-Check:** Sind die Vorgänger-Tasks wirklich DONE? Falls nicht, erst die nachziehen.
+3. **Prompt-Bau:** Claude Chat schreibt den Claude-Code-Prompt für den nächsten Task als einzelner copy-paste-fähiger Block in einer `.txt`-Datei (Altins bevorzugter Workflow).
+4. **Nach Task-Abschluss:** Altin meldet zurück ("done" oder "Fehler: ..."), Claude Chat aktualisiert Status und baut den nächsten Prompt.
+5. **Kein Approval-Gate zwischen Tasks** — Claude Code läuft autonom, Sicherheit kommt aus TDD + code-reviewer + verification-before-completion + git commits pro Task.
+
+**Merke:** Fortschritt wird nur im Masterplan getrackt, nicht in Claude-Memory. Memory ist flüchtig, der Plan ist fest.
+
+**Recall-Befehl für Altin:** Im Terminal `plan` tippen → Masterplan-Inhalt landet in der Zwischenablage → Altin pastet ihn mit dem Satz "mach weiter mit masterplan" in die neue Claude-Chat-Session.
+
+---
+
+## 2. Projekt-Kontext (Stand April 2026)
+
+### Stack
+- **Frontend:** React + Vite + Tailwind + lucide-react
+- **Backend:** Supabase (project ref: `roeqphnopokfdktvvbpp`)
+- **Deployment:** Vercel (auto-deploy via GitHub push, Repo `altinmalici/MA-Construction-app-`)
+- **Dev:** `npx vite --host` auf `localhost:5173`
+- **Prod:** `ma-construction-app.vercel.app`
+
+### Architektur (post Phase 2)
+- `App.jsx` ist jetzt ~67 Zeilen (Router-only)
+- 37 Komponenten-Dateien:
+  - 23 Screens in `src/components/screens/`
+  - 9 UI-Komponenten in `src/components/ui/`
+  - `AppContext.jsx`, `helpers.js`
+  - 12 API-Layer-Dateien in `src/lib/api/`
+
+### User / Rollen
+- **Altin:** `a.malici` · Chef-Rolle
+- **Agim:** `ag.malici` · Mitarbeiter-Rolle
+
+### Abgeschlossene Phasen
+- **Phase 1 (Auth + RLS):** 🟢 DONE — Supabase Auth mit PIN-as-Password, synthetische Emails (`username@ma-construction.local`), 35 RLS-Policies über 11 Tabellen, Helper-Funktionen (`get_user_role`, `user_has_baustelle_access`)
+- **Phase 2 (App.jsx Split):** 🟢 DONE — 37 Dateien extrahiert, 24 Bugs post-split gefixt, deployed
+
+### Arbeitsweise / Prinzipien
+- **Workflow-Teilung:** Claude Chat = Architekt (Planung, Prompt-Schreiben), Claude Code im Terminal = Ausführung. Altins Bruder führt manchmal auch Prompts aus.
+- **Prompt-Stil:** Autonom, keine Approval-Gates zwischen Tasks
+- **Terminal-Befehle:** Immer als einzelne kopierbare Plain-Text-Zeile, NIE in Markdown-Code-Blöcken
+- **Längere Prompts:** Als Download-`.txt` liefern für One-Click-Copy
+- **Sequenz:** Ein Fix nach dem anderen, nach jedem Testen
+- **Neue Chat-Session pro Phase** für frischen Kontext
+- **Keine unnötige Komplexität** (kein React Router, keine Skeleton-Loader ohne echten Bedarf)
+- **Altin kommuniziert auf Deutsch**, oft per Voice — gelegentliche Zahlen-Fehler durch Voice sollen zurückgefragt werden
+- **18 Claude-Code-Skills installiert** (Supabase Postgres, Vercel React, Web Design, Composition Patterns, Superpowers-Suite)
+
+---
+
+## 3. Entscheidungs-Log
+
+| Datum | Entscheidung | Begründung |
+|---|---|---|
+| 2026-04 | Phase 3 wird in 3a / 3b / 3c aufgeteilt | Security-Fixes dürfen nicht warten, bis alle UX-Prompts durch sind |
+| 2026-04 | Audit-Masterplan (Pakete A-F) wird mit ursprünglicher Roadmap (Phase 3-8) gemerged, nicht parallel geführt | Zwei parallele Roadmaps würden sich überschneiden (Paket D = Phase 5 PWA, Paket E = Phase 4 Storage) |
+| 2026-04 | DokView wird in Phase 3b temporär deaktiviert, nicht erst in Phase 4 gefixt | Stiller Datenverlust ist das schlimmste UX-Versagen — User darf nicht denken, Dokumente seien gespeichert |
+| 2026-04 | Auto-Lock bleibt bei 120 Sekunden Background-only (visibilitychange API), keine Idle-Timeout-Logik | User-Entscheidung aus früherer Session |
+| 2026-04 | Auto-Seed "Testprojekt Muster GmbH" wird in Phase 3b entfernt | Überraschend auf leerer Prod-DB |
+| 2026-04 | Keine externen AI-Agent-Produkte, Automation wird nativ in den Stack gebaut (Phase 8) | App soll fokussiert bleiben, Lexoffice/Storage sind bridges, nicht Monolith-Features |
+| 2026-04 | Masterplan liegt als `docs/MASTERPLAN.md` im Repo, nicht im Claude-Projekt-Knowledge | Muss parallel zum Code versioniert werden und von Claude Code direkt updatebar sein |
+
+---
+
+## 4. Offene Bugs aus Phase 2 (Altin-Beobachtungen)
+
+Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nachverfolgung gelistet:
+
+- 🔴 Bautagebuch "Speichern" funktioniert nicht → vermutlich RLS-Policy, wird in **Phase 3c / Task 3c-BTB** gelöst
+- 🔴 "Willkommen zurück" macht globalen PIN-Lookup statt User-spezifischer Validation → **Phase 3c / Task 3c-LOGIN**
+- 🔴 PIN-Re-Entry nach 120s Background (visibilitychange API) fehlt → **Phase 3c / Task 3c-LOGIN**
+
+---
+
+## 5. Roadmap
+
+### 🎯 Phase 3a — Security-Sofort-Fixes · Status: 🔴 TODO · geschätzt ~4-6h
+
+**Ziel:** Keine ausnutzbaren Schwachstellen mehr. Muss VOR allem anderen durch.
+
+| ID | Task | Datei | Aufwand | Status |
+|---|---|---|---|---|
+| 3a-01 | `Math.random` → `crypto.getRandomValues` für Onboarding-PIN-Generierung | `src/utils/helpers.js` | klein | 🔴 TODO |
+| 3a-02 | `supabase.js` fail-fast bei fehlenden Env-Vars (statt silent fallback) | `src/lib/supabase.js` | klein | 🔴 TODO |
+| 3a-03 | Auth `signOut + signIn` durch `updateUser` ersetzen wo möglich | `src/lib/api/auth.js` | klein | 🔴 TODO |
+| 3a-04 | Logout-Confirm-Modal (iOS-Style) einbauen | `src/components/screens/ProfilView.jsx:400-407` + neue `ConfirmModal`-Komponente | klein | 🔴 TODO |
+| 3a-05 | `users.update` — undefined-Felder dürfen nicht als NULL ins DB-Update gehen | `src/lib/api/users.js:47-64` | klein | 🔴 TODO |
+| 3a-06 | `baustellen.updateField` — Whitelist erlaubter Felder einführen | `src/lib/api/baustellen.js` | klein | 🔴 TODO |
+| 3a-07 | `check_pin_exists` RPC — Chef-only ODER Rate-Limit | Supabase SQL-Migration + `src/lib/api/auth.js` | mittel | 🔴 TODO |
+
+**Abschluss-Kriterium:** Alle 7 Tasks 🟢 DONE, `npm run build` läuft, Deploy auf Vercel ok, Altin hat Login/Logout auf Mobile getestet.
+
+---
+
+### 🎯 Phase 3b — Daten-Hygiene + Critical Bug Fixes · Status: 🔴 TODO · geschätzt ~6-8h
+
+**Ziel:** Keine falschen Zahlen mehr. Keine Fake-Features mehr. Keine Duplikate mehr.
+
+| ID | Task | Datei | Aufwand | Status |
+|---|---|---|---|---|
+| 3b-01 | **DokView deaktivieren** mit "In Entwicklung"-Hinweis (bis Phase 4 echte Uploads bringt) | `src/components/screens/DokView.jsx` | klein | 🔴 TODO |
+| 3b-02 | Number-Inputs app-weit: `min="0"` + `inputMode="numeric/decimal"` + `Math.max(0, n)` beim Setzen | `SteView.jsx:540-568`, `RegView.jsx:471-475`, `MitForm.jsx:278-285`, `KostenView.jsx:645-652` | klein | 🔴 TODO |
+| 3b-03 | `bStd` Mitternachts-Übergang fixen (22:00→02:00 = aktuell 0 Stunden) | `src/utils/helpers.js:2-8` | klein | 🔴 TODO |
+| 3b-04 | `RegView` NaN-Bug bei altem `fahrtzeit`-Feld | `RegView.jsx:48` | klein | 🔴 TODO |
+| 3b-05 | `KalView` TZ-Bug: konsistent String-Vergleich mit `t.datum.slice(0,10)` | `KalView.jsx:171-172, 36` | klein | 🔴 TODO |
+| 3b-06 | `MeineStd` Filter-Konsistenz mit `StundenUebersicht` und `KostenView` (Helper extrahieren) | `MeineStd.jsx:31, 36-43, 60` + neuer Helper | klein | 🔴 TODO |
+| 3b-07 | `KostenView` CSV-Export: `bsList` (gefiltert) statt `data.baustellen` | `KostenView.jsx:95-147` | klein | 🔴 TODO |
+| 3b-08 | `RegView` Inline-Edits: entweder per `stundeneintraege.update` persistieren ODER klar als "nur für Bericht" labeln | `RegView.jsx:13, 28-32, 113-115` | mittel | 🔴 TODO |
+| 3b-09 | Komma als Dezimaltrenner akzeptieren in Betrag/Stundensatz-Feldern | betroffene Forms | klein | 🔴 TODO |
+| 3b-10 | Auto-Seed "Testprojekt Muster GmbH" entfernen oder auf `import.meta.env.DEV` beschränken | `src/AppContext.jsx:107-138` | klein | 🔴 TODO |
+| 3b-11 | `benachrichtigungen.removeAll` — explizit User-Filter einbauen (defense-in-depth) | `src/lib/api/benachrichtigungen.js:50` | klein | 🔴 TODO |
+
+**Abschluss-Kriterium:** Alle 11 Tasks 🟢 DONE, Nachtschicht-Test (22:00→02:00) zeigt korrekte Stunden, DokView zeigt klaren Hinweis, CSV-Export matched Bildschirm-Filter.
+
+---
+
+### 🎯 Phase 3c — UX-Kernstück · Status: 🔴 TODO · geschätzt ~10-15h
+
+**Ziel:** Die App fühlt sich auf Baustellen-Mobile endlich fertig an. Keine versehentlichen Doppel-Klicks, keine verlorenen Formular-Eingaben, keine versehentlichen Logouts.
+
+Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebuch RLS, Regiebericht UX) plus Paket C aus dem Audit.
+
+| ID | Task | Datei | Aufwand | Status |
+|---|---|---|---|---|
+| 3c-LOGIN | Login-Fixes: App startet immer auf PIN-Screen, user-spezifische PIN-Validation (kein globaler Lookup), Background-Auto-Lock nach 120s via visibilitychange API | `LoginView.jsx`, `App.jsx`, `AppContext.jsx` | mittel | 🔴 TODO |
+| 3c-BTB | Bautagebuch Speichern-Bug diagnostizieren und fixen (vermutlich RLS-Policy) | Supabase-Policies + `BtbView.jsx` | mittel | 🔴 TODO |
+| 3c-REG | Regiebericht: Close-Button-UX + 30-Min-Intervall-Validation für Zeiten | `RegView.jsx` | klein | 🔴 TODO |
+| 3c-SAVING | Zentraler `useSaving`-Hook bauen, dann app-weit in Save-Handlern integrieren (`BstForm`, `SteView`, `MngView`, `BtbView`, `KalView`, `MitForm`, `KostenView`, `SubView`) inkl. `disabled={saving}` + Spinner | neuer Hook + 8 Screens | mittel | 🔴 TODO |
+| 3c-MODAL | `ConfirmModal` + `PromptModal` (iOS-Style) bauen und alle `window.confirm()` / `window.prompt()` Aufrufe ersetzen | neue Komponenten + alle Screens mit confirm/prompt | mittel | 🔴 TODO |
+| 3c-DIRTY | `BstForm` Dirty-Check vor Zurück-Tap (Confirm-Modal "Änderungen verwerfen?") | `BstForm.jsx:11-32` | klein | 🔴 TODO |
+| 3c-SLIDER | `BstDet` Fortschritts-Slider: lokaler Optimistic-State + Debounce 300-500ms vor `updateField` | `BstDet.jsx:128-148` | klein | 🔴 TODO |
+| 3c-TOUCH | Touch-Targets app-weit auf ≥44px | audit-weit | mittel | 🔴 TODO |
+| 3c-TOAST | Toast-Queue mit X-Close, Errors länger anzeigen | `Toast`-Komponente + `AppContext` | klein | 🔴 TODO |
+| 3c-SAFEAREA | `ScreenLayout` um `safe-area-inset-bottom` erweitern | `ScreenLayout.jsx` | klein | 🔴 TODO |
+| 3c-THEME | Theme-Color-Werte konsolidieren (index.html meta + manifest später in Phase 5) | `index.html` + Konstanten-Datei | klein | 🔴 TODO |
+| 3c-SIGPAD | `SigPad` Canvas-Resize bei Rotation handhaben | `SigPad.jsx` | mittel | 🔴 TODO |
+| 3c-SPINNER | Loading-Spinner + Error-Messages wo sie fehlen (MngView-Styling gleich mit-überarbeiten) | `MngView.jsx` + ggf. andere | klein | 🔴 TODO |
+
+**Abschluss-Kriterium:** Alle 13 Tasks 🟢 DONE. Altin testet auf iPhone: Doppel-Tap Save erzeugt keine Duplikate, Logout fragt nach, BstForm-Zurück bei Änderungen fragt nach, Bautagebuch speichert erfolgreich, alle confirm/prompt sind iOS-Modals.
+
+---
+
+### 🎯 Phase 4 — Supabase Storage + Foto-Architektur · Status: 🔴 TODO · geschätzt ~8-12h
+
+**Ziel:** Echte Datei-Uploads. Base64-Fotos verschwinden aus der DB. DokView wird funktional.
+
+| ID | Task | Aufwand | Status |
+|---|---|---|---|
+| 4-01 | Supabase Storage Buckets einrichten (`documents`, `photos`), RLS-Policies definieren | mittel | 🔴 TODO |
+| 4-02 | Storage-Upload-Helper in `src/lib/storage.js` bauen | klein | 🔴 TODO |
+| 4-03 | DokView aktivieren: echter File-Upload + Anzeige + Download-Link | groß | 🔴 TODO |
+| 4-04 | Client-seitige Photo-Compression (Canvas resize + JPEG q=0.7, max 1600px Kante) | mittel | 🔴 TODO |
+| 4-05 | `PhotoGrid` erweitern: max 5 Fotos pro Eintrag, `alt`-Texte, Lazy-Loading, Lightbox | mittel | 🔴 TODO |
+| 4-06 | Migration: bestehende Base64-Fotos in Storage umziehen (Migrations-Script + DB-Spalten-Umstellung) | groß | 🔴 TODO |
+| 4-07 | Junction-Sync atomar als RPC (Paket F Vorziehen, da Photo-Junctions betroffen) | mittel | 🔴 TODO |
+
+**Abschluss-Kriterium:** Alle Tasks 🟢 DONE. DB-Table-Size für `maengel` / `stundeneintraege` deutlich reduziert. DokView funktional.
+
+---
+
+### 🎯 Phase 5 — PWA-Versprechen einlösen · Status: 🔴 TODO · geschätzt ~6-10h
+
+**Ziel:** App ist installierbar auf iPhone/Android. Basis-Offline-Fähigkeit. Schnelleres Laden.
+
+| ID | Task | Aufwand | Status |
+|---|---|---|---|
+| 5-01 | `vite-plugin-pwa` installieren + konfigurieren | klein | 🔴 TODO |
+| 5-02 | `manifest.webmanifest` erstellen (name, icons, theme_color, display) | klein | 🔴 TODO |
+| 5-03 | `apple-touch-icon` + iOS Splash-Screens | klein | 🔴 TODO |
+| 5-04 | `viewport`-Meta-Tag: `user-scalable=no` entfernen (WCAG) | klein | 🔴 TODO |
+| 5-05 | Service Worker: Cache-First für statische Assets, Stale-While-Revalidate für Daten | mittel | 🔴 TODO |
+| 5-06 | `React.lazy` für alle Screens außer Login/Dash | klein | 🔴 TODO |
+| 5-07 | `vite` `manualChunks` für Vendor-Chunks (lucide-react, supabase, recharts falls drin) | klein | 🔴 TODO |
+| 5-08 | `key={v}` aus `<Screen>`-Rendering entfernen (unnötige Remounts) | klein | 🔴 TODO |
+| 5-09 | Bundle-Analyzer einmal laufen lassen, Low-Hanging-Fruit entfernen | klein | 🔴 TODO |
+| 5-10 | Auf iPhone "Zum Home-Screen hinzufügen" testen | klein | 🔴 TODO |
+
+**Abschluss-Kriterium:** App öffnet sich offline auf iPhone (letzter Stand sichtbar), Install-Prompt erscheint, Bundle-Size < 350KB gzipped.
+
+---
+
+### 🎯 Phase 6 — Realtime + Performance · Status: 🔴 TODO · geschätzt tbd
+
+**Ziel:** Chef sieht Mitarbeiter-Eintragungen live. App skaliert auf 10k+ Stundeneinträge.
+
+| ID | Task | Aufwand | Status |
+|---|---|---|---|
+| 6-01 | Supabase Realtime-Subscriptions für `stundeneintraege`, `maengel`, `benachrichtigungen` | mittel | 🔴 TODO |
+| 6-02 | AppContext: Realtime-Updates mergen ohne Full-Refresh | mittel | 🔴 TODO |
+| 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🔴 TODO |
+| 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🔴 TODO |
+| 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🔴 TODO |
+| 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🔴 TODO |
+| 6-07 | Vitest-Coverage auf wichtigste Helpers ausdehnen (`bStd`, Datum-Utils, Filter-Helpers) | mittel | 🔴 TODO |
+
+---
+
+### 🎯 Phase 7 — Lexoffice-Integration · Status: 🔴 TODO · geschätzt tbd
+
+**Ziel:** Stunden, Regieberichte, Materialien aus der App landen per Klick in Lexoffice als Rechnung/Angebot-Entwurf. App bleibt fokussiert, Lexoffice macht Buchhaltung, smarte Brücke dazwischen.
+
+| ID | Task | Aufwand | Status |
+|---|---|---|---|
+| 7-01 | Lexoffice API-Dokumentation studieren, Auth-Flow festlegen (OAuth) | mittel | 🔴 TODO |
+| 7-02 | Supabase Edge Function für Lexoffice-API-Calls (Secret-Schutz) | mittel | 🔴 TODO |
+| 7-03 | "Nach Lexoffice exportieren"-Button in Regiebericht + Kostenübersicht | mittel | 🔴 TODO |
+| 7-04 | Mapping Baustelle → Lexoffice-Kunde | mittel | 🔴 TODO |
+| 7-05 | Test-Modus + Prod-Modus für Lexoffice | klein | 🔴 TODO |
+
+---
+
+### 🎯 Phase 8 — Automation-Layer · Status: ⚪ DEFERRED bis nach Phase 7
+
+**Ziel / Vision:** Die App wird zum "digitalen Mitarbeiter" für Admin-Tasks. Automatische wöchentliche Reports, Rechnungs-Vorbereitung, Dokumenten-Sortierung, Voice-Note-Summaries.
+
+Konkrete Tasks werden definiert, wenn Phase 7 abgeschlossen ist und wir die Realität der Lexoffice-Integration kennen. Geplante Building-Blocks:
+- Supabase Edge Functions (zeitgesteuert via `pg_cron`)
+- Wöchentlicher Report-Trigger (Sonntag 18:00 → PDF + Email an Chef)
+- Voice-Note-Upload → Transkription → Bautagebuch-Eintrag-Vorschlag
+- Rechnungs-Preview-Queue (User prüft, App bereitet vor)
+
+---
+
+## 6. Architektur-Cleanup (Paket F — laufend, parallel)
+
+Diese Tasks sind **nicht phase-gebunden** und werden eingeschoben, wenn sie gerade sinnvoll sind (z.B. wenn eine betroffene Datei sowieso angefasst wird).
+
+| ID | Task | Aufwand | Status |
+|---|---|---|---|
+| F-01 | `<Card>`, `<SectionHeader>`, `<IconButton>`, `<ListRow>` Komponenten extrahieren, Inline-Styles sukzessive ersetzen | groß | 🔴 TODO |
+| F-02 | Auth: `_signInAndLoadProfile(email, pwd)` Helper extrahieren, 5 Login-Funktionen konsolidieren | klein | 🔴 TODO |
+| F-03 | API-Returns konsistent machen (überall mapped Object ODER überall ID) | klein | 🔴 TODO |
+| F-04 | `bStdNum()` Number-Variante neben `bStd()` (String) extrahieren — spart 30+ `parseFloat`-Calls | klein | 🔴 TODO |
+| F-05 | `Hdr.jsx` `large` vs compact: gemeinsame Sub-Renders | klein | 🔴 TODO |
+| F-06 | `WI.jsx` Wetter-Icon-Default auf neutral (`Cloud`) statt `Sun` | klein | 🔴 TODO |
+| F-07 | ESLint-Cleanup-Sprint: 50 Errors + 5 Warnings abarbeiten | mittel | 🔴 TODO |
+| F-08 | `pg`-Package aus devDependencies entfernen (ungenutzt im Frontend) | klein | 🔴 TODO |
+| F-09 | `BstForm` mit `<Section>`-Pattern refaktorieren (665 Zeilen) | mittel | 🔴 TODO |
+
+---
+
+## 7. Explizit out-of-scope
+
+Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer explizit neu entschieden):
+
+- **i18n / Mehrsprachigkeit** — App ist absichtlich Deutsch-only
+- **GitHub Actions CI/CD** — Vercel Auto-Deploy reicht für das Setup
+- **Vollständiger SQL-Review** aller RLS-Policies — RLS wurde in Phase 1 gebaut, Stichproben in Phase 3a reichen
+- **Externe AI-Agent-Produkte** — Automation wird nativ in Supabase Edge Functions gebaut (siehe Decision Log)
+- **React Router** — eigener History-Stack reicht für die App-Struktur
+- **Skeleton-Loader** — echte Spinner reichen, Skeleton wäre Overengineering für die Daten-Größe
+- **Tests außer Vitest für Helpers** — kein E2E/Playwright bis die App stabil auf Prod läuft
+- **Android-spezifische Optimierungen** — iOS ist Primär-Plattform des Teams
+
+---
+
+## 8. Referenz-Dokumente im Projekt
+
+| Datei | Zweck | Stand |
+|---|---|---|
+| `MA_Construction_App.jsx` | Monolith-Version vor Phase 2 (Referenz) | eingefroren |
+| `full-source.txt` | Aktuelle Codebase-Dump für Claude-Search | wird bei Bedarf aktualisiert |
+| `AUDIT_REPORT_2026-04.md` | Vollständiger Audit (70 Findings, detaillierte Fix-Empfehlungen) | eingefroren 2026-04-18 |
+| `docs/MASTERPLAN.md` | **Dieses Dokument — lebende Roadmap** | aktuell |
+
+---
+
+## 9. Changelog (Task-Abschlüsse)
+
+Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
+
+*(noch keine Einträge — wird beim ersten Task-Abschluss gestartet)*
+
+---
+
+*Ende des Masterplans. Claude Code aktualisiert diese Datei nach jedem erfolgreich abgeschlossenen Task.*
