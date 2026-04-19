@@ -128,7 +128,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 | 3b-06 | `MeineStd` Filter-Konsistenz mit `StundenUebersicht` und `KostenView` (Helper extrahieren) | `MeineStd.jsx:31, 36-43, 60` + neuer Helper | klein | 🟢 DONE |
 | 3b-07 | `KostenView` CSV-Export: `bsList` (gefiltert) statt `data.baustellen` | `KostenView.jsx:95-147` | klein | 🟢 DONE |
 | 3b-08 | `RegView` Inline-Edits: entweder per `stundeneintraege.update` persistieren ODER klar als "nur für Bericht" labeln | `RegView.jsx:13, 28-32, 113-115` | mittel | 🟢 DONE |
-| 3b-09 | Komma als Dezimaltrenner akzeptieren in Betrag/Stundensatz-Feldern | betroffene Forms | klein | 🔴 TODO |
+| 3b-09 | Komma als Dezimaltrenner akzeptieren in Betrag/Stundensatz-Feldern | betroffene Forms | klein | 🟢 DONE |
 | 3b-10 | Auto-Seed "Testprojekt Muster GmbH" entfernen oder auf `import.meta.env.DEV` beschränken | `src/AppContext.jsx:107-138` | klein | 🔴 TODO |
 | 3b-11 | `benachrichtigungen.removeAll` — explizit User-Filter einbauen (defense-in-depth) | `src/lib/api/benachrichtigungen.js:50` | klein | 🔴 TODO |
 | 3b-12 | `stripUndefined`-Helper aus `users.js` nach `src/utils/objects.js` extrahieren und auf `baustellen.update` + `stundeneintraege.update` anwenden | `src/lib/api/baustellen.js`, `src/lib/api/stundeneintraege.js`, neuer Utils-File | klein | 🔴 TODO |
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-19 · 3b-09 · 2067b06 · parseDecimal-Helper akzeptiert Komma + Punkt; 3 Dezimal-Inputs (Stundensatz/Betrag/Budget) auf type=text/inputMode=decimal umgestellt; MitForm/KostenView/BstForm Save-Handler DRY; +12 vitest-Szenarien
 - 2026-04-19 · 3b-08 · 750c5cd · RegView: beginn/ende/pause-Edits werden vor dem Druck per stundeneintraege.update persistiert; Fehler-Pfad bricht Druck ab; bemerkung bleibt transient (keine DB-Spalte)
 - 2026-04-19 · 3b-07 · 2700206 · KostenView CSV-Export iteriert bsList (status-gefiltert) statt data.baustellen; Filename mit Status-Suffix
 - 2026-04-19 · 3b-06 · b805520 · isInMonth + isMitarbeiterEntry Helper in helpers.js; MeineStd+StundenUebersicht auf TZ-safe String-Compare umgestellt; KostenView DRY; +14 vitest-Szenarien
