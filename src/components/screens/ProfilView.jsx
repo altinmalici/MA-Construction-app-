@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Save, LogOut } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, P, G, RED, GREEN, CS, IC } from "../../utils/helpers";
-import { ScreenLayout, Bdg } from "../ui";
+import { ScreenLayout, Bdg, ConfirmModal } from "../ui";
 
 const ProfilView = () => {
   const {
@@ -20,6 +20,23 @@ const ProfilView = () => {
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState(cu?.name || "");
   const [pin, setPin] = useState("");
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
+
+  const doLogout = async () => {
+    try {
+      await actions.auth.signOut();
+    } catch (err) {
+      setConfirmLogoutOpen(false);
+      show(
+        "Abmelden fehlgeschlagen: " + (err?.message || "Netzwerk-Fehler"),
+        "error",
+      );
+      return;
+    }
+    setCu(null);
+    setHistory([]);
+    setVRaw("login");
+  };
   if (!cu) return null;
   const meineStd = data.stundeneintraege.filter(
     (e) => e.mitarbeiterId === cu.id,
@@ -397,14 +414,7 @@ const ProfilView = () => {
           <>
             <div style={{ flex: 1 }} />
             <button
-              onClick={async () => {
-                try {
-                  await actions.auth.signOut();
-                } catch {}
-                setCu(null);
-                setHistory([]);
-                setVRaw("login");
-              }}
+              onClick={() => setConfirmLogoutOpen(true)}
               style={{
                 width: "100%",
                 padding: "16px 24px",
@@ -426,6 +436,16 @@ const ProfilView = () => {
           </>
         )}
       </div>
+      <ConfirmModal
+        open={confirmLogoutOpen}
+        title="Abmelden?"
+        message="Ungespeicherte Eingaben gehen verloren."
+        confirmLabel="Abmelden"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doLogout}
+        onCancel={() => setConfirmLogoutOpen(false)}
+      />
     </ScreenLayout>
   );
 };

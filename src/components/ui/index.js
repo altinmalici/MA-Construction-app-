@@ -8,3 +8,4 @@ export { default as SigPad } from './SigPad';
 export { default as WI } from './WI';
 export { default as ScreenLayout } from './ScreenLayout';
 export { default as TimePicker } from './TimePicker';
+export { default as ConfirmModal } from './ConfirmModal';
