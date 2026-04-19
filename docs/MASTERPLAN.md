@@ -156,7 +156,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | 3c-TOAST | Toast-Queue mit X-Close, Errors länger anzeigen | `Toast`-Komponente + `AppContext` | klein | 🟢 DONE |
 | 3c-SAFEAREA | `ScreenLayout` um `safe-area-inset-bottom` erweitern | `ScreenLayout.jsx` | klein | 🟢 DONE |
 | 3c-THEME | Theme-Color-Werte konsolidieren (index.html meta + manifest später in Phase 5) | `index.html` + Konstanten-Datei | klein | 🟢 DONE |
-| 3c-SIGPAD | `SigPad` Canvas-Resize bei Rotation handhaben | `SigPad.jsx` | mittel | 🔴 TODO |
+| 3c-SIGPAD | `SigPad` Canvas-Resize bei Rotation handhaben | `SigPad.jsx` | mittel | 🟢 DONE |
 | 3c-SPINNER | Loading-Spinner + Error-Messages wo sie fehlen (MngView-Styling gleich mit-überarbeiten) | `MngView.jsx` + ggf. andere | klein | 🔴 TODO |
 
 **Abschluss-Kriterium:** Alle 13 Tasks 🟢 DONE. Altin testet auf iPhone: Doppel-Tap Save erzeugt keine Duplikate, Logout fragt nach, BstForm-Zurück bei Änderungen fragt nach, Bautagebuch speichert erfolgreich, alle confirm/prompt sind iOS-Modals.
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 3c-SIGPAD · 822acf6 · SigPad: ResizeObserver + setTransform(dpr) statt fixem Faktor 2; Signatur-Snapshot bleibt bei Rotation/Layout-Shift erhalten; Löschen-Button Icon 14px + minHeight + aria-label
 - 2026-04-20 · 3c-THEME · eb52c09 · --brand-primary/--brand-light/--brand-dark als CSS-Vars; <meta name="theme-color"> von #8E3A9E auf #7C3AED korrigiert (Statusbar matched jetzt App-Primary); helpers.js P/PL/PD mit Sync-Kommentar; Manifest-Anbindung folgt in Task 5-02
 - 2026-04-20 · 3c-SAFEAREA · 0eeaebe · ScreenLayout bottom-Padding um var(--safe-bottom) erweitert; --safe-bottom CSS-Var + viewport-fit=cover; Toast-Wrapper auf env(safe-area-inset-top); Home-Indicator-Bereich respektiert
 - 2026-04-20 · 3c-TOAST · 3621a87 · Toast-Queue (max 3 parallel) + X-Close-Button; Errors 4500ms statt 1800ms; aria-live für Screen-Reader; show()-API unverändert
