@@ -49,7 +49,7 @@ const KostenView = () => {
     const lohn = calcLohn(bid);
     const extra = data.kosten
       .filter((k) => k.baustelleId === bid)
-      .reduce((s, k) => s + k.betrag, 0);
+      .reduce((s, k) => s + (k.betrag || 0), 0);
     return lohn + extra;
   };
 
@@ -58,7 +58,7 @@ const KostenView = () => {
     if (kat === "lohn") return calcLohn(bid);
     return data.kosten
       .filter((k) => k.baustelleId === bid && k.kategorie === kat)
-      .reduce((s, k) => s + k.betrag, 0);
+      .reduce((s, k) => s + (k.betrag || 0), 0);
   };
 
   // Gesamtkosten aller Baustellen
@@ -431,7 +431,7 @@ const KostenView = () => {
                   Lohn gesamt
                 </span>
                 <span style={{ color: "#000", fontWeight: 700 }}>
-                  {fE(Object.values(byUser).reduce((s, d) => s + d.kosten, 0))}
+                  {fE(Object.values(byUser).reduce((s, d) => s + (d.kosten || 0), 0))}
                 </span>
               </div>
             </div>
@@ -805,7 +805,7 @@ const KostenView = () => {
             const lohn = calcLohn(b.id);
             const extraK = data.kosten
               .filter((k) => k.baustelleId === b.id)
-              .reduce((s, k) => s + k.betrag, 0);
+              .reduce((s, k) => s + (k.betrag || 0), 0);
             const byU = {};
             ei.forEach((e) => {
               const uid = e.mitarbeiterId;

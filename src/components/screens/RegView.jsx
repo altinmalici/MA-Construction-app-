@@ -45,7 +45,7 @@ const RegView = () => {
     const v = getVal(e);
     return s + parseFloat(bStd(v.beginn, v.ende, v.pause));
   }, 0);
-  const gf = te.reduce((s, e) => s + e.fahrtzeit, 0);
+  const gf = te.reduce((s, e) => s + (e.fahrtzeit || 0), 0);
   const pdfHtml = () => {
     let h =
       "<!DOCTYPE html><html><head><title>Regiebericht</title><style>body{font-family:Arial;padding:30px;color:#333;font-size:14px}h1{font-size:18px}table{width:100%;border-collapse:collapse;margin:15px 0}th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}th{background:#f5f5f5}.sum{background:#f9fafb}</style></head><body>";
