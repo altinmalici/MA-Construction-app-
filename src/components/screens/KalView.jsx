@@ -33,11 +33,14 @@ const KalView = () => {
   const off = (new Date(jr, mo, 1).getDay() + 6) % 7;
   const days = new Date(jr, mo + 1, 0).getDate();
   const tm = data.kalender.filter((t) => {
-    const d = new Date(t.datum);
-    return d.getMonth() === mo && d.getFullYear() === jr;
+    const ds = (t.datum || "").slice(0, 10); // YYYY-MM-DD
+    if (ds.length !== 10) return false;
+    const tJr = Number(ds.slice(0, 4));
+    const tMo = Number(ds.slice(5, 7)) - 1;
+    return tMo === mo && tJr === jr;
   });
   const dayTermine = selDay
-    ? data.kalender.filter((t) => t.datum === selDay)
+    ? data.kalender.filter((t) => (t.datum || "").slice(0, 10) === selDay)
     : [];
   const tgM = (id) =>
     sKf((p) => ({
@@ -169,7 +172,7 @@ const KalView = () => {
               mo === h.getMonth() &&
               jr === h.getFullYear();
             const dat = `${jr}-${String(mo + 1).padStart(2, "0")}-${String(tg).padStart(2, "0")}`;
-            const hat = ok && data.kalender.some((t) => t.datum === dat);
+            const hat = ok && data.kalender.some((t) => (t.datum || "").slice(0, 10) === dat);
             const sel = ok && dat === selDay;
             return (
               <button
