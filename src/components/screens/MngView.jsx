@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Plus, X, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fK, IC, BTN, CS, P, RED, GREEN } from "../../utils/helpers";
-import { ScreenLayout, Empty, Bdg, PhotoGrid } from "../ui";
+import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
 
 const MngView = () => {
   const { sb, chef, cu, data, actions, show, goBack, trigPhoto, addN } =
     useApp();
+  const { saving, withSaving } = useSaving();
   const [sf, setSf] = useState(false);
   const [fl, setFl] = useState("alle");
   const [mf, sMf] = useState({
@@ -32,35 +34,37 @@ const MngView = () => {
       ? data.maengel
       : data.maengel.filter((m) => myBs.some((b) => b.id === m.baustelleId));
   if (fl !== "alle") ls = ls.filter((m) => m.status === fl);
-  const save = async () => {
-    if (!mf.baustelleId) {
-      show("Baustelle wählen", "error");
-      return;
-    }
-    if (!mf.titel.trim()) {
-      show("Titel nötig", "error");
-      return;
-    }
-    try {
-      await actions.maengel.create({
-        baustelleId: mf.baustelleId,
-        titel: mf.titel,
-        beschreibung: mf.beschreibung,
-        prioritaet: mf.prioritaet,
-        status: "offen",
-        zustaendig: mf.zustaendig || null,
-        erstelltAm: new Date().toISOString().split("T")[0],
-        frist: mf.frist,
-        fotos: mf.fotos,
-      });
-      addN("mangel", `Mangel: ${mf.titel}`, mf.baustelleId);
-      show("Erfasst");
-      setSf(false);
-      sMf({ ...mf, titel: "", beschreibung: "", fotos: [] });
-    } catch (e) {
-      show("Fehler", "error");
-    }
-  };
+  const save = () =>
+    withSaving(async () => {
+      if (!mf.baustelleId) {
+        show("Baustelle wählen", "error");
+        return;
+      }
+      if (!mf.titel.trim()) {
+        show("Titel nötig", "error");
+        return;
+      }
+      try {
+        await actions.maengel.create({
+          baustelleId: mf.baustelleId,
+          titel: mf.titel,
+          beschreibung: mf.beschreibung,
+          prioritaet: mf.prioritaet,
+          status: "offen",
+          zustaendig: mf.zustaendig || null,
+          erstelltAm: new Date().toISOString().split("T")[0],
+          frist: mf.frist,
+          fotos: mf.fotos,
+        });
+        addN("mangel", `Mangel: ${mf.titel}`, mf.baustelleId);
+        show("Erfasst");
+        setSf(false);
+        sMf({ ...mf, titel: "", beschreibung: "", fotos: [] });
+      } catch (e) {
+        console.error("[MngView.save]", e);
+        show(e?.message || "Fehler beim Speichern", "error");
+      }
+    });
   const upSt = async (id, st) => {
     try {
       await actions.maengel.updateStatus(id, st);
@@ -216,6 +220,7 @@ const MngView = () => {
           />
           <button
             onClick={save}
+            disabled={saving}
             style={{
               width: "100%",
               padding: "16px 24px",
@@ -230,10 +235,12 @@ const MngView = () => {
               background: BTN,
               boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
               border: "none",
+              opacity: saving ? 0.6 : 1,
+              cursor: saving ? "not-allowed" : "pointer",
             }}
           >
-            <AlertCircle size={18} />
-            Erfassen
+            {saving ? <Spinner size={18} color="white" /> : <AlertCircle size={18} />}
+            {saving ? "Speichere..." : "Erfassen"}
           </button>
         </div>
       )}

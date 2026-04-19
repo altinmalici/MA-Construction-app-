@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Plus, X, Save, ClipboardList, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fDat, IC, BTN, RED, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout } from "../ui";
+import { Empty, ScreenLayout, Spinner } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
 
 const BtbView = () => {
   const { sb, chef, cu, data, actions, show, goBack } = useApp();
+  const { saving, withSaving } = useSaving();
   const [sf, setSf] = useState(false);
   const ls = sb
     ? data.bautagebuch.filter((b) => b.baustelleId === sb.id)
@@ -30,38 +32,39 @@ const BtbView = () => {
         ? p.anwesende.filter((x) => x !== id)
         : [...p.anwesende, id],
     }));
-  const save = async () => {
-    if (!bf.baustelleId) {
-      show("Baustelle wählen", "error");
-      return;
-    }
-    if (!bf.arbeiten.trim()) {
-      show("Arbeiten beschreiben", "error");
-      return;
-    }
-    try {
-      await actions.bautagebuch.create({
-        baustelleId: bf.baustelleId,
-        datum: bf.datum,
-        anwesende: bf.anwesende,
-        arbeiten: bf.arbeiten,
-        besonderheiten: bf.besonderheiten,
-        behinderungen: bf.behinderungen,
-      });
-      show("Gespeichert");
-      setSf(false);
-      sBf({
-        ...bf,
-        arbeiten: "",
-        besonderheiten: "",
-        behinderungen: "",
-        anwesende: [],
-      });
-    } catch (e) {
-      console.error("[BtbView.save]", e);
-      show(e?.message || "Fehler beim Speichern", "error");
-    }
-  };
+  const save = () =>
+    withSaving(async () => {
+      if (!bf.baustelleId) {
+        show("Baustelle wählen", "error");
+        return;
+      }
+      if (!bf.arbeiten.trim()) {
+        show("Arbeiten beschreiben", "error");
+        return;
+      }
+      try {
+        await actions.bautagebuch.create({
+          baustelleId: bf.baustelleId,
+          datum: bf.datum,
+          anwesende: bf.anwesende,
+          arbeiten: bf.arbeiten,
+          besonderheiten: bf.besonderheiten,
+          behinderungen: bf.behinderungen,
+        });
+        show("Gespeichert");
+        setSf(false);
+        sBf({
+          ...bf,
+          arbeiten: "",
+          besonderheiten: "",
+          behinderungen: "",
+          anwesende: [],
+        });
+      } catch (e) {
+        console.error("[BtbView.save]", e);
+        show(e?.message || "Fehler beim Speichern", "error");
+      }
+    });
   const delBtb = async (id) => {
     if (confirm("Eintrag löschen?")) {
       try {
@@ -185,6 +188,7 @@ const BtbView = () => {
           />
           <button
             onClick={save}
+            disabled={saving}
             style={{
               width: "100%",
               padding: "16px 24px",
@@ -199,10 +203,12 @@ const BtbView = () => {
               background: BTN,
               boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
               border: "none",
+              opacity: saving ? 0.6 : 1,
+              cursor: saving ? "not-allowed" : "pointer",
             }}
           >
-            <Save size={18} />
-            Speichern
+            {saving ? <Spinner size={18} color="white" /> : <Save size={18} />}
+            {saving ? "Speichere..." : "Speichern"}
           </button>
         </div>
       )}

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Check, Save, Edit3, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { CS, BTN, RED, IC, fDat, bStd } from "../../utils/helpers";
-import { ScreenLayout, PhotoGrid, TimePicker } from "../ui";
+import { ScreenLayout, PhotoGrid, TimePicker, Spinner } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
 
 const SteView = () => {
   const {
@@ -19,6 +20,7 @@ const SteView = () => {
     trigPhoto,
     addN,
   } = useApp();
+  const { saving, withSaving } = useSaving();
   const [editId, setEditId] = useState(null);
   const initFd = {
     baustelleId: sb?.id || "",
@@ -63,60 +65,62 @@ const SteView = () => {
     setShowList(false);
   };
 
-  const save = async () => {
-    if (!fd.baustelleId) {
-      show("Baustelle wählen", "error");
-      return;
-    }
-    if (fd.personTyp === "mitarbeiter" && !fd.mitarbeiterId) {
-      show("Mitarbeiter wählen", "error");
-      return;
-    }
-    if (fd.personTyp === "sub" && !fd.subId) {
-      show("Subunternehmer wählen", "error");
-      return;
-    }
-    if (fd.personTyp === "sonstige" && !fd.personName.trim()) {
-      show("Name eingeben", "error");
-      return;
-    }
-    const entry = {
-      ...fd,
-      baustelleId: fd.baustelleId,
-      mitarbeiterId: fd.personTyp === "mitarbeiter" ? fd.mitarbeiterId : null,
-      subId: fd.personTyp === "sub" ? fd.subId : null,
-      personName: fd.personTyp === "sonstige" ? fd.personName.trim() : "",
-    };
-    const wasEdit = !!editId;
-    try {
-      if (editId) {
-        await actions.stundeneintraege.update(editId, entry);
-        show("Aktualisiert");
-        setEditId(null);
-      } else {
-        await actions.stundeneintraege.create(entry);
-        const pn =
-          fd.personTyp === "mitarbeiter"
-            ? data.users.find((u) => u.id === fd.mitarbeiterId)?.name
-            : fd.personTyp === "sub"
-              ? data.subunternehmer.find((s) => s.id === fd.subId)?.name
-              : fd.personName;
-        addN(
-          "stunden",
-          `${pn || cu.name}: Stunden eingetragen`,
-          fd.baustelleId,
-        );
+  const save = () =>
+    withSaving(async () => {
+      if (!fd.baustelleId) {
+        show("Baustelle wählen", "error");
+        return;
       }
-      setSaved(wasEdit ? "update" : "create");
-      setTimeout(() => {
-        sFd(initFd);
-        setSaved(false);
-        if (!chef) nav(sb ? "bsd" : "dash");
-      }, 1200);
-    } catch (e) {
-      show("Fehler beim Speichern", "error");
-    }
-  };
+      if (fd.personTyp === "mitarbeiter" && !fd.mitarbeiterId) {
+        show("Mitarbeiter wählen", "error");
+        return;
+      }
+      if (fd.personTyp === "sub" && !fd.subId) {
+        show("Subunternehmer wählen", "error");
+        return;
+      }
+      if (fd.personTyp === "sonstige" && !fd.personName.trim()) {
+        show("Name eingeben", "error");
+        return;
+      }
+      const entry = {
+        ...fd,
+        baustelleId: fd.baustelleId,
+        mitarbeiterId: fd.personTyp === "mitarbeiter" ? fd.mitarbeiterId : null,
+        subId: fd.personTyp === "sub" ? fd.subId : null,
+        personName: fd.personTyp === "sonstige" ? fd.personName.trim() : "",
+      };
+      const wasEdit = !!editId;
+      try {
+        if (editId) {
+          await actions.stundeneintraege.update(editId, entry);
+          show("Aktualisiert");
+          setEditId(null);
+        } else {
+          await actions.stundeneintraege.create(entry);
+          const pn =
+            fd.personTyp === "mitarbeiter"
+              ? data.users.find((u) => u.id === fd.mitarbeiterId)?.name
+              : fd.personTyp === "sub"
+                ? data.subunternehmer.find((s) => s.id === fd.subId)?.name
+                : fd.personName;
+          addN(
+            "stunden",
+            `${pn || cu.name}: Stunden eingetragen`,
+            fd.baustelleId,
+          );
+        }
+        setSaved(wasEdit ? "update" : "create");
+        setTimeout(() => {
+          sFd(initFd);
+          setSaved(false);
+          if (!chef) nav(sb ? "bsd" : "dash");
+        }, 1200);
+      } catch (e) {
+        console.error("[SteView.save]", e);
+        show(e?.message || "Fehler beim Speichern", "error");
+      }
+    });
 
   const delEntry = async (id) => {
     if (confirm("Eintrag löschen?")) {
@@ -699,7 +703,7 @@ const SteView = () => {
           {/* Save Button */}
           <button
             onClick={save}
-            disabled={!fd.baustelleId}
+            disabled={!fd.baustelleId || saving}
             style={{
               width: "100%",
               padding: "16px 24px",
@@ -714,11 +718,12 @@ const SteView = () => {
               background: BTN,
               boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
               border: "none",
-              opacity: !fd.baustelleId ? 0.5 : 1,
+              opacity: !fd.baustelleId || saving ? 0.5 : 1,
+              cursor: saving ? "not-allowed" : "pointer",
             }}
           >
-            <Save size={20} />
-            {editId ? "Aktualisieren" : "Speichern"}
+            {saving ? <Spinner size={20} color="white" /> : <Save size={20} />}
+            {saving ? "Speichere..." : editId ? "Aktualisieren" : "Speichern"}
           </button>
           {editId && (
             <button

@@ -2,10 +2,12 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, X, Save, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fDat, fK, IC, BTN, CS, P, PD } from "../../utils/helpers";
-import { ScreenLayout } from "../ui";
+import { ScreenLayout, Spinner } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
 
 const KalView = () => {
   const { data, chef, actions, show, goBack, prevV } = useApp();
+  const { saving, withSaving } = useSaving();
   const h = new Date();
   const [mo, setMo] = useState(h.getMonth());
   const [jr, setJr] = useState(h.getFullYear());
@@ -49,25 +51,27 @@ const KalView = () => {
         ? p.mitarbeiter.filter((x) => x !== id)
         : [...p.mitarbeiter, id],
     }));
-  const saveTermin = async () => {
-    if (!kf.titel.trim()) {
-      show("Titel nötig", "error");
-      return;
-    }
-    try {
-      await actions.kalender.create({
-        datum: selDay,
-        baustelleId: kf.baustelleId || null,
-        titel: kf.titel,
-        mitarbeiter: kf.mitarbeiter,
-      });
-      show("Termin gespeichert");
-      setSf(false);
-      sKf({ titel: "", baustelleId: "", mitarbeiter: [] });
-    } catch (e) {
-      show("Fehler", "error");
-    }
-  };
+  const saveTermin = () =>
+    withSaving(async () => {
+      if (!kf.titel.trim()) {
+        show("Titel nötig", "error");
+        return;
+      }
+      try {
+        await actions.kalender.create({
+          datum: selDay,
+          baustelleId: kf.baustelleId || null,
+          titel: kf.titel,
+          mitarbeiter: kf.mitarbeiter,
+        });
+        show("Termin gespeichert");
+        setSf(false);
+        sKf({ titel: "", baustelleId: "", mitarbeiter: [] });
+      } catch (e) {
+        console.error("[KalView.saveTermin]", e);
+        show(e?.message || "Fehler beim Speichern", "error");
+      }
+    });
   const delTermin = async (id) => {
     if (confirm("Termin löschen?")) {
       try {
@@ -355,6 +359,7 @@ const KalView = () => {
               )}
               <button
                 onClick={saveTermin}
+                disabled={saving}
                 style={{
                   width: "100%",
                   padding: "16px 24px",
@@ -369,10 +374,12 @@ const KalView = () => {
                   background: BTN,
                   boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
                   border: "none",
+                  opacity: saving ? 0.6 : 1,
+                  cursor: saving ? "not-allowed" : "pointer",
                 }}
               >
-                <Save size={18} />
-                Speichern
+                {saving ? <Spinner size={18} color="white" /> : <Save size={18} />}
+                {saving ? "Speichere..." : "Speichern"}
               </button>
             </div>
           )}

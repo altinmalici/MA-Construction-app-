@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Save, UserPlus, CheckCircle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { genUsername, genPin, parseDecimal, IC, BTN, GREEN, CS } from "../../utils/helpers";
-import { ScreenLayout } from "../ui";
+import { ScreenLayout, Spinner } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
 
 const MitForm = () => {
   const {
@@ -15,6 +16,7 @@ const MitForm = () => {
     setMitSummary,
     mitSummary,
   } = useApp();
+  const { saving, withSaving } = useSaving();
   const ex = editUser ? data.users.find((u) => u.id === editUser.id) : null;
   const [n, setN] = useState(ex?.name || "");
   const [ss, setSs] = useState(String(ex?.stundensatz || 45));
@@ -27,47 +29,49 @@ const MitForm = () => {
     const existing = data.users.map((u) => u.username).filter(Boolean);
     setUn(genUsername(n.trim(), existing));
   }, [n]);
-  const save = async () => {
-    if (!n.trim()) {
-      show("Name nötig", "error");
-      return;
-    }
-    if (!ex && !un.trim()) {
-      show("Benutzername nötig", "error");
-      return;
-    }
-    try {
-      if (ex) {
-        await actions.users.update(ex.id, {
-          name: n.trim(),
-          stundensatz: parseDecimal(ss) || 45,
-        });
-        show("Gespeichert");
-        setEditUser(null);
-        goBack();
-      } else {
-        const pin = genPin();
-        await actions.users.createForOnboarding({
-          name: n.trim(),
-          username: un.trim().toLowerCase(),
-          stundensatz: parseDecimal(ss) || 45,
-          onboardingPin: pin,
-        });
-        setMitSummary({
-          name: n.trim(),
-          username: un.trim().toLowerCase(),
-          pin,
-        });
+  const save = () =>
+    withSaving(async () => {
+      if (!n.trim()) {
+        show("Name nötig", "error");
+        return;
       }
-    } catch (e) {
-      show(
-        e.message?.includes("duplicate") || e.code === "23505"
-          ? "Benutzername bereits vergeben"
-          : "Fehler beim Speichern",
-        "error",
-      );
-    }
-  };
+      if (!ex && !un.trim()) {
+        show("Benutzername nötig", "error");
+        return;
+      }
+      try {
+        if (ex) {
+          await actions.users.update(ex.id, {
+            name: n.trim(),
+            stundensatz: parseDecimal(ss) || 45,
+          });
+          show("Gespeichert");
+          setEditUser(null);
+          goBack();
+        } else {
+          const pin = genPin();
+          await actions.users.createForOnboarding({
+            name: n.trim(),
+            username: un.trim().toLowerCase(),
+            stundensatz: parseDecimal(ss) || 45,
+            onboardingPin: pin,
+          });
+          setMitSummary({
+            name: n.trim(),
+            username: un.trim().toLowerCase(),
+            pin,
+          });
+        }
+      } catch (e) {
+        console.error("[MitForm.save]", e);
+        show(
+          e.message?.includes("duplicate") || e.code === "23505"
+            ? "Benutzername bereits vergeben"
+            : e?.message || "Fehler beim Speichern",
+          "error",
+        );
+      }
+    });
   const closeSummary = () => {
     setMitSummary(null);
     setEditUser(null);
@@ -304,6 +308,7 @@ const MitForm = () => {
         )}
         <button
           onClick={save}
+          disabled={saving}
           style={{
             width: "100%",
             padding: "16px 24px",
@@ -318,9 +323,16 @@ const MitForm = () => {
             background: BTN,
             boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
             border: "none",
+            opacity: saving ? 0.6 : 1,
+            cursor: saving ? "not-allowed" : "pointer",
           }}
         >
-          {ex ? (
+          {saving ? (
+            <>
+              <Spinner size={18} color="white" />
+              Speichere...
+            </>
+          ) : ex ? (
             <>
               <Save size={18} />
               Speichern

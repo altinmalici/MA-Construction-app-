@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Check, Save } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { CS, BTN, IC, parseDecimal } from "../../utils/helpers";
-import { ScreenLayout } from "../ui";
+import { ScreenLayout, Spinner } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
 
 const BstForm = () => {
   const { em, sb, data, actions, show, chef, nav, setSb, setEm, goBack } =
     useApp();
+  const { saving, withSaving } = useSaving();
   const ex = em && sb ? data.baustellen.find((b) => b.id === sb.id) : null;
   const [f, sF] = useState({
     kunde: ex?.kunde || "",
@@ -35,41 +37,43 @@ const BstForm = () => {
       ...p,
       [k]: p[k].includes(id) ? p[k].filter((x) => x !== id) : [...p[k], id],
     }));
-  const save = async () => {
-    if (!f.kunde.trim()) {
-      show("Name nötig", "error");
-      return;
-    }
-    const bd = {
-      ...f,
-      budget: parseDecimal(f.budget),
-      details: {
-        raeume: f.raeume,
-        flaeche: f.flaeche,
-        arbeiten: f.arbeiten,
-        bauleiter: f.bauleiter,
-        rechnungFirma: f.rechnungFirma,
-        rechnungAdresse: f.rechnungAdresse,
-        rechnungEmail: f.rechnungEmail,
-        rechnungUid: f.rechnungUid,
-      },
-    };
-    try {
-      if (ex) {
-        await actions.baustellen.update(ex.id, bd);
-        setSb({ ...bd, id: ex.id });
-        show("Aktualisiert");
-      } else {
-        const newId = await actions.baustellen.create(bd);
-        setSb({ ...bd, id: newId });
-        show("Angelegt");
+  const save = () =>
+    withSaving(async () => {
+      if (!f.kunde.trim()) {
+        show("Name nötig", "error");
+        return;
       }
-      setEm(false);
-      nav("bsd");
-    } catch (e) {
-      show("Fehler beim Speichern", "error");
-    }
-  };
+      const bd = {
+        ...f,
+        budget: parseDecimal(f.budget),
+        details: {
+          raeume: f.raeume,
+          flaeche: f.flaeche,
+          arbeiten: f.arbeiten,
+          bauleiter: f.bauleiter,
+          rechnungFirma: f.rechnungFirma,
+          rechnungAdresse: f.rechnungAdresse,
+          rechnungEmail: f.rechnungEmail,
+          rechnungUid: f.rechnungUid,
+        },
+      };
+      try {
+        if (ex) {
+          await actions.baustellen.update(ex.id, bd);
+          setSb({ ...bd, id: ex.id });
+          show("Aktualisiert");
+        } else {
+          const newId = await actions.baustellen.create(bd);
+          setSb({ ...bd, id: newId });
+          show("Angelegt");
+        }
+        setEm(false);
+        nav("bsd");
+      } catch (e) {
+        console.error("[BstForm.save]", e);
+        show(e?.message || "Fehler beim Speichern", "error");
+      }
+    });
   return (
     <ScreenLayout
       title={ex ? "Bearbeiten" : "Neue Baustelle"}
@@ -642,6 +646,7 @@ const BstForm = () => {
 
       <button
         onClick={save}
+        disabled={saving}
         style={{
           width: "100%",
           padding: "16px 24px",
@@ -656,10 +661,12 @@ const BstForm = () => {
           background: BTN,
           boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
           border: "none",
+          opacity: saving ? 0.6 : 1,
+          cursor: saving ? "not-allowed" : "pointer",
         }}
       >
-        <Save size={20} />
-        {ex ? "Speichern" : "Anlegen"}
+        {saving ? <Spinner size={20} color="white" /> : <Save size={20} />}
+        {saving ? "Speichere..." : ex ? "Speichern" : "Anlegen"}
       </button>
     </ScreenLayout>
   );

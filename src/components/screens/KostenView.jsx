@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
-import { ScreenLayout, PBar, Empty } from "../ui";
+import { ScreenLayout, PBar, Empty, Spinner } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
 
 const KostenView = () => {
   const { data, actions, show, goBack, cu, addN } = useApp();
+  const { saving, withSaving } = useSaving();
   const [selBs, setSelBs] = useState(null);
   const [sf, setSf] = useState(false);
   const [fl, setFl] = useState("alle");
@@ -69,32 +71,34 @@ const KostenView = () => {
   const totalAll = data.baustellen.reduce((s, b) => s + calcTotal(b.id), 0);
   const budgetAll = data.baustellen.reduce((s, b) => s + (b.budget || 0), 0);
 
-  const saveKost = async () => {
-    if (!kf.baustelleId || !kf.beschreibung.trim() || !kf.betrag) {
-      show("Alle Felder ausfüllen", "error");
-      return;
-    }
-    try {
-      await actions.kosten.create({
-        baustelleId: kf.baustelleId,
-        kategorie: kf.kategorie,
-        beschreibung: kf.beschreibung,
-        betrag: parseDecimal(kf.betrag),
-        datum: kf.datum,
-        ersteller: cu?.id,
-      });
-      addN(
-        "info",
-        `Kosten: ${fE(parseDecimal(kf.betrag))} – ${kf.beschreibung}`,
-        kf.baustelleId,
-      );
-      show("Kosten erfasst");
-      setSf(false);
-      sKf({ ...kf, beschreibung: "", betrag: "" });
-    } catch (e) {
-      show("Fehler", "error");
-    }
-  };
+  const saveKost = () =>
+    withSaving(async () => {
+      if (!kf.baustelleId || !kf.beschreibung.trim() || !kf.betrag) {
+        show("Alle Felder ausfüllen", "error");
+        return;
+      }
+      try {
+        await actions.kosten.create({
+          baustelleId: kf.baustelleId,
+          kategorie: kf.kategorie,
+          beschreibung: kf.beschreibung,
+          betrag: parseDecimal(kf.betrag),
+          datum: kf.datum,
+          ersteller: cu?.id,
+        });
+        addN(
+          "info",
+          `Kosten: ${fE(parseDecimal(kf.betrag))} – ${kf.beschreibung}`,
+          kf.baustelleId,
+        );
+        show("Kosten erfasst");
+        setSf(false);
+        sKf({ ...kf, beschreibung: "", betrag: "" });
+      } catch (e) {
+        console.error("[KostenView.saveKost]", e);
+        show(e?.message || "Fehler beim Speichern", "error");
+      }
+    });
 
   const exportCSV = () => {
     const rows = [
@@ -663,6 +667,7 @@ const KostenView = () => {
           </div>
           <button
             onClick={saveKost}
+            disabled={saving}
             style={{
               width: "100%",
               padding: "16px 24px",
@@ -677,10 +682,12 @@ const KostenView = () => {
               background: BTN,
               boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
               border: "none",
+              opacity: saving ? 0.6 : 1,
+              cursor: saving ? "not-allowed" : "pointer",
             }}
           >
-            <Receipt size={18} />
-            Kosten erfassen
+            {saving ? <Spinner size={18} color="white" /> : <Receipt size={18} />}
+            {saving ? "Speichere..." : "Kosten erfassen"}
           </button>
         </div>
       )}

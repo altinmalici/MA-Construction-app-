@@ -2,34 +2,38 @@ import { useState } from "react";
 import { Plus, X, Briefcase, Phone, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { IC, BTN, CS } from "../../utils/helpers";
-import { Empty, Bdg, ScreenLayout } from "../ui";
+import { Empty, Bdg, ScreenLayout, Spinner } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
 
 const SubView = () => {
   const { data, actions, show, goBack } = useApp();
+  const { saving, withSaving } = useSaving();
   const [sf, setSf] = useState(false);
   const [fn, setFn] = useState("");
   const [fg, setFg] = useState("");
   const [ft, setFt] = useState("");
-  const add = async () => {
-    if (!fn.trim()) {
-      show("Name nötig", "error");
-      return;
-    }
-    try {
-      await actions.subunternehmer.create({
-        name: fn.trim(),
-        gewerk: fg,
-        telefon: ft,
-      });
-      show("Angelegt");
-      setSf(false);
-      setFn("");
-      setFg("");
-      setFt("");
-    } catch (e) {
-      show("Fehler", "error");
-    }
-  };
+  const add = () =>
+    withSaving(async () => {
+      if (!fn.trim()) {
+        show("Name nötig", "error");
+        return;
+      }
+      try {
+        await actions.subunternehmer.create({
+          name: fn.trim(),
+          gewerk: fg,
+          telefon: ft,
+        });
+        show("Angelegt");
+        setSf(false);
+        setFn("");
+        setFg("");
+        setFt("");
+      } catch (e) {
+        console.error("[SubView.add]", e);
+        show(e?.message || "Fehler beim Anlegen", "error");
+      }
+    });
   const del = async (id) => {
     if (confirm("Löschen?")) {
       try {
@@ -102,6 +106,7 @@ const SubView = () => {
           </div>
           <button
             onClick={add}
+            disabled={saving}
             style={{
               width: "100%",
               padding: "16px 24px",
@@ -116,10 +121,12 @@ const SubView = () => {
               background: BTN,
               boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
               border: "none",
+              opacity: saving ? 0.6 : 1,
+              cursor: saving ? "not-allowed" : "pointer",
             }}
           >
-            <Plus size={18} />
-            Anlegen
+            {saving ? <Spinner size={18} color="white" /> : <Plus size={18} />}
+            {saving ? "Speichere..." : "Anlegen"}
           </button>
         </div>
       )}
