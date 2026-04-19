@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   ChevronLeft,
   Edit3,
@@ -9,25 +10,27 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { P, CS, BTN, RED, fK, bStd } from "../../utils/helpers";
-import { ScreenLayout, PBar, Bdg } from "../ui";
+import { ScreenLayout, PBar, Bdg, ConfirmModal } from "../ui";
 
 const BstDet = () => {
   const { sb, data, chef, goBack, actions, show, nav, setEm, eName } =
     useApp();
   const b = sb;
+  const [confirmDelete, setConfirmDelete] = useState(false);
   if (!b) return null;
   const fr = data.baustellen.find((x) => x.id === b.id) || b;
   const ei = data.stundeneintraege.filter((e) => e.baustelleId === b.id);
   const mg = data.maengel.filter((m) => m.baustelleId === b.id);
-  const del = async () => {
-    if (confirm("Löschen?")) {
-      try {
-        await actions.baustellen.remove(b.id);
-        show("Gelöscht");
-        nav("bst");
-      } catch (e) {
-        show("Fehler beim Löschen", "error");
-      }
+  const del = () => setConfirmDelete(true);
+  const doDelete = async () => {
+    setConfirmDelete(false);
+    try {
+      await actions.baustellen.remove(b.id);
+      show("Gelöscht");
+      nav("bst");
+    } catch (e) {
+      console.error("[BstDet.del]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
     }
   };
   return (
@@ -472,6 +475,16 @@ const BstDet = () => {
         <Clock size={20} />
         Stunden eintragen
       </button>
+      <ConfirmModal
+        open={confirmDelete}
+        title={`Baustelle "${fr.kunde}" löschen?`}
+        message={`Inkl. ${ei.length} Stundeneinträgen, ${mg.length} Mängeln und allen weiteren zugehörigen Einträgen. Aktion lässt sich nicht rückgängig machen.`}
+        confirmLabel="Löschen"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </ScreenLayout>
   );
 };

@@ -2,12 +2,13 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, X, Save, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fDat, fK, IC, BTN, CS, P, PD } from "../../utils/helpers";
-import { ScreenLayout, Spinner } from "../ui";
+import { ScreenLayout, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const KalView = () => {
   const { data, chef, actions, show, goBack, prevV } = useApp();
   const { saving, withSaving } = useSaving();
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const h = new Date();
   const [mo, setMo] = useState(h.getMonth());
   const [jr, setJr] = useState(h.getFullYear());
@@ -72,14 +73,17 @@ const KalView = () => {
         show(e?.message || "Fehler beim Speichern", "error");
       }
     });
-  const delTermin = async (id) => {
-    if (confirm("Termin löschen?")) {
-      try {
-        await actions.kalender.remove(id);
-        show("Gelöscht");
-      } catch (e) {
-        show("Fehler", "error");
-      }
+  const delTermin = (id) => setConfirmDelete(id);
+  const doDeleteTermin = async () => {
+    const id = confirmDelete;
+    setConfirmDelete(null);
+    if (!id) return;
+    try {
+      await actions.kalender.remove(id);
+      show("Gelöscht");
+    } catch (e) {
+      console.error("[KalView.delTermin]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
     }
   };
   return (
@@ -497,6 +501,16 @@ const KalView = () => {
           })}
         </div>
       )}
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Termin löschen?"
+        message="Der Eintrag wird aus dem Kalender entfernt."
+        confirmLabel="Löschen"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doDeleteTermin}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </ScreenLayout>
   );
 };

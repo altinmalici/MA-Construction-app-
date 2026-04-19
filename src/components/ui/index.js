@@ -9,4 +9,5 @@ export { default as WI } from './WI';
 export { default as ScreenLayout } from './ScreenLayout';
 export { default as TimePicker } from './TimePicker';
 export { default as ConfirmModal } from './ConfirmModal';
+export { default as PromptModal } from './PromptModal';
 export { default as Spinner } from './Spinner';

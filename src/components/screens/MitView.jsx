@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Plus, User, Trash2, Edit3, Users, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fE, genUsername, genPin, BTN, RED, GREEN, CS } from "../../utils/helpers";
-import { Empty, Bdg, ScreenLayout } from "../ui";
+import { Empty, Bdg, ScreenLayout, ConfirmModal } from "../ui";
 
 const MitView = () => {
   const { data, actions, show, goBack, setEditUser, nav } =
     useApp();
   const ma = data.users.filter((u) => u.role === "mitarbeiter");
   const [resetInfo, setResetInfo] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const getStatus = (u) => {
     if (!u.isActive) return { color: RED, text: "Deaktiviert" };
     if (!u.isOnboarded) {
@@ -43,14 +44,17 @@ const MitView = () => {
       show("Fehler", "error");
     }
   };
-  const del = async (id) => {
-    if (confirm("Endgültig löschen?")) {
-      try {
-        await actions.users.remove(id);
-        show("Gelöscht");
-      } catch (e) {
-        show("Fehler", "error");
-      }
+  const del = (id) => setConfirmDelete(id);
+  const doDelete = async () => {
+    const id = confirmDelete;
+    setConfirmDelete(null);
+    if (!id) return;
+    try {
+      await actions.users.remove(id);
+      show("Gelöscht");
+    } catch (e) {
+      console.error("[MitView.del]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
     }
   };
   const shareWA = (info) => {
@@ -319,6 +323,16 @@ const MitView = () => {
           })
         )}
       </div>
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Mitarbeiter löschen?"
+        message="Der Zugang wird komplett entfernt."
+        confirmLabel="Löschen"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </ScreenLayout>
   );
 };

@@ -2,12 +2,26 @@ import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
-import { ScreenLayout, PBar, Empty, Spinner } from "../ui";
+import { ScreenLayout, PBar, Empty, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const KostenView = () => {
   const { data, actions, show, goBack, cu, addN } = useApp();
   const { saving, withSaving } = useSaving();
+  const [confirmDeleteKost, setConfirmDeleteKost] = useState(null);
+
+  const doDeleteKost = async () => {
+    const id = confirmDeleteKost;
+    setConfirmDeleteKost(null);
+    if (!id) return;
+    try {
+      await actions.kosten.remove(id);
+      show("Gelöscht");
+    } catch (e) {
+      console.error("[KostenView.delKost]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
+    }
+  };
   const [selBs, setSelBs] = useState(null);
   const [sf, setSf] = useState(false);
   const [fl, setFl] = useState("alle");
@@ -179,16 +193,7 @@ const KostenView = () => {
       byUser[uid].kosten += std * (u?.stundensatz || 45);
     });
 
-    const delKost = async (id) => {
-      if (confirm("Kosten löschen?")) {
-        try {
-          await actions.kosten.remove(id);
-          show("Gelöscht");
-        } catch (e) {
-          show("Fehler", "error");
-        }
-      }
-    };
+    const delKost = (id) => setConfirmDeleteKost(id);
 
     return (
       <ScreenLayout title={`Kosten: ${b.kunde}`} onBack={() => setSelBs(null)}>
@@ -534,6 +539,16 @@ const KostenView = () => {
             )}
           </div>
         </div>
+        <ConfirmModal
+          open={!!confirmDeleteKost}
+          title="Kosten löschen?"
+          message="Der Kosten-Eintrag wird dauerhaft entfernt. Das kann die Lohnabrechnung beeinflussen."
+          confirmLabel="Löschen"
+          cancelLabel="Abbrechen"
+          destructive
+          onConfirm={doDeleteKost}
+          onCancel={() => setConfirmDeleteKost(null)}
+        />
       </ScreenLayout>
     );
   }

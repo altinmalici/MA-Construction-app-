@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Plus, X, Briefcase, Phone, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { IC, BTN, CS } from "../../utils/helpers";
-import { Empty, Bdg, ScreenLayout, Spinner } from "../ui";
+import { Empty, Bdg, ScreenLayout, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const SubView = () => {
   const { data, actions, show, goBack } = useApp();
   const { saving, withSaving } = useSaving();
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [sf, setSf] = useState(false);
   const [fn, setFn] = useState("");
   const [fg, setFg] = useState("");
@@ -34,14 +35,17 @@ const SubView = () => {
         show(e?.message || "Fehler beim Anlegen", "error");
       }
     });
-  const del = async (id) => {
-    if (confirm("Löschen?")) {
-      try {
-        await actions.subunternehmer.remove(id);
-        show("Gelöscht");
-      } catch (e) {
-        show("Fehler", "error");
-      }
+  const del = (id) => setConfirmDelete(id);
+  const doDelete = async () => {
+    const id = confirmDelete;
+    setConfirmDelete(null);
+    if (!id) return;
+    try {
+      await actions.subunternehmer.remove(id);
+      show("Gelöscht");
+    } catch (e) {
+      console.error("[SubView.del]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
     }
   };
   return (
@@ -207,6 +211,16 @@ const SubView = () => {
           })
         )}
       </div>
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Subunternehmer löschen?"
+        message="Der Subunternehmer wird dauerhaft entfernt."
+        confirmLabel="Löschen"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </ScreenLayout>
   );
 };

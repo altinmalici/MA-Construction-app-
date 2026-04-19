@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Plus, X, Save, ClipboardList, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fDat, IC, BTN, RED, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout, Spinner } from "../ui";
+import { Empty, ScreenLayout, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const BtbView = () => {
   const { sb, chef, cu, data, actions, show, goBack } = useApp();
   const { saving, withSaving } = useSaving();
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [sf, setSf] = useState(false);
   const ls = sb
     ? data.bautagebuch.filter((b) => b.baustelleId === sb.id)
@@ -65,15 +66,17 @@ const BtbView = () => {
         show(e?.message || "Fehler beim Speichern", "error");
       }
     });
-  const delBtb = async (id) => {
-    if (confirm("Eintrag löschen?")) {
-      try {
-        await actions.bautagebuch.remove(id);
-        show("Gelöscht");
-      } catch (e) {
-        console.error("[BtbView.delBtb]", e);
-        show(e?.message || "Fehler beim Löschen", "error");
-      }
+  const delBtb = (id) => setConfirmDelete(id);
+  const doDeleteBtb = async () => {
+    const id = confirmDelete;
+    setConfirmDelete(null);
+    if (!id) return;
+    try {
+      await actions.bautagebuch.remove(id);
+      show("Gelöscht");
+    } catch (e) {
+      console.error("[BtbView.delBtb]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
     }
   };
   return (
@@ -283,6 +286,16 @@ const BtbView = () => {
           })
         )}
       </div>
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Eintrag löschen?"
+        message="Der Bautagebuch-Eintrag wird dauerhaft entfernt."
+        confirmLabel="Löschen"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doDeleteBtb}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </ScreenLayout>
   );
 };

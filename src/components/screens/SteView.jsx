@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Save, Edit3, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { CS, BTN, RED, IC, fDat, bStd } from "../../utils/helpers";
-import { ScreenLayout, PhotoGrid, TimePicker, Spinner } from "../ui";
+import { ScreenLayout, PhotoGrid, TimePicker, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const SteView = () => {
@@ -22,6 +22,7 @@ const SteView = () => {
   } = useApp();
   const { saving, withSaving } = useSaving();
   const [editId, setEditId] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const initFd = {
     baustelleId: sb?.id || "",
     datum: new Date().toISOString().split("T")[0],
@@ -122,14 +123,17 @@ const SteView = () => {
       }
     });
 
-  const delEntry = async (id) => {
-    if (confirm("Eintrag löschen?")) {
-      try {
-        await actions.stundeneintraege.remove(id);
-        show("Gelöscht");
-      } catch (e) {
-        show("Fehler", "error");
-      }
+  const delEntry = (id) => setConfirmDelete(id);
+  const doDeleteEntry = async () => {
+    const id = confirmDelete;
+    setConfirmDelete(null);
+    if (!id) return;
+    try {
+      await actions.stundeneintraege.remove(id);
+      show("Gelöscht");
+    } catch (e) {
+      console.error("[SteView.delEntry]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
     }
   };
 
@@ -739,6 +743,16 @@ const SteView = () => {
           )}
         </div>
       )}
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Eintrag löschen?"
+        message="Der Stundeneintrag wird dauerhaft entfernt."
+        confirmLabel="Löschen"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doDeleteEntry}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </ScreenLayout>
   );
 };

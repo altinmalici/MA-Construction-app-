@@ -1,29 +1,35 @@
+import { useState } from "react";
 import { AlertCircle, Clock, Bell, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { RED, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout } from "../ui";
+import { Empty, ScreenLayout, ConfirmModal } from "../ui";
 
 const NotifView = () => {
   const { data, actions, show, goBack, chef } = useApp();
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
   const markAll = async () => {
     try {
       await actions.benachrichtigungen.markAllRead();
     } catch (e) {
-      show("Fehler", "error");
+      console.error("[NotifView.markAll]", e);
+      show(e?.message || "Fehler", "error");
     }
   };
-  const clearAll = async () => {
+  const clearAll = () => {
     if (!chef) {
       show("Nur Chef kann alle Benachrichtigungen löschen", "error");
       return;
     }
-    if (confirm("Alle Benachrichtigungen löschen?")) {
-      try {
-        await actions.benachrichtigungen.removeAll();
-        show("Alle gelöscht");
-      } catch (e) {
-        show("Fehler", "error");
-      }
+    setConfirmClearAll(true);
+  };
+  const doClearAll = async () => {
+    setConfirmClearAll(false);
+    try {
+      await actions.benachrichtigungen.removeAll();
+      show("Alle gelöscht");
+    } catch (e) {
+      console.error("[NotifView.clearAll]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
     }
   };
   const delN = async (id) => {
@@ -138,6 +144,16 @@ const NotifView = () => {
           })
         )}
       </div>
+      <ConfirmModal
+        open={confirmClearAll}
+        title="Alle Benachrichtigungen löschen?"
+        message="Alle Benachrichtigungen werden dauerhaft entfernt."
+        confirmLabel="Alle löschen"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doClearAll}
+        onCancel={() => setConfirmClearAll(false)}
+      />
     </ScreenLayout>
   );
 };

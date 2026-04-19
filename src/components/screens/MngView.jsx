@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Plus, X, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fK, IC, BTN, CS, P, RED, GREEN } from "../../utils/helpers";
-import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner } from "../ui";
+import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const MngView = () => {
   const { sb, chef, cu, data, actions, show, goBack, trigPhoto, addN } =
     useApp();
   const { saving, withSaving } = useSaving();
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [sf, setSf] = useState(false);
   const [fl, setFl] = useState("alle");
   const [mf, sMf] = useState({
@@ -73,14 +74,17 @@ const MngView = () => {
       show("Fehler", "error");
     }
   };
-  const delMng = async (id) => {
-    if (confirm("Mangel löschen?")) {
-      try {
-        await actions.maengel.remove(id);
-        show("Gelöscht");
-      } catch (e) {
-        show("Fehler", "error");
-      }
+  const delMng = (id) => setConfirmDelete(id);
+  const doDeleteMng = async () => {
+    const id = confirmDelete;
+    setConfirmDelete(null);
+    if (!id) return;
+    try {
+      await actions.maengel.remove(id);
+      show("Gelöscht");
+    } catch (e) {
+      console.error("[MngView.delMng]", e);
+      show(e?.message || "Fehler beim Löschen", "error");
     }
   };
   const pc = { hoch: RED, mittel: P, niedrig: "#8e8e93" };
@@ -392,6 +396,16 @@ const MngView = () => {
           })
         )}
       </div>
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Mangel löschen?"
+        message="Der Mangel wird dauerhaft entfernt."
+        confirmLabel="Löschen"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={doDeleteMng}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </ScreenLayout>
   );
 };
