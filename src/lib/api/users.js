@@ -44,7 +44,17 @@ export async function createForOnboarding({ name, username, stundensatz, onboard
   return data;
 }
 
-export async function update(id, { name, pin, stundensatz }) {
+// Strips undefined fields so partial updates (e.g. only `pin`) don't write
+// NULL into name/stundensatz. Intentional `null` is preserved.
+function stripUndefined(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
+export async function update(id, { name, pin, stundensatz } = {}) {
   // If PIN changed, update hash via v2 RPC (auth + public)
   if (pin) {
     const { error: pinErr } = await supabase.rpc('update_user_pin_v2', {
@@ -53,9 +63,14 @@ export async function update(id, { name, pin, stundensatz }) {
     });
     if (pinErr) throw pinErr;
   }
+  const payload = stripUndefined({ name, stundensatz });
+  if (Object.keys(payload).length === 0) {
+    // Nothing to write — no-op (avoids unnecessary roundtrip + accidental NULLs).
+    return null;
+  }
   const { data, error } = await supabase
     .from('users')
-    .update({ name, stundensatz })
+    .update(payload)
     .eq('id', id)
     .select('id, name, role, stundensatz')
     .single();
