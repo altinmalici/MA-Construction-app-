@@ -14,10 +14,31 @@ export default defineConfig({
       registerType: 'autoUpdate',
       // Dev: SW deaktiviert — Reload-Loops + Stale-Cache stören sonst HMR.
       devOptions: { enabled: false },
-      // Manifest: leeres Objekt = SW + Asset-Caching aktiv, aber noch kein
-      // generiertes manifest.webmanifest. Echte Manifest-Werte (name, icons,
-      // theme_color) kommen in Task 5-02.
-      manifest: false,
+      manifest: {
+        name: 'MA Construction',
+        short_name: 'MA Construction',
+        description: 'Baustellen, Stunden, Mängel, Bautagebuch, Regieberichte — App für das MA-Construction-Team.',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        orientation: 'portrait',
+        lang: 'de',
+        background_color: '#f2f2f7',
+        // Single Source of Truth: matched index.html theme-color + index.css --brand-primary
+        theme_color: '#7C3AED',
+        categories: ['business', 'productivity'],
+        // Icon-Dateien folgen in Task 5-03 — Build kann bis dahin warnen.
+        icons: [
+          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: 'pwa-512x512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
       workbox: {
         // Pre-Cache der Build-Assets; differenzierte Strategien in Task 5-05.
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
