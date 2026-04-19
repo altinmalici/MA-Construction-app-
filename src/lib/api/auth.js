@@ -104,8 +104,10 @@ export async function loginWithUsername(username, onboardingPin) {
 }
 
 /**
- * Mode B: Onboarding abschließen (neuen PIN setzen)
- * Danach re-auth mit neuem PIN
+ * Mode B: Onboarding abschließen (neuen PIN setzen).
+ * Synct anschließend auth.users.encrypted_password via updateUser, damit die
+ * laufende Session sofort gültig bleibt — kein signOut/signIn-Flip mehr,
+ * sonst wäre der User bei kurzem Netz-Drop ungewollt komplett ausgeloggt.
  */
 export async function completeOnboarding(userId, newPin) {
   const { error } = await supabase.rpc('complete_onboarding_v2', {
@@ -114,19 +116,8 @@ export async function completeOnboarding(userId, newPin) {
   });
   if (error) throw error;
 
-  // Re-auth: Session mit neuem Passwort auffrischen
-  // Wir brauchen den Username des Users
-  const { data: profile } = await supabase.rpc('get_user_by_auth_id');
-  if (profile && profile.length > 0) {
-    const email = profile[0].username + '@ma-construction.local';
-    // Erst ausloggen, dann mit neuem PIN einloggen
-    await supabase.auth.signOut();
-    const { error: reAuthErr } = await supabase.auth.signInWithPassword({
-      email,
-      password: newPin,
-    });
-    if (reAuthErr) throw reAuthErr;
-  }
+  const { error: updErr } = await supabase.auth.updateUser({ password: newPin });
+  if (updErr) throw updErr;
 }
 
 /**
@@ -160,16 +151,15 @@ export async function getCurrentUser() {
 }
 
 /**
- * Re-Auth nach PIN-Änderung (für ProfilView)
+ * Sync der Auth-Session nach PIN-Änderung (z.B. ProfilView).
+ * Nutzt updateUser statt signOut+signIn — Session bleibt aktiv, keine
+ * Race-Condition mit anderen API-Calls, kein onAuthStateChange-Flip.
+ * Der `username`-Parameter bleibt aus Backwards-Compat-Gründen erhalten,
+ * wird aber nicht mehr benötigt (updateUser wirkt auf den aktuellen User).
  */
+// eslint-disable-next-line no-unused-vars
 export async function reAuthWithPin(username, newPin) {
-  const email = username + '@ma-construction.local';
-  // SignOut + SignIn mit neuem PIN
-  await supabase.auth.signOut();
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password: newPin,
-  });
+  const { error } = await supabase.auth.updateUser({ password: newPin });
   if (error) throw error;
 }
 
