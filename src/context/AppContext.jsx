@@ -40,7 +40,7 @@ export function AppProvider({ children }) {
   const [editUser, setEditUser] = useState(null);
   const [mitSummary, setMitSummary] = useState(null);
   const [sq, setSq] = useState("");
-  const [toast, setToast] = useState(null);
+  const [toasts, setToasts] = useState([]);
   const fileRef = useRef(null);
   const [photoCb, setPhotoCb] = useState(null);
   const [clockTime, setClockTime] = useState(new Date());
@@ -181,7 +181,13 @@ export function AppProvider({ children }) {
       .catch((e) => console.error("Seed fehlgeschlagen:", e));
   }, [loading, data.baustellen.length]);
 
-  const show = (m, t = "success") => setToast({ message: m, type: t });
+  const show = (m, t = "success") => {
+    const id = Date.now() + Math.random();
+    // Max 3 parallele Toasts — älteste werden verdrängt.
+    setToasts((prev) => [...prev, { id, message: m, type: t }].slice(-3));
+  };
+  const dismissToast = (id) =>
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   const chef = cu?.role === "chef";
   const unread = data.benachrichtigungen.filter((n) => !n.gelesen).length;
   const addN = async (typ, text, bid) => {
@@ -316,8 +322,6 @@ export function AppProvider({ children }) {
     setMitSummary,
     fileRef,
     clockTime,
-    toast,
-    setToast,
   };
 
   return (
@@ -407,12 +411,34 @@ export function AppProvider({ children }) {
                   overflow: "hidden",
                 }}
               />
-              {toast && (
-                <Toast
-                  message={toast.message}
-                  type={toast.type}
-                  onDone={() => setToast(null)}
-                />
+              {toasts.length > 0 && (
+                <div
+                  style={{
+                    position: "fixed",
+                    top: 16,
+                    left: 0,
+                    right: 0,
+                    zIndex: 50,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                    pointerEvents: "none",
+                  }}
+                >
+                  {toasts.map((t) => (
+                    <div
+                      key={t.id}
+                      style={{ pointerEvents: "auto" }}
+                    >
+                      <Toast
+                        message={t.message}
+                        type={t.type}
+                        onDone={() => dismissToast(t.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
               )}
               {children}
             </div>
