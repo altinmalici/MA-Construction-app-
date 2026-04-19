@@ -273,9 +273,9 @@ const RegView = () => {
               onClick={() => setShowPdf(false)}
               aria-label="Schließen"
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
+                width: 44,
+                height: 44,
+                borderRadius: 22,
                 background: "rgba(0,0,0,0.06)",
                 border: "none",
                 display: "flex",
@@ -284,7 +284,7 @@ const RegView = () => {
                 cursor: "pointer",
               }}
             >
-              <X size={18} style={{ color: "#3c3c43" }} />
+              <X size={20} style={{ color: "#3c3c43" }} />
             </button>
           </div>
           <div
