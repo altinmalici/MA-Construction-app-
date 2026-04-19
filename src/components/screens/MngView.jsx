@@ -311,11 +311,43 @@ const MngView = () => {
                 >
                   <div style={{ color: "#8e8e93" }}>
                     {z && <span>→ {z.name}</span>}
-                    {m.frist && (
-                      <span style={{ marginLeft: 8 }}>
-                        Frist: {fK(m.frist)}
-                      </span>
-                    )}
+                    {m.frist &&
+                      (() => {
+                        if (m.status === "erledigt") {
+                          return (
+                            <span style={{ marginLeft: 8 }}>
+                              Frist: {fK(m.frist)}
+                            </span>
+                          );
+                        }
+                        const d = new Date(m.frist);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const diffDays = Math.round(
+                          (d - today) / 86400000,
+                        );
+                        const overdue = diffDays < 0;
+                        const soon = diffDays >= 0 && diffDays <= 3;
+                        const color = overdue
+                          ? RED
+                          : soon
+                            ? "#FF9500"
+                            : "#8e8e93";
+                        const label = overdue
+                          ? `Überfällig: ${fK(m.frist)}`
+                          : `Frist: ${fK(m.frist)}`;
+                        return (
+                          <span
+                            style={{
+                              marginLeft: 8,
+                              color,
+                              fontWeight: overdue ? 600 : 400,
+                            }}
+                          >
+                            {label}
+                          </span>
+                        );
+                      })()}
                   </div>
                   {chef && m.status !== "erledigt" && (
                     <div style={{ display: "flex", gap: 8 }}>

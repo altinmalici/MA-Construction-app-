@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useRef, useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useAppData } from "../lib/useAppData.js";
-import { G, P } from "../utils/helpers";
-import { Toast } from "../components/ui";
+import { G, P, BTN, RED } from "../utils/helpers";
+import { Toast, Spinner } from "../components/ui";
 
 const BACKGROUND_LOCK_MS = 120 * 1000;
 
@@ -226,6 +226,73 @@ export function AppProvider({ children }) {
     return u?.name || "?";
   };
 
+  // App-Level Error: useAppData fehlgeschlagen → kein endloses Spinning,
+  // sondern Hinweis + Retry. window.location.reload() resettet auch
+  // Auth-Check und useAppData-State.
+  if (dataError && !loading) {
+    return (
+      <div className="device-wrapper font-sans">
+        <div className="device-frame">
+          <div className="device-screen">
+            <div
+              role="alert"
+              style={{
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#f2f2f7",
+                padding: 24,
+                textAlign: "center",
+              }}
+            >
+              <AlertCircle size={48} style={{ color: RED, marginBottom: 16 }} />
+              <h2
+                style={{
+                  fontSize: 17,
+                  fontWeight: 600,
+                  color: "#000",
+                  marginBottom: 8,
+                }}
+              >
+                Daten konnten nicht geladen werden
+              </h2>
+              <p
+                style={{
+                  fontSize: 14,
+                  color: "#8e8e93",
+                  marginBottom: 24,
+                  maxWidth: 280,
+                }}
+              >
+                {dataError?.message ||
+                  dataError ||
+                  "Verbindungsfehler. Bitte prüfe deine Internet-Verbindung."}
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: "14px 32px",
+                  borderRadius: 14,
+                  background: BTN,
+                  color: "white",
+                  fontWeight: 600,
+                  fontSize: 15,
+                  border: "none",
+                  minHeight: 44,
+                  cursor: "pointer",
+                }}
+              >
+                Erneut versuchen
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Loading screen
   if (loading || authChecking)
     return (
@@ -270,19 +337,10 @@ export function AppProvider({ children }) {
                       MA
                     </span>
                   </div>
-                  <Loader2
-                    className="mx-auto mb-3 animate-spin"
-                    size={24}
-                    style={{ color: P }}
-                  />
+                  <div style={{ marginBottom: 12, color: P }}>
+                    <Spinner size={24} color={P} />
+                  </div>
                   <p style={{ fontSize: 14, color: "#8e8e93" }}>Laden...</p>
-                  {dataError && (
-                    <p
-                      style={{ color: "#FF3B30", fontSize: 13, marginTop: 12 }}
-                    >
-                      {dataError}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
