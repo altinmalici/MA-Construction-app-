@@ -11,6 +11,22 @@ export const bStd = (b, e, p) => {
   return Math.max(0, (diff - (p || 0)) / 60).toFixed(1);
 };
 
+// TZ-sicherer Monats-Check auf YYYY-MM-DD-Strings.
+// datum: "2026-04-19" oder "2026-04-19T..." — Zeitanteil wird ignoriert.
+// mo: 0-11 (JS-Konvention), jr: vierstellig.
+export const isInMonth = (datum, mo, jr) => {
+  const ds = (datum || "").slice(0, 10);
+  if (ds.length !== 10) return false;
+  const tJr = Number(ds.slice(0, 4));
+  const tMo = Number(ds.slice(5, 7)) - 1;
+  return tMo === mo && tJr === jr;
+};
+
+// True, wenn der Stundeneintrag einem echten Mitarbeiter zuzuordnen ist
+// (nicht Sub, nicht Sonstige). Defaults ohne personTyp gelten als mitarbeiter.
+export const isMitarbeiterEntry = (e) =>
+  !!e && (!e.personTyp || e.personTyp === "mitarbeiter");
+
 // Datum lang formatieren: "Mo, 03.04.2026"
 export const fDat = (d) =>
   new Date(d).toLocaleDateString("de-DE", {

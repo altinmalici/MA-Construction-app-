@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, fE, fK, P, RED, GREEN, BTN, CS, IC } from "../../utils/helpers";
+import { bStd, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry } from "../../utils/helpers";
 import { ScreenLayout, PBar, Empty } from "../ui";
 
 const KostenView = () => {
@@ -33,9 +33,7 @@ const KostenView = () => {
   // Lohnkosten berechnen pro Baustelle
   const calcLohn = (bid) => {
     const ei = data.stundeneintraege.filter(
-      (e) =>
-        e.baustelleId === bid &&
-        (!e.personTyp || e.personTyp === "mitarbeiter"),
+      (e) => e.baustelleId === bid && isMitarbeiterEntry(e),
     );
     return ei.reduce((s, e) => {
       const u = data.users.find((x) => x.id === e.mitarbeiterId);
@@ -43,6 +41,7 @@ const KostenView = () => {
       return s + std * (u?.stundensatz || 45);
     }, 0);
   };
+
 
   // Gesamtkosten pro Baustelle
   const calcTotal = (bid) => {
@@ -99,9 +98,7 @@ const KostenView = () => {
     data.baustellen.forEach((b) => {
       // Lohnkosten pro Mitarbeiter
       const ei = data.stundeneintraege.filter(
-        (e) =>
-          e.baustelleId === b.id &&
-          (!e.personTyp || e.personTyp === "mitarbeiter"),
+        (e) => e.baustelleId === b.id && isMitarbeiterEntry(e),
       );
       const byUser = {};
       ei.forEach((e) => {

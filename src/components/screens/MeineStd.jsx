@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, fDat, CS } from "../../utils/helpers";
+import { bStd, fDat, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
 import { ScreenLayout, Empty } from "../ui";
 
 const MeineStd = () => {
@@ -28,11 +28,10 @@ const MeineStd = () => {
       return m + 1;
     });
   };
-  const all = data.stundeneintraege.filter((e) => e.mitarbeiterId === cu.id);
-  const me = all.filter((e) => {
-    const d = new Date(e.datum);
-    return d.getMonth() === mo && d.getFullYear() === jr;
-  });
+  const all = data.stundeneintraege.filter(
+    (e) => e.mitarbeiterId === cu.id && isMitarbeiterEntry(e),
+  );
+  const me = all.filter((e) => isInMonth(e.datum, mo, jr));
   const moH = me.reduce(
     (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
     0,

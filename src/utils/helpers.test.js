@@ -1,5 +1,53 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { genPin, bStd } from "./helpers.js";
+import { genPin, bStd, isInMonth, isMitarbeiterEntry } from "./helpers.js";
+
+describe("isInMonth (TZ-safe Monats-Check)", () => {
+  it("plain YYYY-MM-DD im richtigen Monat → true", () => {
+    expect(isInMonth("2026-04-19", 3, 2026)).toBe(true);
+  });
+  it("ISO mit lokalem Offset, Zeitanteil ignoriert → true", () => {
+    expect(isInMonth("2026-04-19T22:30:00+02:00", 3, 2026)).toBe(true);
+  });
+  it("ISO mit Z (UTC), spät am Tag, Zeitanteil ignoriert → bleibt im April (kein TZ-Shift)", () => {
+    expect(isInMonth("2026-04-19T22:30:00Z", 3, 2026)).toBe(true);
+  });
+  it("falscher Monat → false", () => {
+    expect(isInMonth("2026-05-01", 3, 2026)).toBe(false);
+  });
+  it("falsches Jahr → false", () => {
+    expect(isInMonth("2026-04-19", 3, 2025)).toBe(false);
+  });
+  it("leerer String → false", () => {
+    expect(isInMonth("", 3, 2026)).toBe(false);
+  });
+  it("null → false", () => {
+    expect(isInMonth(null, 3, 2026)).toBe(false);
+  });
+  it("undefined → false", () => {
+    expect(isInMonth(undefined, 3, 2026)).toBe(false);
+  });
+});
+
+describe("isMitarbeiterEntry", () => {
+  it("personTyp 'mitarbeiter' → true", () => {
+    expect(isMitarbeiterEntry({ personTyp: "mitarbeiter" })).toBe(true);
+  });
+  it("personTyp fehlt → true (Default)", () => {
+    expect(isMitarbeiterEntry({})).toBe(true);
+  });
+  it("personTyp undefined → true", () => {
+    expect(isMitarbeiterEntry({ personTyp: undefined })).toBe(true);
+  });
+  it("personTyp 'sub' → false", () => {
+    expect(isMitarbeiterEntry({ personTyp: "sub" })).toBe(false);
+  });
+  it("personTyp 'sonstige' → false", () => {
+    expect(isMitarbeiterEntry({ personTyp: "sonstige" })).toBe(false);
+  });
+  it("null → false (defensiv)", () => {
+    expect(isMitarbeiterEntry(null)).toBe(false);
+  });
+});
 
 describe("bStd (Stunden-Berechnung)", () => {
   it("a) normale Schicht 08:00-16:00 ohne Pause = 8.0h", () => {
