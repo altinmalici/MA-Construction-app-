@@ -147,7 +147,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 |---|---|---|---|---|
 | 3c-LOGIN | Login-Fixes: App startet immer auf PIN-Screen, user-spezifische PIN-Validation (kein globaler Lookup), Background-Auto-Lock nach 120s via visibilitychange API | `LoginView.jsx`, `App.jsx`, `AppContext.jsx` | mittel | 🟢 DONE |
 | 3c-BTB | Bautagebuch Speichern-Bug diagnostizieren und fixen (vermutlich RLS-Policy) | Supabase-Policies + `BtbView.jsx` | mittel | 🟢 DONE |
-| 3c-REG | Regiebericht: Close-Button-UX + 30-Min-Intervall-Validation für Zeiten | `RegView.jsx` | klein | 🔴 TODO |
+| 3c-REG | Regiebericht: Close-Button-UX + 30-Min-Intervall-Validation für Zeiten | `RegView.jsx` | klein | 🟢 DONE |
 | 3c-SAVING | Zentraler `useSaving`-Hook bauen, dann app-weit in Save-Handlern integrieren (`BstForm`, `SteView`, `MngView`, `BtbView`, `KalView`, `MitForm`, `KostenView`, `SubView`) inkl. `disabled={saving}` + Spinner | neuer Hook + 8 Screens | mittel | 🔴 TODO |
 | 3c-MODAL | `ConfirmModal` + `PromptModal` (iOS-Style) bauen und alle `window.confirm()` / `window.prompt()` Aufrufe ersetzen | neue Komponenten + alle Screens mit confirm/prompt | mittel | 🔴 TODO |
 | 3c-DIRTY | `BstForm` Dirty-Check vor Zurück-Tap (Confirm-Modal "Änderungen verwerfen?") | `BstForm.jsx:11-32` | klein | 🔴 TODO |
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-19 · 3c-REG · a4d9e67 · RegView: Close-X im PDF-Preview-Modal auf 44x44 (iOS-HIG-konform). 30-Min-Intervall-Validation bereits seit Phase 3 Prompt 3 via TimePicker (minuteStep=30 + snapMinute).
 - 2026-04-19 · 3c-BTB · b11ec95 · Bautagebuch-Save: Error-Propagation gehärtet + Orphan-Rollback bei Junction-Fail; ursprünglicher Save-Bug durch Repro-Test nicht mehr reproduzierbar (vermutlich Nebenwirkung Phase-3a-Auth-Härtungen)
 - 2026-04-19 · 3c-LOGIN · 528eefe · Login-Flow gehärtet: App-Start invalidiert Session hart via signOut (Defense-in-Depth gegen DevTools-Console-Missbrauch des alten JWT). Sub-Fix 2 (loginAsUser user-spezifisch) + Sub-Fix 3 (BG-Lock 120s via visibilitychange) waren bereits durch Phase 3 implementiert.
 - 2026-04-19 · 3b-12 · 46d73b4 · stripUndefined nach src/utils/objects.js extrahiert; users.js importiert statt lokal; baustellen.update + stundeneintraege.update defense-in-depth gehärtet; +8 vitest-Szenarien
