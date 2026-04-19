@@ -194,7 +194,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | 5-05 | Service Worker: Cache-First für statische Assets, Stale-While-Revalidate für Daten | mittel | 🟢 DONE |
 | 5-06 | `React.lazy` für alle Screens außer Login/Dash | klein | 🟢 DONE |
 | 5-07 | `vite` `manualChunks` für Vendor-Chunks (lucide-react, supabase, recharts falls drin) | klein | 🟢 DONE |
-| 5-08 | `key={v}` aus `<Screen>`-Rendering entfernen (unnötige Remounts) | klein | 🔴 TODO |
+| 5-08 | `key={v}` aus `<Screen>`-Rendering entfernen (unnötige Remounts) | klein | 🟢 DONE |
 | 5-09 | Bundle-Analyzer einmal laufen lassen, Low-Hanging-Fruit entfernen | klein | 🔴 TODO |
 | 5-10 | Auf iPhone "Zum Home-Screen hinzufügen" testen | klein | 🔴 TODO |
 
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 5-08 · 42d81ba · key={v} aus view-fade-Wrapper entfernt; keine Remounts mehr bei Tab-Wechsel; lokaler Screen-State (Monats-Navigation, Form-State, useSaving-mountedRef) bleibt erhalten; Fade triggert nur bei First-Mount
 - 2026-04-20 · 5-07 · 15efd70 · vendor-react/vendor-supabase/vendor-icons als separate Chunks (Function-Variante); Main-Chunk 422→53KB (gzip 123→17KB); Long-Term-Caching für Vendors über mehrere Deploys
 - 2026-04-20 · 5-06 · 6c654cf · React.lazy für 20 Screens (alle außer Login/Dash/TabBar); Suspense-Wrapper mit Spinner-Fallback; Main-Bundle 546→422KB (−22.6%), gzip 148→123KB (−16.9%); 20 on-demand Chunks
 - 2026-04-20 · 5-05 · 9d58a47 · Workbox-Strategien: Supabase NetworkOnly (nie stale Daten), Google-Fonts CacheFirst, Images StaleWhileRevalidate; navigateFallback /index.html; skipWaiting+clientsClaim für stille Auto-Updates
