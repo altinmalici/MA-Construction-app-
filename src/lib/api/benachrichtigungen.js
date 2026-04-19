@@ -46,6 +46,10 @@ export async function remove(id) {
   if (error) throw error;
 }
 
+// Löscht ALLE Benachrichtigungen aus Sicht des aufrufenden Users (RLS-scoped).
+// Schema hat keine user_id-Spalte — Benachrichtigungen sind shared.
+// RLS-Policy "chef_all" erzwingt Chef-Recht für DELETE, defense-in-depth
+// erfolgt im Aufrufer (Chef-Guard im UI). Nicht von Mitarbeitern aufrufen.
 export async function removeAll() {
   const { error } = await supabase.from('benachrichtigungen').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   if (error) throw error;

@@ -4,7 +4,7 @@ import { RED, CS } from "../../utils/helpers";
 import { Empty, ScreenLayout } from "../ui";
 
 const NotifView = () => {
-  const { data, actions, show, goBack } = useApp();
+  const { data, actions, show, goBack, chef } = useApp();
   const markAll = async () => {
     try {
       await actions.benachrichtigungen.markAllRead();
@@ -13,6 +13,10 @@ const NotifView = () => {
     }
   };
   const clearAll = async () => {
+    if (!chef) {
+      show("Nur Chef kann alle Benachrichtigungen löschen", "error");
+      return;
+    }
     if (confirm("Alle Benachrichtigungen löschen?")) {
       try {
         await actions.benachrichtigungen.removeAll();
@@ -48,7 +52,7 @@ const NotifView = () => {
           >
             Alle gelesen
           </button>
-          {data.benachrichtigungen.length > 0 && (
+          {chef && data.benachrichtigungen.length > 0 && (
             <button
               onClick={clearAll}
               style={{
