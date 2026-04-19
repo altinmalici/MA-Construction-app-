@@ -120,7 +120,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 
 | ID | Task | Datei | Aufwand | Status |
 |---|---|---|---|---|
-| 3b-01 | **DokView deaktivieren** mit "In Entwicklung"-Hinweis (bis Phase 4 echte Uploads bringt) | `src/components/screens/DokView.jsx` | klein | 🔴 TODO |
+| 3b-01 | **DokView deaktivieren** mit "In Entwicklung"-Hinweis (bis Phase 4 echte Uploads bringt) | `src/components/screens/DokView.jsx` | klein | 🟢 DONE |
 | 3b-02 | Number-Inputs app-weit: `min="0"` + `inputMode="numeric/decimal"` + `Math.max(0, n)` beim Setzen | `SteView.jsx:540-568`, `RegView.jsx:471-475`, `MitForm.jsx:278-285`, `KostenView.jsx:645-652` | klein | 🔴 TODO |
 | 3b-03 | `bStd` Mitternachts-Übergang fixen (22:00→02:00 = aktuell 0 Stunden) | `src/utils/helpers.js:2-8` | klein | 🔴 TODO |
 | 3b-04 | `RegView` NaN-Bug bei altem `fahrtzeit`-Feld | `RegView.jsx:48` | klein | 🔴 TODO |
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-19 · 3b-01 · 54d530f · DokView deaktiviert: prompt-basierter Fake-Upload entfernt + In-Entwicklung-Banner; bestehende Einträge read-only
 - 2026-04-19 · 3a-07 · 10c4534 · check_pin_exists gehärtet (Option D: REVOKE anon, GRANT authenticated, SET search_path = public, extensions); Migration in Prod, Smoke-Test ok
 - 2026-04-19 · 3a-06 · 214a08d · Whitelist (status, fortschritt) für baustellen.updateField; Defense-in-depth gegen Typos/Misuse
 - 2026-04-19 · 3a-05 · 7d4a4dc · users.update filtert undefined-Felder; leeres Payload ist No-op
