@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { stripUndefined } from '../../utils/objects.js';
 
 export async function getAll() {
   const { data, error } = await supabase
@@ -21,7 +22,7 @@ export async function create(entry) {
 }
 
 export async function update(id, entry) {
-  const row = toRow(entry);
+  const row = stripUndefined(toRow(entry));
   const { error } = await supabase.from('stundeneintraege').update(row).eq('id', id);
   if (error) throw error;
 }

@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { stripUndefined } from '../../utils/objects.js';
 
 export async function getAll() {
   const { data, error } = await supabase
@@ -42,16 +43,6 @@ export async function createForOnboarding({ name, username, stundensatz, onboard
   });
   if (error) throw error;
   return data;
-}
-
-// Strips undefined fields so partial updates (e.g. only `pin`) don't write
-// NULL into name/stundensatz. Intentional `null` is preserved.
-function stripUndefined(obj) {
-  const out = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (v !== undefined) out[k] = v;
-  }
-  return out;
 }
 
 export async function update(id, { name, pin, stundensatz } = {}) {

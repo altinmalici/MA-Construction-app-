@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { stripUndefined } from '../../utils/objects.js';
 
 // Whitelist allowed for partial single-field updates via updateField().
 // Other columns (kunde, adresse, budget, details, ...) must go through
@@ -84,7 +85,7 @@ export async function create(bs) {
 
 export async function update(id, bs) {
   const { mitarbeiter, subunternehmer, ...fields } = bs;
-  const row = {
+  const row = stripUndefined({
     kunde: fields.kunde,
     adresse: fields.adresse || '',
     status: fields.status || 'geplant',
@@ -96,7 +97,7 @@ export async function update(id, bs) {
     enddatum: fields.enddatum || null,
     budget: fields.budget || 0,
     details: fields.details || {},
-  };
+  });
 
   const { error } = await supabase.from('baustellen').update(row).eq('id', id);
   if (error) throw error;
