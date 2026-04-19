@@ -49,20 +49,31 @@ export function AppProvider({ children }) {
     return () => clearInterval(t);
   }, []);
 
-  // Auth session init: Session bleibt erhalten (für schnelles PIN-Re-Entry),
-  // aber UI startet immer im Login-Screen. sessionUser füttert das
-  // "Willkommen zurück"-Greeting.
+  // Auth session init: gültige Session wird beim App-Start HART invalidiert
+  // (signOut), damit kein altes JWT silently RLS-Queries machen kann (z.B.
+  // via DevTools-Console). lastUser im localStorage bleibt erhalten, daher
+  // funktioniert der "Willkommen zurück"-Greeting weiterhin ohne sessionUser.
+  // PIN-Re-Entry läuft über loginAsUser → frischer signInWithPassword.
   useEffect(() => {
     let cancelled = false;
-    actions.auth.getCurrentUser().then(user => {
-      if (cancelled) return;
-      if (user) {
-        setSessionUser({ name: user.name, username: user.username });
+    (async () => {
+      try {
+        const user = await actions.auth.getCurrentUser();
+        if (cancelled) return;
+        if (user) {
+          await actions.auth.signOut();
+        }
+      } catch {
+        /* getCurrentUser/signOut-Fehler → wir zeigen eh Login */
+      } finally {
+        if (!cancelled) {
+          setSessionUser(null);
+          setCu(null);
+          setVRaw("login");
+          setAuthChecking(false);
+        }
       }
-      setAuthChecking(false);
-    }).catch(() => {
-      if (!cancelled) setAuthChecking(false);
-    });
+    })();
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
