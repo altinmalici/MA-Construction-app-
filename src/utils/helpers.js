@@ -40,6 +40,16 @@ export const fDat = (d) =>
 export const fK = (d) =>
   new Date(d).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
 
+// Akzeptiert deutsche ("50,5") und englische ("50.5") Dezimaleingabe.
+// Leer / ungültig → 0. Negative Werte werden auf 0 geklemmt
+// (konsistent mit 3b-02 Non-Negative-Guards).
+export const parseDecimal = (v) => {
+  if (v === null || v === undefined || v === "") return 0;
+  const s = String(v).trim().replace(",", ".");
+  const n = parseFloat(s);
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+};
+
 // Euro formatieren: "1.234,56 €"
 export const fE = (v) =>
   new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(

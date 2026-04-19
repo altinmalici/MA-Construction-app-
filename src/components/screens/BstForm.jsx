@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, Save } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { CS, BTN, IC } from "../../utils/helpers";
+import { CS, BTN, IC, parseDecimal } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 
 const BstForm = () => {
@@ -42,7 +42,7 @@ const BstForm = () => {
     }
     const bd = {
       ...f,
-      budget: f.budget ? Number(f.budget) : 0,
+      budget: parseDecimal(f.budget),
       details: {
         raeume: f.raeume,
         flaeche: f.flaeche,
@@ -311,16 +311,11 @@ const BstForm = () => {
             Budget (€)
           </label>
           <input
-            type="number"
-            min="0"
+            type="text"
             inputMode="decimal"
+            pattern="[0-9]*[.,]?[0-9]*"
             value={f.budget}
-            onChange={(e) =>
-              sF({
-                ...f,
-                budget: e.target.value.startsWith("-") ? "" : e.target.value,
-              })
-            }
+            onChange={(e) => sF({ ...f, budget: e.target.value })}
             placeholder="z.B. 50000"
             className={IC}
           />

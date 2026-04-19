@@ -1,5 +1,50 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { genPin, bStd, isInMonth, isMitarbeiterEntry } from "./helpers.js";
+import {
+  genPin,
+  bStd,
+  isInMonth,
+  isMitarbeiterEntry,
+  parseDecimal,
+} from "./helpers.js";
+
+describe("parseDecimal (Komma + Punkt)", () => {
+  it("englischer Punkt: '50.5' → 50.5", () => {
+    expect(parseDecimal("50.5")).toBe(50.5);
+  });
+  it("deutsches Komma: '50,5' → 50.5", () => {
+    expect(parseDecimal("50,5")).toBe(50.5);
+  });
+  it("vier-stelliger Komma-Wert: '50000,50' → 50000.5", () => {
+    expect(parseDecimal("50000,50")).toBe(50000.5);
+  });
+  it("Cent-Wert: '0,01' → 0.01", () => {
+    expect(parseDecimal("0,01")).toBe(0.01);
+  });
+  it("leerer String → 0", () => {
+    expect(parseDecimal("")).toBe(0);
+  });
+  it("null → 0", () => {
+    expect(parseDecimal(null)).toBe(0);
+  });
+  it("undefined → 0", () => {
+    expect(parseDecimal(undefined)).toBe(0);
+  });
+  it("Buchstaben → 0", () => {
+    expect(parseDecimal("abc")).toBe(0);
+  });
+  it("negativer String → 0 (Non-Negative-Guard)", () => {
+    expect(parseDecimal("-5")).toBe(0);
+  });
+  it("Whitespace wird getrimmt: '  12,3  ' → 12.3", () => {
+    expect(parseDecimal("  12,3  ")).toBe(12.3);
+  });
+  it("Number-Input wird durchgereicht: 45 → 45", () => {
+    expect(parseDecimal(45)).toBe(45);
+  });
+  it("Tausenderpunkt + Komma: '1.234,56' → 1.234 (dokumentiert: erstes Komma → Punkt, parseFloat stoppt am zweiten Punkt)", () => {
+    expect(parseDecimal("1.234,56")).toBe(1.234);
+  });
+});
 
 describe("isInMonth (TZ-safe Monats-Check)", () => {
   it("plain YYYY-MM-DD im richtigen Monat → true", () => {

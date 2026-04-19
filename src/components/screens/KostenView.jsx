@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry } from "../../utils/helpers";
+import { bStd, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
 import { ScreenLayout, PBar, Empty } from "../ui";
 
 const KostenView = () => {
@@ -79,13 +79,13 @@ const KostenView = () => {
         baustelleId: kf.baustelleId,
         kategorie: kf.kategorie,
         beschreibung: kf.beschreibung,
-        betrag: Number(kf.betrag),
+        betrag: parseDecimal(kf.betrag),
         datum: kf.datum,
         ersteller: cu?.id,
       });
       addN(
         "info",
-        `Kosten: ${fE(Number(kf.betrag))} – ${kf.beschreibung}`,
+        `Kosten: ${fE(parseDecimal(kf.betrag))} – ${kf.beschreibung}`,
         kf.baustelleId,
       );
       show("Kosten erfasst");
@@ -643,18 +643,11 @@ const KostenView = () => {
                 €
               </span>
               <input
-                type="number"
-                min="0"
+                type="text"
                 inputMode="decimal"
+                pattern="[0-9]*[.,]?[0-9]*"
                 value={kf.betrag}
-                onChange={(e) =>
-                  sKf({
-                    ...kf,
-                    betrag: e.target.value.startsWith("-")
-                      ? ""
-                      : e.target.value,
-                  })
-                }
+                onChange={(e) => sKf({ ...kf, betrag: e.target.value })}
                 placeholder="Betrag *"
                 className={IC}
                 style={{ background: "rgba(118,118,128,0.12)", border: "none" }}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Save, UserPlus, CheckCircle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { genUsername, genPin, IC, BTN, GREEN, CS } from "../../utils/helpers";
+import { genUsername, genPin, parseDecimal, IC, BTN, GREEN, CS } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 
 const MitForm = () => {
@@ -40,7 +40,7 @@ const MitForm = () => {
       if (ex) {
         await actions.users.update(ex.id, {
           name: n.trim(),
-          stundensatz: Number(ss) || 45,
+          stundensatz: parseDecimal(ss) || 45,
         });
         show("Gespeichert");
         setEditUser(null);
@@ -50,7 +50,7 @@ const MitForm = () => {
         await actions.users.createForOnboarding({
           name: n.trim(),
           username: un.trim().toLowerCase(),
-          stundensatz: Number(ss) || 45,
+          stundensatz: parseDecimal(ss) || 45,
           onboardingPin: pin,
         });
         setMitSummary({
@@ -276,13 +276,11 @@ const MitForm = () => {
               Stundensatz (€/h)
             </label>
             <input
-              type="number"
-              min="0"
+              type="text"
               inputMode="decimal"
+              pattern="[0-9]*[.,]?[0-9]*"
               value={ss}
-              onChange={(e) =>
-                setSs(e.target.value.startsWith("-") ? "" : e.target.value)
-              }
+              onChange={(e) => setSs(e.target.value)}
               placeholder="45"
               className={IC}
               style={{ background: "rgba(118,118,128,0.12)", border: "none" }}
