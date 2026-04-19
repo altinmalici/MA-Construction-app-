@@ -3,6 +3,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -42,6 +43,8 @@ export default defineConfig({
       workbox: {
         // Pre-Cache aller Build-Assets (versionsbasiert via Plugin).
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // stats.html aus rollup-plugin-visualizer (~1 MB Dev-Tool) raus.
+        globIgnores: ['**/stats.html'],
 
         // SPA-Routing: Reload auf beliebiger Route → /index.html.
         navigateFallback: '/index.html',
@@ -100,6 +103,13 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
       },
+    }),
+    visualizer({
+      filename: 'dist/stats.html',
+      open: false,
+      gzipSize: true,
+      brotliSize: true,
+      template: 'treemap',
     }),
   ],
   build: {
