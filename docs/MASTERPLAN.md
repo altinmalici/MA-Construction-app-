@@ -163,7 +163,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 
 ---
 
-### 🎯 Phase 4 — Supabase Storage + Foto-Architektur · Status: 🔴 TODO · geschätzt ~8-12h
+### 🎯 Phase 4 — Supabase Storage + Foto-Architektur · Status: 🟡 IN PROGRESS · geschätzt ~8-12h
 
 **Ziel:** Echte Datei-Uploads. Base64-Fotos verschwinden aus der DB. DokView wird funktional.
 
