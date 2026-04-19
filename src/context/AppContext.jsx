@@ -415,7 +415,7 @@ export function AppProvider({ children }) {
                 <div
                   style={{
                     position: "fixed",
-                    top: 16,
+                    top: "calc(env(safe-area-inset-top, 0px) + 16px)",
                     left: 0,
                     right: 0,
                     zIndex: 50,

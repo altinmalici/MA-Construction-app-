@@ -14,8 +14,8 @@ const ScreenLayout = ({ title, onBack, right, children, large }) => (
       className="app-scroll"
       style={{
         padding: title
-          ? "16px 20px 32px"
-          : "calc(var(--safe-top) + 16px) 20px 32px",
+          ? "16px 20px calc(var(--safe-bottom) + 32px)"
+          : "calc(var(--safe-top) + 16px) 20px calc(var(--safe-bottom) + 32px)",
       }}
     >
       {children}

@@ -42,6 +42,7 @@ body {
 /* Mobile safe-area: 60px fallback for browser chrome */
 :root {
   --safe-top: 60px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Native app feel */
