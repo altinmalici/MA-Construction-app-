@@ -96,7 +96,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 
 ## 5. Roadmap
 
-### 🎯 Phase 3a — Security-Sofort-Fixes · Status: 🔴 TODO · geschätzt ~4-6h
+### 🎯 Phase 3a — Security-Sofort-Fixes · Status: 🟢 DONE · geschätzt ~4-6h
 
 **Ziel:** Keine ausnutzbaren Schwachstellen mehr. Muss VOR allem anderen durch.
 
@@ -108,7 +108,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 | 3a-04 | Logout-Confirm-Modal (iOS-Style) einbauen | `src/components/screens/ProfilView.jsx:400-407` + neue `ConfirmModal`-Komponente | klein | 🟢 DONE |
 | 3a-05 | `users.update` — undefined-Felder dürfen nicht als NULL ins DB-Update gehen | `src/lib/api/users.js:47-64` | klein | 🟢 DONE |
 | 3a-06 | `baustellen.updateField` — Whitelist erlaubter Felder einführen | `src/lib/api/baustellen.js` | klein | 🟢 DONE |
-| 3a-07 | `check_pin_exists` RPC — Chef-only ODER Rate-Limit | Supabase SQL-Migration + `src/lib/api/auth.js` | mittel | 🔴 TODO |
+| 3a-07 | `check_pin_exists` RPC — Chef-only ODER Rate-Limit | Supabase SQL-Migration + `src/lib/api/auth.js` | mittel | 🟢 DONE |
 
 **Abschluss-Kriterium:** Alle 7 Tasks 🟢 DONE, `npm run build` läuft, Deploy auf Vercel ok, Altin hat Login/Logout auf Mobile getestet.
 
@@ -131,6 +131,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 | 3b-09 | Komma als Dezimaltrenner akzeptieren in Betrag/Stundensatz-Feldern | betroffene Forms | klein | 🔴 TODO |
 | 3b-10 | Auto-Seed "Testprojekt Muster GmbH" entfernen oder auf `import.meta.env.DEV` beschränken | `src/AppContext.jsx:107-138` | klein | 🔴 TODO |
 | 3b-11 | `benachrichtigungen.removeAll` — explizit User-Filter einbauen (defense-in-depth) | `src/lib/api/benachrichtigungen.js:50` | klein | 🔴 TODO |
+| 3b-12 | `stripUndefined`-Helper aus `users.js` nach `src/utils/objects.js` extrahieren und auf `baustellen.update` + `stundeneintraege.update` anwenden | `src/lib/api/baustellen.js`, `src/lib/api/stundeneintraege.js`, neuer Utils-File | klein | 🔴 TODO |
 
 **Abschluss-Kriterium:** Alle 11 Tasks 🟢 DONE, Nachtschicht-Test (22:00→02:00) zeigt korrekte Stunden, DokView zeigt klaren Hinweis, CSV-Export matched Bildschirm-Filter.
 
@@ -291,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-19 · 3a-07 · 10c4534 · check_pin_exists gehärtet (Option D: REVOKE anon, GRANT authenticated, SET search_path = public, extensions); Migration in Prod, Smoke-Test ok
 - 2026-04-19 · 3a-06 · 214a08d · Whitelist (status, fortschritt) für baustellen.updateField; Defense-in-depth gegen Typos/Misuse
 - 2026-04-19 · 3a-05 · 7d4a4dc · users.update filtert undefined-Felder; leeres Payload ist No-op
 - 2026-04-19 · 3a-04 · 30dffbc · iOS-Style ConfirmModal-Komponente + Logout-Bestätigung in ProfilView + Error-Toast bei signOut-Fail
