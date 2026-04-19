@@ -170,7 +170,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | ID | Task | Aufwand | Status |
 |---|---|---|---|
 | 4-01 | Supabase Storage Buckets einrichten (`documents`, `photos`), RLS-Policies definieren | mittel | 🟢 DONE |
-| 4-02 | Storage-Upload-Helper in `src/lib/storage.js` bauen | klein | 🔴 TODO |
+| 4-02 | Storage-Upload-Helper in `src/lib/storage.js` bauen | klein | 🟢 DONE |
 | 4-03 | DokView aktivieren: echter File-Upload + Anzeige + Download-Link | groß | 🔴 TODO |
 | 4-04 | Client-seitige Photo-Compression (Canvas resize + JPEG q=0.7, max 1600px Kante) | mittel | 🔴 TODO |
 | 4-05 | `PhotoGrid` erweitern: max 5 Fotos pro Eintrag, `alt`-Texte, Lazy-Loading, Lightbox | mittel | 🔴 TODO |
@@ -307,6 +307,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 4-02 · ddf4400 · src/lib/storage.js: uploadDocument/getDocumentUrl/deleteDocument + uploadPhoto/getPhotoUrl/getPhotoUrls/deletePhoto/deletePhotos; sanitizeFilename mit Umlaut-Mapping + Längen-Limit; +12 vitest-Szenarien
 - 2026-04-20 · 4-01 · 193277e · Storage-Buckets documents (20MB, PDF/Office) + photos (5MB, JPEG/PNG/WEBP); 6 RLS-Policies (je SELECT/INSERT/DELETE pro Bucket); 2 Helper-Functions (user_has_baustelle_access, storage_baustelle_id); Migration in Prod ausgeführt
 - 2026-04-20 · 5-10 · — · iPhone PWA-Smoke erfolgreich: Icon scharf, Standalone-Modus läuft, Offline-Shell zeigt Error-Screen korrekt. **Phase 5 komplett (10/10).**
 - 2026-04-20 · 5-09 · 5cc5921 · rollup-plugin-visualizer für dist/stats.html; Erst-Load gzip ~124 KB (Ziel <350 erreicht); kein Wildcard-Lucide-Import, keine Module-Duplikate, keine Source-Maps in Prod; pg-Removal in F-08; stats.html aus PWA-Precache ausgeschlossen
