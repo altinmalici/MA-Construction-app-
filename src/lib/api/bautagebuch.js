@@ -46,11 +46,16 @@ export async function create(entry) {
     .single();
   if (error) throw error;
 
-  // Insert anwesende
+  // Insert anwesende — bei RLS-/FK-Fehler Hauptzeile rollbacken,
+  // damit kein Waisen-Eintrag in bautagebuch zurückbleibt.
   if (anwesende?.length) {
-    await supabase.from('bautagebuch_anwesende').insert(
-      anwesende.map(uid => ({ bautagebuch_id: data.id, user_id: uid }))
-    );
+    const { error: anwErr } = await supabase
+      .from('bautagebuch_anwesende')
+      .insert(anwesende.map(uid => ({ bautagebuch_id: data.id, user_id: uid })));
+    if (anwErr) {
+      await supabase.from('bautagebuch').delete().eq('id', data.id);
+      throw anwErr;
+    }
   }
   return data.id;
 }

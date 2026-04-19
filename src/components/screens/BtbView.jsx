@@ -58,7 +58,8 @@ const BtbView = () => {
         anwesende: [],
       });
     } catch (e) {
-      show("Fehler", "error");
+      console.error("[BtbView.save]", e);
+      show(e?.message || "Fehler beim Speichern", "error");
     }
   };
   const delBtb = async (id) => {
@@ -67,7 +68,8 @@ const BtbView = () => {
         await actions.bautagebuch.remove(id);
         show("Gelöscht");
       } catch (e) {
-        show("Fehler", "error");
+        console.error("[BtbView.delBtb]", e);
+        show(e?.message || "Fehler beim Löschen", "error");
       }
     }
   };
