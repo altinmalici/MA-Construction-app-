@@ -102,6 +102,28 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Vendor-Splitting: React/Supabase/Lucide ändern sich selten
+        // → eigene Chunks → langfristiger Browser-Cache, App-Updates
+        // invalidieren nur den Main-Chunk. Function-Variante weil das
+        // statische Objekt React + jsx-runtime nicht zuverlässig matched.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('@supabase')) return 'vendor-supabase';
+          if (id.includes('lucide-react')) return 'vendor-icons';
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/scheduler/')
+          )
+            return 'vendor-react';
+          return undefined;
+        },
+      },
+    },
+  },
   test: {
     environment: 'happy-dom',
     globals: true,
