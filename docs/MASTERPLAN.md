@@ -191,7 +191,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | 5-02 | `manifest.webmanifest` erstellen (name, icons, theme_color, display) | klein | 🟢 DONE |
 | 5-03 | `apple-touch-icon` + iOS Splash-Screens | klein | 🟢 DONE |
 | 5-04 | `viewport`-Meta-Tag: `user-scalable=no` entfernen (WCAG) | klein | 🟢 DONE |
-| 5-05 | Service Worker: Cache-First für statische Assets, Stale-While-Revalidate für Daten | mittel | 🔴 TODO |
+| 5-05 | Service Worker: Cache-First für statische Assets, Stale-While-Revalidate für Daten | mittel | 🟢 DONE |
 | 5-06 | `React.lazy` für alle Screens außer Login/Dash | klein | 🔴 TODO |
 | 5-07 | `vite` `manualChunks` für Vendor-Chunks (lucide-react, supabase, recharts falls drin) | klein | 🔴 TODO |
 | 5-08 | `key={v}` aus `<Screen>`-Rendering entfernen (unnötige Remounts) | klein | 🔴 TODO |
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 5-05 · 9d58a47 · Workbox-Strategien: Supabase NetworkOnly (nie stale Daten), Google-Fonts CacheFirst, Images StaleWhileRevalidate; navigateFallback /index.html; skipWaiting+clientsClaim für stille Auto-Updates
 - 2026-04-20 · 5-04 · b5b34e6 · user-scalable=no + maximum-scale=1.0 aus viewport-Meta entfernt (WCAG 1.4.4 / BFSG); Pinch-Zoom jetzt überall möglich; iOS-Input-Auto-Zoom durch globales font-size:max(1rem,16px) bereits abgedeckt
 - 2026-04-20 · 5-03 · d69728e · PWA-Icons (192/512/512-maskable) + apple-touch-icon 180 + favicon-32 aus ma-logo.svg via sharp generiert; scripts/gen-icons.mjs für Re-Runs; iOS-Splash-Screens bewusst weggelassen (iOS 15+ generiert automatisch); Build pre-cached 16 entries
 - 2026-04-20 · 5-02 · 3a277b2 · Manifest mit name/short_name/theme_color #7C3AED/standalone/portrait/lang=de; iOS apple-mobile-web-app-* Meta-Tags (status-bar default, title, touch-icon); Icons als Referenzen (Dateien folgen in 5-03)
