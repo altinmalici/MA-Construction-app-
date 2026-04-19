@@ -1,5 +1,15 @@
 import { supabase } from '../supabase.js';
 
+// Whitelist allowed for partial single-field updates via updateField().
+// Other columns (kunde, adresse, budget, details, ...) must go through
+// the full update() with the complete edit-form payload — that's both a
+// defense-in-depth guard against typos / API misuse and an explicit
+// boundary between "quick toggles" and "full edits".
+export const BAUSTELLE_UPDATABLE_FIELDS = Object.freeze([
+  'status',
+  'fortschritt',
+]);
+
 export async function getAll() {
   // Fetch baustellen with junction tables
   const { data: bsList, error } = await supabase
@@ -95,6 +105,13 @@ export async function update(id, bs) {
 }
 
 export async function updateField(id, field, value) {
+  if (!BAUSTELLE_UPDATABLE_FIELDS.includes(field)) {
+    throw new Error(
+      `[baustellen.updateField] Field "${field}" is not in the whitelist. ` +
+      `Allowed: ${BAUSTELLE_UPDATABLE_FIELDS.join(', ')}. ` +
+      `For full updates use baustellen.update(id, data).`
+    );
+  }
   const { error } = await supabase.from('baustellen').update({ [field]: value }).eq('id', id);
   if (error) throw error;
 }
