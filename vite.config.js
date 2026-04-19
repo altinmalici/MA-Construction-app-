@@ -40,8 +40,65 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Pre-Cache der Build-Assets; differenzierte Strategien in Task 5-05.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Pre-Cache aller Build-Assets (versionsbasiert via Plugin).
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+
+        // SPA-Routing: Reload auf beliebiger Route → /index.html.
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /\.(png|jpg|jpeg|svg|webp|gif)$/,
+        ],
+
+        // Runtime-Caching für dynamische Requests.
+        runtimeCaching: [
+          // 1. Supabase: NIE cachen — Stunden, Kosten, Mängel müssen frisch
+          //    sein. Offline → Error (3c-SPINNER zeigt App-Level-Screen).
+          {
+            urlPattern: /^https:\/\/[a-z0-9]+\.supabase\.co\/.*/i,
+            handler: 'NetworkOnly',
+          },
+          // 2. Google-Fonts CSS: SWR (ändert sich praktisch nie).
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'google-fonts-stylesheets' },
+          },
+          // 3. Google-Fonts woff2: CacheFirst, 1 Jahr.
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // 4. Bilder (spätere Storage-URLs): SWR, 30 Tage.
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'images',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
+          },
+        ],
+
+        // Alte SW-Versionen beim Aktivieren entsorgen.
+        cleanupOutdatedCaches: true,
+        // Update-UI bewusst nicht implementiert: skipWaiting+clientsClaim
+        // übernimmt neue Versionen stillschweigend beim nächsten Load. Falls
+        // später ein "App aktualisiert — neu laden?"-Toast gewünscht:
+        // registerType: 'prompt' + useRegisterSW-Hook aus virtual:pwa-register/react.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
