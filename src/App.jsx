@@ -50,7 +50,10 @@ function AppRouter() {
   return (
     <>
       <div style={{ flex: 1, minHeight: 0 }}>
-        <div key={v} className="view-fade">
+        {/* kein key={v}: Tab-Wechsel ohne Remount → lokaler Screen-State
+            (Monats-Nav, Form-State, useSaving-Mount-Ref) bleibt erhalten.
+            view-fade triggert nur beim ersten Mount. */}
+        <div className="view-fade">
           <Suspense fallback={<ScreenLoader />}>
             {v === "login" && <Login />}
             {v === "dash" && <Dash />}
