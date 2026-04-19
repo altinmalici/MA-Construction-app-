@@ -135,9 +135,10 @@ export function AppProvider({ children }) {
       backgroundSinceRef.current = null;
     };
   }, [cu]);
-  // Seed: Testbaustelle
+  // Seed: Testbaustelle (NUR Dev-Env, um leere Prod-DB nicht zu überraschen)
   const seededRef = useRef(false);
   useEffect(() => {
+    if (!import.meta.env.DEV) return;
     if (loading || seededRef.current || data.baustellen.length > 0) return;
     seededRef.current = true;
     const chefUser = data.users.find((u) => u.role === "chef");
@@ -165,7 +166,7 @@ export function AppProvider({ children }) {
         mitarbeiter: chefUser ? [chefUser.id] : [],
         subunternehmer: [],
       })
-      .then(() => console.log("Testbaustelle angelegt"))
+      .then(() => console.log("Testbaustelle angelegt (DEV)"))
       .catch((e) => console.error("Seed fehlgeschlagen:", e));
   }, [loading, data.baustellen.length]);
 
