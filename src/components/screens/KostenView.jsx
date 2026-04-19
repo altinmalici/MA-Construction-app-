@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
-import { ScreenLayout, PBar, Empty, Spinner, ConfirmModal } from "../ui";
+import { ScreenLayout, PBar, Empty, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const KostenView = () => {
@@ -522,17 +522,13 @@ const KostenView = () => {
                     <span style={{ fontWeight: 600, color: "#000" }}>
                       {fE(k.betrag)}
                     </span>
-                    <button
+                    <IconButton
+                      icon={Trash2}
+                      variant="subtle"
+                      iconSize={16}
                       onClick={() => delKost(k.id)}
-                      style={{
-                        padding: 8,
-                        color: "#c7c7cc",
-                        background: "none",
-                        border: "none",
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                      ariaLabel="Kosten löschen"
+                    />
                   </div>
                 </div>
               ))
@@ -560,33 +556,18 @@ const KostenView = () => {
       onBack={goBack}
       right={
         <div style={{ display: "flex", gap: 8 }}>
-          <button
+          <IconButton
+            icon={sf ? X : Plus}
+            variant={sf ? "default" : "primary"}
             onClick={() => setSf(!sf)}
-            style={{
-              padding: 8,
-              borderRadius: 10,
-              background: sf ? "rgba(0,0,0,0.05)" : BTN,
-              border: "none",
-            }}
-          >
-            {sf ? (
-              <X size={18} style={{ color: "#3c3c43" }} />
-            ) : (
-              <Plus size={18} style={{ color: "white" }} />
-            )}
-          </button>
-          <button
+            ariaLabel={sf ? "Schließen" : "Kosten erfassen"}
+          />
+          <IconButton
+            icon={Download}
+            variant="default"
             onClick={exportCSV}
-            style={{
-              padding: 8,
-              borderRadius: 10,
-              color: "#8e8e93",
-              background: "rgba(0,0,0,0.05)",
-              border: "none",
-            }}
-          >
-            <Download size={18} />
-          </button>
+            ariaLabel="CSV exportieren"
+          />
         </div>
       }
     >

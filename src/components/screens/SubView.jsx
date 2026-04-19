@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, X, Briefcase, Phone, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { IC, BTN, CS } from "../../utils/helpers";
-import { Empty, Bdg, ScreenLayout, Spinner, ConfirmModal } from "../ui";
+import { Empty, Bdg, ScreenLayout, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const SubView = () => {
@@ -53,22 +53,12 @@ const SubView = () => {
       title="Subunternehmer"
       onBack={goBack}
       right={
-        <button
+        <IconButton
+          icon={sf ? X : Plus}
+          variant={sf ? "default" : "primary"}
           onClick={() => setSf(!sf)}
-          style={{
-            padding: 8,
-            borderRadius: 10,
-            background: sf ? "rgba(0,0,0,0.05)" : BTN,
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          {sf ? (
-            <X size={18} style={{ color: "#3c3c43" }} />
-          ) : (
-            <Plus size={18} style={{ color: "white" }} />
-          )}
-        </button>
+          ariaLabel={sf ? "Schließen" : "Subunternehmer anlegen"}
+        />
       }
     >
       {sf && (
@@ -176,17 +166,13 @@ const SubView = () => {
                     <p style={{ fontSize: 15, color: "#000" }}>{s.name}</p>
                     <p style={{ fontSize: 13, color: "#8e8e93" }}>{s.gewerk}</p>
                   </div>
-                  <button
+                  <IconButton
+                    icon={Trash2}
+                    variant="subtle"
+                    iconSize={16}
                     onClick={() => del(s.id)}
-                    style={{
-                      padding: 8,
-                      color: "#c7c7cc",
-                      background: "none",
-                      border: "none",
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                    ariaLabel="Subunternehmer löschen"
+                  />
                 </div>
                 {s.telefon && (
                   <div

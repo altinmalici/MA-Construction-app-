@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, X, Save, ClipboardList, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fDat, IC, BTN, RED, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout, Spinner, ConfirmModal } from "../ui";
+import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const BtbView = () => {
@@ -85,22 +85,12 @@ const BtbView = () => {
       onBack={goBack}
       right={
         chef && (
-          <button
+          <IconButton
+            icon={sf ? X : Plus}
+            variant={sf ? "default" : "primary"}
             onClick={() => setSf(!sf)}
-            style={{
-              padding: 8,
-              borderRadius: 10,
-              background: sf ? "rgba(0,0,0,0.05)" : BTN,
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            {sf ? (
-              <X size={18} style={{ color: "#3c3c43" }} />
-            ) : (
-              <Plus size={18} style={{ color: "white" }} />
-            )}
-          </button>
+            ariaLabel={sf ? "Schließen" : "Eintrag erstellen"}
+          />
         )
       }
     >
@@ -247,17 +237,13 @@ const BtbView = () => {
                     </p>
                   </div>
                   {chef && (
-                    <button
+                    <IconButton
+                      icon={Trash2}
+                      variant="subtle"
+                      iconSize={16}
                       onClick={() => delBtb(e.id)}
-                      style={{
-                        padding: 8,
-                        color: "#c7c7cc",
-                        background: "none",
-                        border: "none",
-                      }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                      ariaLabel="Eintrag löschen"
+                    />
                   )}
                 </div>
                 <p style={{ fontSize: 13, color: "#3c3c43", marginBottom: 4 }}>

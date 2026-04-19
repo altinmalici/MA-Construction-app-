@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, fK, P, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
-import { ScreenLayout, Empty } from "../ui";
+import { ScreenLayout, Empty, IconButton } from "../ui";
 
 const StundenUebersicht = () => {
   const { data, cu, goBack } = useApp();
@@ -100,42 +100,26 @@ const StundenUebersicht = () => {
           justifyContent: "space-between",
         }}
       >
-        <button
+        <IconButton
+          icon={ChevronLeft}
+          variant="default"
           onClick={pv}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(0,0,0,0.04)",
-            border: "none",
-          }}
-        >
-          <ChevronLeft size={18} style={{ color: "#8e8e93" }} />
-        </button>
+          ariaLabel="Vorheriger Monat"
+          style={{ borderRadius: 22 }}
+        />
         <span style={{ fontSize: 17, fontWeight: 600, color: "#000" }}>
           {new Date(jr, mo).toLocaleDateString("de-DE", {
             month: "long",
             year: "numeric",
           })}
         </span>
-        <button
+        <IconButton
+          icon={ChevronRight}
+          variant="default"
           onClick={nx}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(0,0,0,0.04)",
-            border: "none",
-          }}
-        >
-          <ChevronRight size={18} style={{ color: "#8e8e93" }} />
-        </button>
+          ariaLabel="Nächster Monat"
+          style={{ borderRadius: 22 }}
+        />
       </div>
       {/* KPI */}
       <div

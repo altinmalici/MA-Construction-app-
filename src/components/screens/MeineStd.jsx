@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, fDat, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
-import { ScreenLayout, Empty } from "../ui";
+import { ScreenLayout, Empty, IconButton } from "../ui";
 
 const MeineStd = () => {
   const { data, cu, goBack } = useApp();
@@ -61,34 +61,24 @@ const MeineStd = () => {
         className="flex items-center justify-between"
         style={{ marginBottom: 12 }}
       >
-        <button
+        <IconButton
+          icon={ChevronLeft}
+          variant="subtle"
           onClick={pv}
-          style={{
-            padding: 8,
-            color: "#8e8e93",
-            background: "none",
-            border: "none",
-          }}
-        >
-          <ChevronLeft size={18} />
-        </button>
+          ariaLabel="Vorheriger Monat"
+        />
         <h2 style={{ fontSize: 17, fontWeight: 600, color: "#000" }}>
           {new Date(jr, mo).toLocaleDateString("de-DE", {
             month: "long",
             year: "numeric",
           })}
         </h2>
-        <button
+        <IconButton
+          icon={ChevronRight}
+          variant="subtle"
           onClick={nx}
-          style={{
-            padding: 8,
-            color: "#8e8e93",
-            background: "none",
-            border: "none",
-          }}
-        >
-          <ChevronRight size={18} />
-        </button>
+          ariaLabel="Nächster Monat"
+        />
       </div>
       <div
         style={{
