@@ -104,7 +104,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 |---|---|---|---|---|
 | 3a-01 | `Math.random` → `crypto.getRandomValues` für Onboarding-PIN-Generierung | `src/utils/helpers.js` | klein | 🟢 DONE |
 | 3a-02 | `supabase.js` fail-fast bei fehlenden Env-Vars (statt silent fallback) | `src/lib/supabase.js` | klein | 🟢 DONE |
-| 3a-03 | Auth `signOut + signIn` durch `updateUser` ersetzen wo möglich | `src/lib/api/auth.js` | klein | 🔴 TODO |
+| 3a-03 | Auth `signOut + signIn` durch `updateUser` ersetzen wo möglich | `src/lib/api/auth.js` | klein | 🟢 DONE |
 | 3a-04 | Logout-Confirm-Modal (iOS-Style) einbauen | `src/components/screens/ProfilView.jsx:400-407` + neue `ConfirmModal`-Komponente | klein | 🔴 TODO |
 | 3a-05 | `users.update` — undefined-Felder dürfen nicht als NULL ins DB-Update gehen | `src/lib/api/users.js:47-64` | klein | 🔴 TODO |
 | 3a-06 | `baustellen.updateField` — Whitelist erlaubter Felder einführen | `src/lib/api/baustellen.js` | klein | 🔴 TODO |
@@ -291,6 +291,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-19 · 3a-03 · 21bb52b · updateUser statt signOut+signIn für Credential-Changes in completeOnboarding + reAuthWithPin
 - 2026-04-19 · 3a-02 · 23497ae · Fail-fast Guard für fehlende Supabase Env-Vars (+ .env.example, vitest-Coverage)
 - 2026-04-19 · 3a-01 · d1ce650 · Math.random durch crypto.getRandomValues für PIN-Generierung ersetzt (+ vitest-Coverage)
 
