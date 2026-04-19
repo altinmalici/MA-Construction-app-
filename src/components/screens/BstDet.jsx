@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ChevronLeft,
   Edit3,
@@ -16,9 +16,23 @@ const BstDet = () => {
   const { sb, data, chef, goBack, actions, show, nav, setEm, eName } =
     useApp();
   const b = sb;
+  const fr = b ? data.baustellen.find((x) => x.id === b.id) || b : null;
+  // Alle Hooks VOR dem early-return — rules-of-hooks.
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Optimistic Slider-State: zeigt sofort den neuen Wert, ohne auf DB-Round-Trip
+  // zu warten. pendingRef verhindert dass useEffect uns während Drag überschreibt.
+  const [sliderVal, setSliderVal] = useState(fr?.fortschritt || 0);
+  const debounceRef = useRef(null);
+  const pendingRef = useRef(false);
+  useEffect(() => {
+    if (!pendingRef.current) setSliderVal(fr?.fortschritt || 0);
+  }, [fr?.fortschritt]);
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
   if (!b) return null;
-  const fr = data.baustellen.find((x) => x.id === b.id) || b;
   const ei = data.stundeneintraege.filter((e) => e.baustelleId === b.id);
   const mg = data.maengel.filter((m) => m.baustelleId === b.id);
   const del = () => setConfirmDelete(true);
@@ -124,23 +138,32 @@ const BstDet = () => {
         >
           <span style={{ fontSize: 13, color: "#8e8e93" }}>Baufortschritt</span>
           <span style={{ fontSize: 15, fontWeight: 700, color: "#000" }}>
-            {fr.fortschritt || 0}%
+            {sliderVal}%
           </span>
         </div>
-        <PBar value={fr.fortschritt || 0} />
+        <PBar value={sliderVal} />
         {chef && (
           <input
             type="range"
             min="0"
             max="100"
-            value={fr.fortschritt || 0}
-            onChange={async (e) => {
+            value={sliderVal}
+            onChange={(e) => {
               const val = Number(e.target.value);
-              try {
-                await actions.baustellen.update(b.id, { fortschritt: val });
-              } catch (err) {
-                show("Fehler", "error");
-              }
+              setSliderVal(val);
+              pendingRef.current = true;
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(async () => {
+                try {
+                  await actions.baustellen.update(b.id, { fortschritt: val });
+                } catch (err) {
+                  console.error("[BstDet.slider]", err);
+                  show(err?.message || "Fehler beim Speichern", "error");
+                  setSliderVal(fr.fortschritt || 0);
+                } finally {
+                  pendingRef.current = false;
+                }
+              }, 400);
             }}
             style={{
               width: "100%",
