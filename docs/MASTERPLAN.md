@@ -130,7 +130,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 | 3b-08 | `RegView` Inline-Edits: entweder per `stundeneintraege.update` persistieren ODER klar als "nur für Bericht" labeln | `RegView.jsx:13, 28-32, 113-115` | mittel | 🟢 DONE |
 | 3b-09 | Komma als Dezimaltrenner akzeptieren in Betrag/Stundensatz-Feldern | betroffene Forms | klein | 🟢 DONE |
 | 3b-10 | Auto-Seed "Testprojekt Muster GmbH" entfernen oder auf `import.meta.env.DEV` beschränken | `src/AppContext.jsx:107-138` | klein | 🟢 DONE |
-| 3b-11 | `benachrichtigungen.removeAll` — explizit User-Filter einbauen (defense-in-depth) | `src/lib/api/benachrichtigungen.js:50` | klein | 🔴 TODO |
+| 3b-11 | `benachrichtigungen.removeAll` — explizit User-Filter einbauen (defense-in-depth) | `src/lib/api/benachrichtigungen.js:50` | klein | 🟢 DONE |
 | 3b-12 | `stripUndefined`-Helper aus `users.js` nach `src/utils/objects.js` extrahieren und auf `baustellen.update` + `stundeneintraege.update` anwenden | `src/lib/api/baustellen.js`, `src/lib/api/stundeneintraege.js`, neuer Utils-File | klein | 🔴 TODO |
 
 **Abschluss-Kriterium:** Alle 11 Tasks 🟢 DONE, Nachtschicht-Test (22:00→02:00) zeigt korrekte Stunden, DokView zeigt klaren Hinweis, CSV-Export matched Bildschirm-Filter.
@@ -292,6 +292,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-19 · 3b-11 · 5bf0d43 · benachrichtigungen.removeAll durch Chef-Guard im Aufrufer abgesichert (Schema hat kein user_id, Benachrichtigungen sind shared); 'Alle löschen'-Button nur für Chef gerendert
 - 2026-04-19 · 3b-10 · 7c00c45 · Auto-Seed "Testprojekt Muster GmbH" nur noch in Dev-Env (import.meta.env.DEV-Guard); Prod bleibt unberührt
 - 2026-04-19 · 3b-09 · 2067b06 · parseDecimal-Helper akzeptiert Komma + Punkt; 3 Dezimal-Inputs (Stundensatz/Betrag/Budget) auf type=text/inputMode=decimal umgestellt; MitForm/KostenView/BstForm Save-Handler DRY; +12 vitest-Szenarien
 - 2026-04-19 · 3b-08 · 750c5cd · RegView: beginn/ende/pause-Edits werden vor dem Druck per stundeneintraege.update persistiert; Fehler-Pfad bricht Druck ab; bemerkung bleibt transient (keine DB-Spalte)
