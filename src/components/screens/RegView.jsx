@@ -5,7 +5,7 @@ import { bStd, fDat, escHtml, G, BTN, IC, CS } from "../../utils/helpers";
 import { ScreenLayout, SigPad, TimePicker } from "../ui";
 
 const RegView = () => {
-  const { data, goBack, show, eName } = useApp();
+  const { data, actions, goBack, show, eName } = useApp();
   const [sd, setSd] = useState(new Date().toISOString().split("T")[0]);
   const [bi, sBi] = useState(data.baustellen[0]?.id || "");
   const [sig, sSig] = useState(null);
@@ -39,6 +39,13 @@ const RegView = () => {
       ed.pause !== e.pause ||
       (ed.bemerkung && ed.bemerkung !== "")
     );
+  };
+  // True wenn beginn/ende/pause vs. Original abweicht.
+  // bemerkung wird ignoriert (keine DB-Spalte, transient nur für Bericht).
+  const hasDbChange = (e) => {
+    const ed = edits[e.id];
+    if (!ed) return false;
+    return ed.beginn !== e.beginn || ed.ende !== e.ende || ed.pause !== e.pause;
   };
   const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
   const gh = te.reduce((s, e) => {
@@ -116,9 +123,37 @@ const RegView = () => {
   // Druckt nur den Bericht (nicht die App-UI). Hidden iframe statt window.open
   // — letzteres lässt sich auf iOS in der PWA praktisch nicht mehr schließen.
   const printingRef = useRef(false);
-  const doPrint = () => {
+  const doPrint = async () => {
     if (printingRef.current) return;
     printingRef.current = true;
+
+    // 1) Korrekturen persistieren BEVOR gedruckt wird. Bei Fehler: kein Druck
+    //    mit fraglichem Stand. Merge mit Original-Eintrag, damit keine anderen
+    //    Felder (arbeit, material, fotos, ...) überschrieben werden.
+    const edited = te.filter(hasDbChange);
+    if (edited.length > 0) {
+      try {
+        for (const e of edited) {
+          const v = getVal(e);
+          await actions.stundeneintraege.update(e.id, {
+            ...e,
+            beginn: v.beginn,
+            ende: v.ende,
+            pause: v.pause,
+          });
+        }
+        show(
+          `${edited.length} Korrektur${edited.length === 1 ? "" : "en"} gespeichert`,
+        );
+      } catch {
+        printingRef.current = false;
+        show("Fehler beim Speichern — Druck abgebrochen", "error");
+        return;
+      }
+    }
+
+    // 2) Druckfenster öffnen. pdfHtml() liest hier noch über getVal() die
+    //    Edit-Werte; setEdits({}) folgt erst danach, damit das Snapshot stimmt.
     const html = pdfHtml();
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
@@ -154,6 +189,10 @@ const RegView = () => {
       // Fallback falls onafterprint nicht feuert (Safari).
       setTimeout(cleanup, 60000);
     }, 200);
+
+    // 3) Edits leeren — DB ist die Source of Truth jetzt. Der reload aus
+    //    actions.stundeneintraege.update hat te bereits aktualisiert.
+    setEdits({});
   };
   const doShare = async () => {
     const title = `Regiebericht ${fDat(sd)}`;
