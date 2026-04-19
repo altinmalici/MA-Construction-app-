@@ -1,10 +1,14 @@
-// Stunden berechnen: Beginn, Ende, Pause → Dezimalstunden
+// Stunden berechnen: Beginn, Ende, Pause → Dezimalstunden.
+// Nachtschicht-tauglich: wenn Ende <= Beginn (z.B. 22:00→02:00), wird die
+// Differenz auf den Folgetag bezogen (+24h). Math.max(0, …) verhindert
+// negative Stunden, falls Pause > Schichtlänge ist.
 export const bStd = (b, e, p) => {
   if (!b || !e) return "0.0";
   const [bH, bM] = b.split(":").map(Number);
   const [eH, eM] = e.split(":").map(Number);
-  const r = (eH * 60 + eM - bH * 60 - bM - (p || 0)) / 60;
-  return r < 0 ? "0.0" : r.toFixed(1);
+  const rawDiff = eH * 60 + eM - (bH * 60 + bM);
+  const diff = rawDiff < 0 ? rawDiff + 1440 : rawDiff;
+  return Math.max(0, (diff - (p || 0)) / 60).toFixed(1);
 };
 
 // Datum lang formatieren: "Mo, 03.04.2026"
