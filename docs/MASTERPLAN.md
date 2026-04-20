@@ -171,9 +171,17 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 
 ---
 
-### 🎯 Phase 4 — Supabase Storage + Foto-Architektur · Status: 🟡 IN PROGRESS · geschätzt ~8-12h
+### 🎯 Phase 4 — Supabase Storage + Foto-Architektur · Status: 🟢 DONE · geschätzt ~8-12h
 
-**Ziel:** Echte Datei-Uploads. Base64-Fotos verschwinden aus der DB. DokView wird funktional.
+**Bilanz Phase 4 (7/7):** Echte Datei-Uploads live. Base64-Fotos aus DB raus, Storage-Pfade als Single-Source-of-Truth. DokView funktional. Junction-Sync atomar.
+
+- 2 neue Storage-Buckets (`documents`, `photos`) mit 6 RLS-Policies + 2 Helper-Functions
+- 2 neue Postgres-Functions: `storage_baustelle_id`, `sync_baustelle_junctions` (SECURITY DEFINER, Chef-Gate)
+- 1 neue Spalte (`dokumente.storage_path`), 0 Spalten-TYPE-Änderungen (fotos[] bleibt `TEXT[]`, Inhalt von Base64 → Pfad migriert)
+- 5 neue Frontend-Module/Komponenten: `lib/storage.js`, `utils/image.js`, `Lightbox.jsx`, `PhotoGrid` (hybrid refactored), `scripts/migrate-photos-to-storage.mjs`
+- Foto-Pipeline: File → Canvas-Compress (1600px, q=0.7) → `{blob, previewDataUrl}` → upload-on-save → Storage-Pfad
+- 3 Prod-Fotos (~6.5 MB) erfolgreich migriert, 0 Base64-Einträge verbleibend
+- 3 UI-Bugs aus Verifikation in §4 dokumentiert (Stundenliste-Click, DokView-Spinner, Eintrag-Count-Mismatch) — geplant für Folge-Task
 
 | ID | Task | Aufwand | Status |
 |---|---|---|---|
@@ -183,9 +191,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | 4-04 | Client-seitige Photo-Compression (Canvas resize + JPEG q=0.7, max 1600px Kante) | mittel | 🟢 DONE |
 | 4-05 | `PhotoGrid` erweitern: max 5 Fotos pro Eintrag, `alt`-Texte, Lazy-Loading, Lightbox | mittel | 🟢 DONE |
 | 4-06 | Migration: bestehende Base64-Fotos in Storage umziehen (Migrations-Script + DB-Spalten-Umstellung) | groß | 🟢 DONE |
-| 4-07 | Junction-Sync atomar als RPC (Paket F Vorziehen, da Photo-Junctions betroffen) | mittel | 🔴 TODO |
-
-**Abschluss-Kriterium:** Alle Tasks 🟢 DONE. DB-Table-Size für `maengel` / `stundeneintraege` deutlich reduziert. DokView funktional.
+| 4-07 | Junction-Sync atomar als RPC (Paket F Vorziehen, da Photo-Junctions betroffen) | mittel | 🟢 DONE |
 
 ---
 
@@ -315,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 4-07 · 26341cb+30f3124 · sync_baustelle_junctions RPC (PL/pgSQL, SECURITY DEFINER, Chef-only via is_chef-Gate, ON CONFLICT DO NOTHING bei INSERTs); baustellen.syncJunctions ruft jetzt RPC statt 4 separate Queries (2x DELETE + 2x INSERT) — atomar mit Rollback bei Fehler. Behoben: zwischen DELETE und INSERT konnte ein Netz-Abbruch eine Baustelle ohne Mitarbeiter-Zuordnungen hinterlassen. **Phase 4 komplett (7/7).**
 - 2026-04-20 · 4-06 · 921ef6b · scripts/migrate-photos-to-storage.mjs (idempotentes Node-Skript, Service-Role-Key, Default Dry-Run, Real-Run via --apply); Pfad-Konvention {baustelle_id}/{entity}/{row_id}/{uuid}.{ext}; Migration in Prod ausgeführt: 0 maengel, 3 stundeneintraege-Fotos (~6.5 MB) erfolgreich nach Storage umgezogen, 0 failed; Re-Run-Verifikation: 0 verbleibende Base64-Einträge in DB; Spalten-TYPE bleibt TEXT[] (Inhalt wechselt nur Format); +7 Vitest-Szenarien für isBase64 + dataUrlToBuffer
 - 2026-04-20 · 4-05 · d818b10+fc6b675+2b81788 · PhotoGrid hybrid (Base64-Legacy + Storage-Pfade + lokale {blob,previewDataUrl}-Objekte); batch-signed URLs via getPhotoUrls; loading="lazy" + alt-Attribute; integrierte Lightbox (ESC/Backdrop-Tap, body-scroll-Lock); maxFotos=5; AppContext.onFile liefert {blob,previewDataUrl} statt DataURL; MngView+SteView Upload-on-Save (Szenario B): pre-insert UUID via crypto.randomUUID, parallel Blob-Upload, dann Row-Insert mit Storage-Pfaden — atomar; maengel.remove löscht Storage-Fotos vor Row-Delete (Cleanup-Fehler nicht blockierend); maengel/stundeneintraege akzeptieren m.id für pre-insert-Pattern
 - 2026-04-20 · 4-04 · 13aaf7e · compressImage-Helper (Canvas longest-side 1600px, JPEG q=0.7); AppContext.onFile pipe'd durch Compression vor Base64-DataURL; ~90% Größen-Reduktion bei iPhone-Originalfotos; API-kompatibel (PhotoGrid erwartet weiter DataURL — 4-05 stellt auf Blob/Storage um); +5 vitest-Szenarien
