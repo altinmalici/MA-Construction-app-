@@ -123,16 +123,17 @@ export async function remove(id) {
 }
 
 async function syncJunctions(baustelleId, mitarbeiterIds, subIds) {
-  // Clear old
-  await Promise.all([
-    supabase.from('baustellen_mitarbeiter').delete().eq('baustelle_id', baustelleId),
-    supabase.from('baustellen_subunternehmer').delete().eq('baustelle_id', baustelleId),
-  ]);
-  // Insert new
-  const mitRows = mitarbeiterIds.map(uid => ({ baustelle_id: baustelleId, user_id: uid }));
-  const subRows = subIds.map(sid => ({ baustelle_id: baustelleId, sub_id: sid }));
-  if (mitRows.length) await supabase.from('baustellen_mitarbeiter').insert(mitRows);
-  if (subRows.length) await supabase.from('baustellen_subunternehmer').insert(subRows);
+  // Atomar: ein RPC-Call, der DELETE + INSERT für beide Junctions
+  // (mitarbeiter + sub) in einer Postgres-Transaktion fährt. Vorher
+  // 4 separate Queries — bei Netz-Abbruch zwischen DELETE und INSERT
+  // landete die Baustelle ohne Zuordnungen → Mitarbeiter verlor still
+  // den Zugriff.
+  const { error } = await supabase.rpc('sync_baustelle_junctions', {
+    p_baustelle_id: baustelleId,
+    p_mitarbeiter_ids: mitarbeiterIds || [],
+    p_sub_ids: subIds || [],
+  });
+  if (error) throw error;
 }
 
 export async function removeMitarbeiterFromAll(userId) {
