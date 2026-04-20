@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { fK, IC, BTN, CS, P, RED, GREEN } from "../../utils/helpers";
 import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
+import { uploadPhoto } from "../../lib/storage";
 
 const MngView = () => {
   const { sb, chef, cu, data, actions, show, goBack, trigPhoto, addN } =
@@ -46,7 +47,25 @@ const MngView = () => {
         return;
       }
       try {
+        // Atomar: Foto-Upload VOR dem Row-Insert. Wenn Upload fehlschlägt,
+        // entsteht keine verwaiste maengel-Row. Pre-insert UUID, damit der
+        // Storage-Pfad die endgültige mangelId enthält.
+        const mangelId = crypto.randomUUID();
+        const existing = [];
+        const blobs = [];
+        for (const f of mf.fotos) {
+          if (typeof f === "string") existing.push(f);
+          else if (f && f.blob) blobs.push(f);
+        }
+        const uploaded = await Promise.all(
+          blobs.map((p) =>
+            uploadPhoto(p.blob, mf.baustelleId, "maengel", mangelId),
+          ),
+        );
+        const fotos = [...existing, ...uploaded.map((u) => u.path)];
+
         await actions.maengel.create({
+          id: mangelId,
           baustelleId: mf.baustelleId,
           titel: mf.titel,
           beschreibung: mf.beschreibung,
@@ -55,7 +74,7 @@ const MngView = () => {
           zustaendig: mf.zustaendig || null,
           erstelltAm: new Date().toISOString().split("T")[0],
           frist: mf.frist,
-          fotos: mf.fotos,
+          fotos,
         });
         addN("mangel", `Mangel: ${mf.titel}`, mf.baustelleId);
         show("Erfasst");
@@ -394,19 +413,8 @@ const MngView = () => {
                   )}
                 </div>
                 {m.fotos?.length > 0 && (
-                  <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
-                    {m.fotos.map((f, i) => (
-                      <img
-                        key={i}
-                        src={f}
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 8,
-                          objectFit: "cover",
-                        }}
-                      />
-                    ))}
+                  <div style={{ marginTop: 6 }}>
+                    <PhotoGrid fotos={m.fotos} />
                   </div>
                 )}
               </div>

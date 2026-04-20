@@ -207,16 +207,17 @@ export function AppProvider({ children }) {
     setPhotoCb(() => cb);
     fileRef.current?.click();
   };
-  // Foto-Pipeline: File → Canvas-Compress (1600px, q=0.7) → Base64-DataURL.
-  // PhotoGrid erwartet weiter DataURL — Storage-Migration kommt in 4-05.
+  // Foto-Pipeline: File → Canvas-Compress (1600px, q=0.7) → {blob, previewDataUrl}.
+  // PhotoGrid rendert previewDataUrl sofort. Konsumenten (MngView/SteView)
+  // uploaden den blob erst beim Save und ersetzen ihn durch den Storage-Pfad.
   const onFile = async (e) => {
     const f = e.target.files?.[0];
     e.target.value = "";
     if (!f) return;
     try {
-      const compressed = await compressImage(f);
-      const dataUrl = await blobToDataURL(compressed);
-      if (photoCb) photoCb(dataUrl);
+      const blob = await compressImage(f);
+      const previewDataUrl = await blobToDataURL(blob);
+      if (photoCb) photoCb({ blob, previewDataUrl });
     } catch (err) {
       console.error("[AppContext.onFile]", err);
       show(err?.message || "Foto konnte nicht verarbeitet werden", "error");

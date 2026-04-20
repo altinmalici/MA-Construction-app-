@@ -11,6 +11,8 @@ export async function getAll() {
 
 export async function create(m) {
   const row = {
+    // Pre-insert UUID erlaubt Foto-Upload mit korrektem Pfad VOR dem Insert.
+    ...(m.id ? { id: m.id } : {}),
     baustelle_id: m.baustelleId,
     titel: m.titel,
     beschreibung: m.beschreibung || '',
