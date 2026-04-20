@@ -92,6 +92,14 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 - 🟢 ~~"Willkommen zurück" macht globalen PIN-Lookup statt User-spezifischer Validation~~ → gelöst in 3c-LOGIN (loginAsUser, schon seit Phase 3 Prompt 1)
 - 🟢 ~~PIN-Re-Entry nach 120s Background (visibilitychange API) fehlt~~ → gelöst in 3c-LOGIN (BACKGROUND_LOCK_MS=120s, schon seit Phase 3 Bug-4-Rework); App-Start-Härtung via signOut neu in 3c-LOGIN
 
+### Phase 4 Beobachtungen (Follow-up nach Phase 4 abschließen)
+
+Während der UI-Verifikation von 4-06 entdeckt — Fixes bewusst nach Phase 4 gepusht, um den Storage-Migrations-Track nicht zu brechen:
+
+- 🔴 **Stundeneinträge in „Stundenübersicht" nicht anklickbar** → kein Detail-View mit Foto-Anzeige. Feature-Gap, hat 4-06-UI-Verifikation indirekt blockiert (Fotos sind in DB als Pfade, aber kein Screen rendert sie). Fix wahrscheinlich `SteView.jsx` (Listen-Item → onClick → Detail-Drawer).
+- 🔴 **DokView Download-Button hängt in „Lädt..."** (Regression aus 4-03). Vermutlich `getDocumentUrl` returnt zwar URL, aber `window.open` oder das Loading-Flag wird nicht zurückgesetzt. Repro: Dokument anklicken → State bleibt im Spinner.
+- 🔴 **Stundenübersicht zeigt „6 Einträge" aber rendert nur 3** (Pagination-Bug?). Header-Count und gerendertes Array divergieren — vermutlich Filter-Mismatch (z.B. nur eigene Einträge gerendert, alle gezählt) oder ein abgeschnittenes `.slice(0, 3)`.
+
 ---
 
 ## 5. Roadmap
