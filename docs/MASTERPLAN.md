@@ -172,7 +172,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | 4-01 | Supabase Storage Buckets einrichten (`documents`, `photos`), RLS-Policies definieren | mittel | 🟢 DONE |
 | 4-02 | Storage-Upload-Helper in `src/lib/storage.js` bauen | klein | 🟢 DONE |
 | 4-03 | DokView aktivieren: echter File-Upload + Anzeige + Download-Link | groß | 🟢 DONE |
-| 4-04 | Client-seitige Photo-Compression (Canvas resize + JPEG q=0.7, max 1600px Kante) | mittel | 🔴 TODO |
+| 4-04 | Client-seitige Photo-Compression (Canvas resize + JPEG q=0.7, max 1600px Kante) | mittel | 🟢 DONE |
 | 4-05 | `PhotoGrid` erweitern: max 5 Fotos pro Eintrag, `alt`-Texte, Lazy-Loading, Lightbox | mittel | 🔴 TODO |
 | 4-06 | Migration: bestehende Base64-Fotos in Storage umziehen (Migrations-Script + DB-Spalten-Umstellung) | groß | 🔴 TODO |
 | 4-07 | Junction-Sync atomar als RPC (Paket F Vorziehen, da Photo-Junctions betroffen) | mittel | 🔴 TODO |
@@ -307,6 +307,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 4-04 · 13aaf7e · compressImage-Helper (Canvas longest-side 1600px, JPEG q=0.7); AppContext.onFile pipe'd durch Compression vor Base64-DataURL; ~90% Größen-Reduktion bei iPhone-Originalfotos; API-kompatibel (PhotoGrid erwartet weiter DataURL — 4-05 stellt auf Blob/Storage um); +5 vitest-Szenarien
 - 2026-04-20 · 4-03 · 4d12867+c7a43ce · DokView reaktiviert: echter File-Upload via storage.js + dokumente.createWithFile (atomic mit Rollback); Download via signedUrl 60s; storage_path-Spalte in dokumente-Table; In-Entwicklung-Banner aus 3b-01 entfernt; Legacy-Rows ohne Path read-only mit 'Legacy'-Badge
 - 2026-04-20 · 4-02 · ddf4400 · src/lib/storage.js: uploadDocument/getDocumentUrl/deleteDocument + uploadPhoto/getPhotoUrl/getPhotoUrls/deletePhoto/deletePhotos; sanitizeFilename mit Umlaut-Mapping + Längen-Limit; +12 vitest-Szenarien
 - 2026-04-20 · 4-01 · 193277e · Storage-Buckets documents (20MB, PDF/Office) + photos (5MB, JPEG/PNG/WEBP); 6 RLS-Policies (je SELECT/INSERT/DELETE pro Bucket); 2 Helper-Functions (user_has_baustelle_access, storage_baustelle_id); Migration in Prod ausgeführt
