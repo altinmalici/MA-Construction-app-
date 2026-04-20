@@ -174,7 +174,7 @@ Dies enthält die ursprünglich als "Phase 3" geplanten Themen (Login, Bautagebu
 | 4-03 | DokView aktivieren: echter File-Upload + Anzeige + Download-Link | groß | 🟢 DONE |
 | 4-04 | Client-seitige Photo-Compression (Canvas resize + JPEG q=0.7, max 1600px Kante) | mittel | 🟢 DONE |
 | 4-05 | `PhotoGrid` erweitern: max 5 Fotos pro Eintrag, `alt`-Texte, Lazy-Loading, Lightbox | mittel | 🟢 DONE |
-| 4-06 | Migration: bestehende Base64-Fotos in Storage umziehen (Migrations-Script + DB-Spalten-Umstellung) | groß | 🔴 TODO |
+| 4-06 | Migration: bestehende Base64-Fotos in Storage umziehen (Migrations-Script + DB-Spalten-Umstellung) | groß | 🟢 DONE |
 | 4-07 | Junction-Sync atomar als RPC (Paket F Vorziehen, da Photo-Junctions betroffen) | mittel | 🔴 TODO |
 
 **Abschluss-Kriterium:** Alle Tasks 🟢 DONE. DB-Table-Size für `maengel` / `stundeneintraege` deutlich reduziert. DokView funktional.
@@ -307,6 +307,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-20 · 4-06 · 921ef6b · scripts/migrate-photos-to-storage.mjs (idempotentes Node-Skript, Service-Role-Key, Default Dry-Run, Real-Run via --apply); Pfad-Konvention {baustelle_id}/{entity}/{row_id}/{uuid}.{ext}; Migration in Prod ausgeführt: 0 maengel, 3 stundeneintraege-Fotos (~6.5 MB) erfolgreich nach Storage umgezogen, 0 failed; Re-Run-Verifikation: 0 verbleibende Base64-Einträge in DB; Spalten-TYPE bleibt TEXT[] (Inhalt wechselt nur Format); +7 Vitest-Szenarien für isBase64 + dataUrlToBuffer
 - 2026-04-20 · 4-05 · d818b10+fc6b675+2b81788 · PhotoGrid hybrid (Base64-Legacy + Storage-Pfade + lokale {blob,previewDataUrl}-Objekte); batch-signed URLs via getPhotoUrls; loading="lazy" + alt-Attribute; integrierte Lightbox (ESC/Backdrop-Tap, body-scroll-Lock); maxFotos=5; AppContext.onFile liefert {blob,previewDataUrl} statt DataURL; MngView+SteView Upload-on-Save (Szenario B): pre-insert UUID via crypto.randomUUID, parallel Blob-Upload, dann Row-Insert mit Storage-Pfaden — atomar; maengel.remove löscht Storage-Fotos vor Row-Delete (Cleanup-Fehler nicht blockierend); maengel/stundeneintraege akzeptieren m.id für pre-insert-Pattern
 - 2026-04-20 · 4-04 · 13aaf7e · compressImage-Helper (Canvas longest-side 1600px, JPEG q=0.7); AppContext.onFile pipe'd durch Compression vor Base64-DataURL; ~90% Größen-Reduktion bei iPhone-Originalfotos; API-kompatibel (PhotoGrid erwartet weiter DataURL — 4-05 stellt auf Blob/Storage um); +5 vitest-Szenarien
 - 2026-04-20 · 4-03 · 4d12867+c7a43ce · DokView reaktiviert: echter File-Upload via storage.js + dokumente.createWithFile (atomic mit Rollback); Download via signedUrl 60s; storage_path-Spalte in dokumente-Table; In-Entwicklung-Banner aus 3b-01 entfernt; Legacy-Rows ohne Path read-only mit 'Legacy'-Badge
