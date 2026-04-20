@@ -26,4 +26,11 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Node-Skripte (Migrations + deren Tests) brauchen process/Buffer-Globals.
+  {
+    files: ['scripts/**/*.{js,mjs}'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ])
