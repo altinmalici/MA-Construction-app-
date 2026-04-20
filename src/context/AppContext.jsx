@@ -3,6 +3,7 @@ import { AlertCircle } from "lucide-react";
 import { useAppData } from "../lib/useAppData.js";
 import { G, P, BTN, RED } from "../utils/helpers";
 import { Toast, Spinner } from "../components/ui";
+import { compressImage, blobToDataURL } from "../utils/image";
 
 const BACKGROUND_LOCK_MS = 120 * 1000;
 
@@ -206,15 +207,20 @@ export function AppProvider({ children }) {
     setPhotoCb(() => cb);
     fileRef.current?.click();
   };
-  const onFile = (e) => {
+  // Foto-Pipeline: File → Canvas-Compress (1600px, q=0.7) → Base64-DataURL.
+  // PhotoGrid erwartet weiter DataURL — Storage-Migration kommt in 4-05.
+  const onFile = async (e) => {
     const f = e.target.files?.[0];
-    if (!f) return;
-    const r = new FileReader();
-    r.onload = (ev) => {
-      if (photoCb) photoCb(ev.target.result);
-    };
-    r.readAsDataURL(f);
     e.target.value = "";
+    if (!f) return;
+    try {
+      const compressed = await compressImage(f);
+      const dataUrl = await blobToDataURL(compressed);
+      if (photoCb) photoCb(dataUrl);
+    } catch (err) {
+      console.error("[AppContext.onFile]", err);
+      show(err?.message || "Foto konnte nicht verarbeitet werden", "error");
+    }
   };
   const eName = (e) => {
     if (e.personTyp === "sub") {
