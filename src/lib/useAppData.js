@@ -241,8 +241,17 @@ export function useAppData() {
         await api.dokumente.create(doc);
         await reload('dokumente');
       },
+      createWithFile: async (payload) => {
+        const result = await api.dokumente.createWithFile(payload);
+        await reload('dokumente');
+        return result;
+      },
       remove: async (id) => {
         await api.dokumente.remove(id);
+        await reload('dokumente');
+      },
+      removeWithFile: async (id, storagePath) => {
+        await api.dokumente.removeWithFile(id, storagePath);
         await reload('dokumente');
       },
     },
