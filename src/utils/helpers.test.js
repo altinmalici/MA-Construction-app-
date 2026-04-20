@@ -6,6 +6,10 @@ import {
   isMitarbeiterEntry,
   parseDecimal,
   aggregateEinsaetze,
+  getReportDates,
+  getCurrentWeekRange,
+  getCurrentMonthRange,
+  getBaustelleFullRange,
 } from "./helpers.js";
 
 describe("parseDecimal (Komma + Punkt)", () => {
@@ -199,5 +203,175 @@ describe("aggregateEinsaetze (Regiebericht-Aggregation)", () => {
     const r = aggregateEinsaetze(eintraege);
     expect(r).toHaveLength(1);
     expect(r[0]).toEqual({ stunden: 7, anzahl: 1, mannstunden: 7 });
+  });
+});
+
+describe("getReportDates (Range-Filter)", () => {
+  const eintraege = [
+    { baustelleId: "A", datum: "2026-04-01" },
+    { baustelleId: "A", datum: "2026-04-01" }, // duplicate same day
+    { baustelleId: "A", datum: "2026-04-03" },
+    { baustelleId: "A", datum: "2026-04-05" },
+    { baustelleId: "B", datum: "2026-04-02" }, // andere Baustelle
+    { baustelleId: "A", datum: "2026-03-31" }, // außerhalb Range
+  ];
+
+  it("liefert distinct Tage chronologisch sortiert", () => {
+    expect(
+      getReportDates(eintraege, "A", "2026-04-01", "2026-04-05"),
+    ).toEqual(["2026-04-01", "2026-04-03", "2026-04-05"]);
+  });
+
+  it("Range mit nur 1 Tag liefert max. 1 Element", () => {
+    expect(
+      getReportDates(eintraege, "A", "2026-04-03", "2026-04-03"),
+    ).toEqual(["2026-04-03"]);
+  });
+
+  it("Range ohne Treffer → []", () => {
+    expect(
+      getReportDates(eintraege, "A", "2026-05-01", "2026-05-31"),
+    ).toEqual([]);
+  });
+
+  it("vertauschte Reihenfolge (Bis < Von) → silent swap", () => {
+    expect(
+      getReportDates(eintraege, "A", "2026-04-05", "2026-04-01"),
+    ).toEqual(["2026-04-01", "2026-04-03", "2026-04-05"]);
+  });
+
+  it("ignoriert andere Baustellen", () => {
+    expect(
+      getReportDates(eintraege, "B", "2026-04-01", "2026-04-05"),
+    ).toEqual(["2026-04-02"]);
+  });
+
+  it("Jahreswechsel: ISO-Strings sortieren lexikographisch korrekt", () => {
+    const e = [
+      { baustelleId: "A", datum: "2025-12-31" },
+      { baustelleId: "A", datum: "2026-01-02" },
+      { baustelleId: "A", datum: "2026-01-05" },
+    ];
+    expect(getReportDates(e, "A", "2025-12-31", "2026-01-05")).toEqual([
+      "2025-12-31",
+      "2026-01-02",
+      "2026-01-05",
+    ]);
+  });
+
+  it("leere Eintragsliste → []", () => {
+    expect(getReportDates([], "A", "2026-04-01", "2026-04-05")).toEqual([]);
+  });
+});
+
+describe("getCurrentWeekRange (Mo-So)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("Mittwoch 15.04.2026 → Mo 13.04. - So 19.04.", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-15T12:00:00"));
+    expect(getCurrentWeekRange()).toEqual({
+      von: "2026-04-13",
+      bis: "2026-04-19",
+    });
+  });
+
+  it("Montag 13.04.2026 → Mo 13.04. - So 19.04.", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-13T12:00:00"));
+    expect(getCurrentWeekRange()).toEqual({
+      von: "2026-04-13",
+      bis: "2026-04-19",
+    });
+  });
+
+  it("Sonntag 19.04.2026 → Mo 13.04. - So 19.04.", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-19T12:00:00"));
+    expect(getCurrentWeekRange()).toEqual({
+      von: "2026-04-13",
+      bis: "2026-04-19",
+    });
+  });
+
+  it("über Monatsgrenze: Mo 30.03. - So 05.04.", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-02T12:00:00"));
+    expect(getCurrentWeekRange()).toEqual({
+      von: "2026-03-30",
+      bis: "2026-04-05",
+    });
+  });
+});
+
+describe("getCurrentMonthRange (1.-letzter)", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("April 2026 (30 Tage) → 01.04. - 30.04.", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-15T12:00:00"));
+    expect(getCurrentMonthRange()).toEqual({
+      von: "2026-04-01",
+      bis: "2026-04-30",
+    });
+  });
+
+  it("Februar 2026 (28 Tage, kein Schaltjahr) → 01.02. - 28.02.", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-10T12:00:00"));
+    expect(getCurrentMonthRange()).toEqual({
+      von: "2026-02-01",
+      bis: "2026-02-28",
+    });
+  });
+
+  it("Februar 2024 (Schaltjahr) → 01.02. - 29.02.", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-02-10T12:00:00"));
+    expect(getCurrentMonthRange()).toEqual({
+      von: "2024-02-01",
+      bis: "2024-02-29",
+    });
+  });
+
+  it("Dezember (31 Tage) → 01.12. - 31.12.", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-12-15T12:00:00"));
+    expect(getCurrentMonthRange()).toEqual({
+      von: "2026-12-01",
+      bis: "2026-12-31",
+    });
+  });
+});
+
+describe("getBaustelleFullRange (frühester-spätester Eintrag)", () => {
+  it("liefert frühesten und spätesten datum-String", () => {
+    const e = [
+      { baustelleId: "A", datum: "2026-04-15" },
+      { baustelleId: "A", datum: "2026-01-03" },
+      { baustelleId: "A", datum: "2026-03-22" },
+      { baustelleId: "B", datum: "2026-05-01" },
+    ];
+    expect(getBaustelleFullRange(e, "A")).toEqual({
+      von: "2026-01-03",
+      bis: "2026-04-15",
+    });
+  });
+
+  it("nur 1 Eintrag → von = bis", () => {
+    expect(
+      getBaustelleFullRange([{ baustelleId: "A", datum: "2026-04-15" }], "A"),
+    ).toEqual({ von: "2026-04-15", bis: "2026-04-15" });
+  });
+
+  it("keine Einträge für Baustelle → null", () => {
+    expect(getBaustelleFullRange([], "A")).toBeNull();
+    expect(
+      getBaustelleFullRange([{ baustelleId: "B", datum: "2026-04-15" }], "A"),
+    ).toBeNull();
   });
 });

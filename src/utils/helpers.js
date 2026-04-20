@@ -27,6 +27,67 @@ export const isInMonth = (datum, mo, jr) => {
 export const isMitarbeiterEntry = (e) =>
   !!e && (!e.personTyp || e.personTyp === "mitarbeiter");
 
+// Liefert distinct Tage im Range, an denen es Einträge für die Baustelle
+// gibt — chronologisch sortiert. Bei vertauschtem von/bis: silent swap
+// (mobile-friendlich, kein Error). ISO-Datumsstrings sortieren
+// lexikographisch = chronologisch.
+export const getReportDates = (
+  stundeneintraege,
+  baustelleId,
+  vonDatum,
+  bisDatum,
+) => {
+  const [von, bis] =
+    vonDatum <= bisDatum ? [vonDatum, bisDatum] : [bisDatum, vonDatum];
+  const tage = new Set(
+    (stundeneintraege || [])
+      .filter((e) => e.baustelleId === baustelleId)
+      .filter((e) => e.datum >= von && e.datum <= bis)
+      .map((e) => e.datum),
+  );
+  return [...tage].sort();
+};
+
+// Aktuelle Woche: Mo (ISO-Konvention) bis So. JS-Default ist
+// Sonntag=0 — wir korrigieren auf Montag=0 für die Wochenberechnung.
+const toIso = (d) => {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+export const getCurrentWeekRange = () => {
+  const now = new Date();
+  const dow = now.getDay(); // 0=So, 1=Mo, ..., 6=Sa
+  const offsetToMonday = dow === 0 ? 6 : dow - 1;
+  const mo = new Date(now);
+  mo.setDate(now.getDate() - offsetToMonday);
+  const so = new Date(mo);
+  so.setDate(mo.getDate() + 6);
+  return { von: toIso(mo), bis: toIso(so) };
+};
+
+export const getCurrentMonthRange = () => {
+  const now = new Date();
+  const von = new Date(now.getFullYear(), now.getMonth(), 1);
+  const bis = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return { von: toIso(von), bis: toIso(bis) };
+};
+
+// Frühester + spätester datum-String einer Baustelle. null wenn keine
+// Einträge — Aufrufer muss diesen Fall behandeln (z.B. Quick-Button "Alle"
+// macht dann nichts).
+export const getBaustelleFullRange = (stundeneintraege, baustelleId) => {
+  const tage = (stundeneintraege || [])
+    .filter((e) => e.baustelleId === baustelleId)
+    .map((e) => e.datum)
+    .sort();
+  return tage.length > 0
+    ? { von: tage[0], bis: tage[tage.length - 1] }
+    : null;
+};
+
 // Aggregiert Stundeneinträge nach Arbeitszeit (auf 0.1h gerundet) → liefert
 // [{stunden, anzahl, mannstunden}, ...] absteigend nach mannstunden sortiert.
 // 0-Stunden-Einträge werden ignoriert (z.B. wenn Pause > Schichtlänge).
