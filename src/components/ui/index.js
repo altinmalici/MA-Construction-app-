@@ -11,4 +11,5 @@ export { default as TimePicker } from './TimePicker';
 export { default as ConfirmModal } from './ConfirmModal';
 export { default as PromptModal } from './PromptModal';
 export { default as IconButton } from './IconButton';
+export { default as Lightbox } from './Lightbox';
 export { default as Spinner } from './Spinner';
