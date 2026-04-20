@@ -5,6 +5,7 @@ import {
   isInMonth,
   isMitarbeiterEntry,
   parseDecimal,
+  aggregateEinsaetze,
 } from "./helpers.js";
 
 describe("parseDecimal (Komma + Punkt)", () => {
@@ -156,5 +157,47 @@ describe("genPin (Onboarding-PIN)", () => {
   it("d) wirft expliziten Error wenn crypto.getRandomValues nicht verfügbar ist (kein silent Math.random-Fallback)", () => {
     vi.stubGlobal("crypto", undefined);
     expect(() => genPin()).toThrow(/crypto\.getRandomValues/);
+  });
+});
+
+describe("aggregateEinsaetze (Regiebericht-Aggregation)", () => {
+  it("3× 8h-Einsatz → 1 Zeile mit 3 Mann × 8h = 24h", () => {
+    const eintraege = [
+      { beginn: "07:00", ende: "16:00", pause: 60 },
+      { beginn: "07:00", ende: "16:00", pause: 60 },
+      { beginn: "07:00", ende: "16:00", pause: 60 },
+    ];
+    const r = aggregateEinsaetze(eintraege);
+    expect(r).toHaveLength(1);
+    expect(r[0]).toEqual({ stunden: 8, anzahl: 3, mannstunden: 24 });
+  });
+
+  it("gemischt: 2×8h + 2×4h → 2 Zeilen, sortiert nach mannstunden desc", () => {
+    const eintraege = [
+      { beginn: "07:00", ende: "16:00", pause: 60 }, // 8h
+      { beginn: "07:00", ende: "16:00", pause: 60 }, // 8h
+      { beginn: "08:00", ende: "12:00", pause: 0 },  // 4h
+      { beginn: "08:00", ende: "12:00", pause: 0 },  // 4h
+    ];
+    const r = aggregateEinsaetze(eintraege);
+    expect(r).toHaveLength(2);
+    expect(r[0]).toEqual({ stunden: 8, anzahl: 2, mannstunden: 16 });
+    expect(r[1]).toEqual({ stunden: 4, anzahl: 2, mannstunden: 8 });
+  });
+
+  it("leere Liste → []", () => {
+    expect(aggregateEinsaetze([])).toEqual([]);
+    expect(aggregateEinsaetze(null)).toEqual([]);
+    expect(aggregateEinsaetze(undefined)).toEqual([]);
+  });
+
+  it("0-Stunden-Einträge (Pause > Schichtlänge) werden ignoriert", () => {
+    const eintraege = [
+      { beginn: "08:00", ende: "12:00", pause: 300 }, // 0h (Pause > Schicht)
+      { beginn: "08:00", ende: "16:00", pause: 60 },  // 7h
+    ];
+    const r = aggregateEinsaetze(eintraege);
+    expect(r).toHaveLength(1);
+    expect(r[0]).toEqual({ stunden: 7, anzahl: 1, mannstunden: 7 });
   });
 });

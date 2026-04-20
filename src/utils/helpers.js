@@ -27,6 +27,26 @@ export const isInMonth = (datum, mo, jr) => {
 export const isMitarbeiterEntry = (e) =>
   !!e && (!e.personTyp || e.personTyp === "mitarbeiter");
 
+// Aggregiert Stundeneinträge nach Arbeitszeit (auf 0.1h gerundet) → liefert
+// [{stunden, anzahl, mannstunden}, ...] absteigend nach mannstunden sortiert.
+// 0-Stunden-Einträge werden ignoriert (z.B. wenn Pause > Schichtlänge).
+// Genutzt vom Regiebericht: "3 Mann × 8h" statt einzelner Personen-Zeilen.
+export const aggregateEinsaetze = (eintraege) => {
+  const map = new Map();
+  (eintraege || []).forEach((e) => {
+    const std = parseFloat(bStd(e.beginn, e.ende, e.pause));
+    if (!(std > 0)) return;
+    const key = std.toFixed(1);
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return Array.from(map.entries())
+    .map(([k, anzahl]) => {
+      const stunden = parseFloat(k);
+      return { stunden, anzahl, mannstunden: stunden * anzahl };
+    })
+    .sort((a, b) => b.mannstunden - a.mannstunden);
+};
+
 // Datum lang formatieren: "Mo, 03.04.2026"
 export const fDat = (d) =>
   new Date(d).toLocaleDateString("de-DE", {
