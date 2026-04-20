@@ -220,8 +220,8 @@ const MngView = () => {
           <PhotoGrid
             fotos={mf.fotos}
             onAdd={() =>
-              trigPhoto((img) =>
-                sMf((p) => ({ ...p, fotos: [...p.fotos, img] })),
+              trigPhoto((photo) =>
+                sMf((p) => ({ ...p, fotos: [...p.fotos, photo] })),
               )
             }
             onRemove={(i) =>

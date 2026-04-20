@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { CS, BTN, RED, IC, fDat, bStd } from "../../utils/helpers";
 import { ScreenLayout, PhotoGrid, TimePicker, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
+import { uploadPhoto } from "../../lib/storage";
 
 const SteView = () => {
   const {
@@ -84,21 +85,39 @@ const SteView = () => {
         show("Name eingeben", "error");
         return;
       }
-      const entry = {
-        ...fd,
-        baustelleId: fd.baustelleId,
-        mitarbeiterId: fd.personTyp === "mitarbeiter" ? fd.mitarbeiterId : null,
-        subId: fd.personTyp === "sub" ? fd.subId : null,
-        personName: fd.personTyp === "sonstige" ? fd.personName.trim() : "",
-      };
       const wasEdit = !!editId;
       try {
+        // Atomar: Foto-Upload VOR dem Row-Insert/Update. Bei Create wird
+        // die UUID hier client-seitig vergeben, damit der Storage-Pfad
+        // die endgültige entityId enthält.
+        const entryId = editId || crypto.randomUUID();
+        const existing = [];
+        const blobs = [];
+        for (const f of fd.fotos) {
+          if (typeof f === "string") existing.push(f);
+          else if (f && f.blob) blobs.push(f);
+        }
+        const uploaded = await Promise.all(
+          blobs.map((p) =>
+            uploadPhoto(p.blob, fd.baustelleId, "stundeneintraege", entryId),
+          ),
+        );
+        const fotos = [...existing, ...uploaded.map((u) => u.path)];
+
+        const entry = {
+          ...fd,
+          fotos,
+          baustelleId: fd.baustelleId,
+          mitarbeiterId: fd.personTyp === "mitarbeiter" ? fd.mitarbeiterId : null,
+          subId: fd.personTyp === "sub" ? fd.subId : null,
+          personName: fd.personTyp === "sonstige" ? fd.personName.trim() : "",
+        };
         if (editId) {
           await actions.stundeneintraege.update(editId, entry);
           show("Aktualisiert");
           setEditId(null);
         } else {
-          await actions.stundeneintraege.create(entry);
+          await actions.stundeneintraege.create({ ...entry, id: entryId });
           const pn =
             fd.personTyp === "mitarbeiter"
               ? data.users.find((u) => u.id === fd.mitarbeiterId)?.name
@@ -690,8 +709,8 @@ const SteView = () => {
               <PhotoGrid
                 fotos={fd.fotos}
                 onAdd={() =>
-                  trigPhoto((img) =>
-                    sFd((p) => ({ ...p, fotos: [...p.fotos, img] })),
+                  trigPhoto((photo) =>
+                    sFd((p) => ({ ...p, fotos: [...p.fotos, photo] })),
                   )
                 }
                 onRemove={(i) =>

@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { deletePhotos } from '../storage.js';
 
 export async function getAll() {
   const { data, error } = await supabase
@@ -38,6 +39,29 @@ export async function updateStatus(id, status) {
 }
 
 export async function remove(id) {
+  // Storage-Fotos zuerst löschen — Row-Delete dürfen wir nicht ohne
+  // Cleanup machen, sonst bleiben verwaiste Files im Bucket. Legacy
+  // Base64-Einträge ("data:...") liegen nicht im Storage und werden
+  // herausgefiltert.
+  const { data: row, error: readErr } = await supabase
+    .from('maengel')
+    .select('fotos')
+    .eq('id', id)
+    .single();
+  if (readErr) throw readErr;
+  const paths = (row?.fotos || []).filter(
+    (f) => typeof f === 'string' && !f.startsWith('data:'),
+  );
+  if (paths.length > 0) {
+    try {
+      await deletePhotos(paths);
+    } catch (e) {
+      // Foto-Cleanup-Fehler darf den Row-Delete nicht blockieren —
+      // verwaiste Storage-Files sind weniger schlimm als eine nicht
+      // löschbare Mangel-Row. Loggen für späteres Aufräumen.
+      console.error('[maengel.remove] storage cleanup failed:', e);
+    }
+  }
   const { error } = await supabase.from('maengel').delete().eq('id', id);
   if (error) throw error;
 }

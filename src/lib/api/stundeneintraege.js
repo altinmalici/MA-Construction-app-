@@ -34,6 +34,8 @@ export async function remove(id) {
 
 function toRow(e) {
   return {
+    // Pre-insert UUID erlaubt Foto-Upload mit korrektem Pfad VOR dem Insert.
+    ...(e.id ? { id: e.id } : {}),
     baustelle_id: e.baustelleId,
     datum: e.datum,
     beginn: e.beginn,
