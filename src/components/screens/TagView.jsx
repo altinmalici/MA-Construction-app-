@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, IC, CS } from "../../utils/helpers";
+import { bStd, bStdNum, IC, CS } from "../../utils/helpers";
 import { Empty, ScreenLayout } from "../ui";
 
 const TagView = () => {
@@ -55,7 +55,7 @@ const TagView = () => {
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
             {(() => {
               const t = te.reduce(
-                (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+                (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
                 0,
               );
               return t === 0 ? "0" : t.toFixed(1);

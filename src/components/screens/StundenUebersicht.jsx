@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, fK, P, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { bStdNum, fK, P, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
 import { ScreenLayout, Empty, IconButton } from "../ui";
 
 const StundenUebersicht = () => {
@@ -41,7 +41,7 @@ const StundenUebersicht = () => {
       const ue = me.filter((e) => e.mitarbeiterId === u.id);
       if (ue.length === 0) return null;
       const std = ue.reduce(
-        (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+        (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
         0,
       );
       const byBs = {};
@@ -49,7 +49,7 @@ const StundenUebersicht = () => {
         const b = data.baustellen.find((x) => x.id === e.baustelleId);
         const k = b?.kunde || "Unbekannt";
         if (!byBs[k]) byBs[k] = 0;
-        byBs[k] += parseFloat(bStd(e.beginn, e.ende, e.pause));
+        byBs[k] += bStdNum(e.beginn, e.ende, e.pause);
       });
       return { user: u, std, entries: ue, byBs };
     })
@@ -331,7 +331,7 @@ const StundenUebersicht = () => {
                         const bs = data.baustellen.find(
                           (x) => x.id === e.baustelleId,
                         );
-                        const h = parseFloat(bStd(e.beginn, e.ende, e.pause));
+                        const h = bStdNum(e.beginn, e.ende, e.pause);
                         return (
                           <div
                             key={e.id}

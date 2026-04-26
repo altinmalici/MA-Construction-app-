@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   genPin,
   bStd,
+  bStdNum,
   isInMonth,
   isMitarbeiterEntry,
   parseDecimal,
@@ -130,6 +131,27 @@ describe("bStd (Stunden-Berechnung)", () => {
 
   it("h) Pause > Schicht-Länge → 0.0h (Safety-Cap, kein Negativ-Wert)", () => {
     expect(bStd("08:00", "09:00", 120)).toBe("0.0");
+  });
+});
+
+describe("bStdNum (Number-Variante)", () => {
+  it("liefert Number, nicht String", () => {
+    expect(typeof bStdNum("08:00", "16:00", 0)).toBe("number");
+  });
+  it("normale Schicht 08:00-16:00 ohne Pause = 8", () => {
+    expect(bStdNum("08:00", "16:00", 0)).toBe(8);
+  });
+  it("mit 30min Pause = 7.5", () => {
+    expect(bStdNum("08:00", "16:00", 30)).toBe(7.5);
+  });
+  it("Mitternachts-Übergang 22:00-02:00 = 4", () => {
+    expect(bStdNum("22:00", "02:00", 0)).toBe(4);
+  });
+  it("leerer Beginn → 0", () => {
+    expect(bStdNum("", "16:00", 0)).toBe(0);
+  });
+  it("Pause > Schicht → 0 (kein Negativ-Wert)", () => {
+    expect(bStdNum("08:00", "09:00", 120)).toBe(0);
   });
 });
 

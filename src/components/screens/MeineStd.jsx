@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, fDat, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { bStd, bStdNum, fDat, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
 import { ScreenLayout, Empty, IconButton } from "../ui";
 
 const MeineStd = () => {
@@ -33,11 +33,11 @@ const MeineStd = () => {
   );
   const me = all.filter((e) => isInMonth(e.datum, mo, jr));
   const moH = me.reduce(
-    (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+    (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
     0,
   );
   const totalH = all.reduce(
-    (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+    (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
     0,
   );
   // Gruppiert nach Woche
@@ -139,7 +139,7 @@ const MeineStd = () => {
             .reverse()
             .map(([w, entries]) => {
               const wH = entries.reduce(
-                (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+                (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
                 0,
               );
               return (

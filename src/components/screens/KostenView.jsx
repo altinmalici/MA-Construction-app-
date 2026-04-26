@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
+import { bStdNum, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
 import { ScreenLayout, PBar, Empty, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
@@ -58,7 +58,7 @@ const KostenView = () => {
     );
     return ei.reduce((s, e) => {
       const u = data.users.find((x) => x.id === e.mitarbeiterId);
-      const std = parseFloat(bStd(e.beginn, e.ende, e.pause));
+      const std = bStdNum(e.beginn, e.ende, e.pause);
       return s + std * (u?.stundensatz || 45);
     }, 0);
   };
@@ -126,7 +126,7 @@ const KostenView = () => {
       const byUser = {};
       ei.forEach((e) => {
         if (!byUser[e.mitarbeiterId]) byUser[e.mitarbeiterId] = 0;
-        byUser[e.mitarbeiterId] += parseFloat(bStd(e.beginn, e.ende, e.pause));
+        byUser[e.mitarbeiterId] += bStdNum(e.beginn, e.ende, e.pause);
       });
       Object.entries(byUser).forEach(([uid, std]) => {
         const u = data.users.find((x) => x.id === uid);
@@ -187,7 +187,7 @@ const KostenView = () => {
     ei.forEach((e) => {
       const uid = e.mitarbeiterId;
       if (!byUser[uid]) byUser[uid] = { std: 0, kosten: 0 };
-      const std = parseFloat(bStd(e.beginn, e.ende, e.pause));
+      const std = bStdNum(e.beginn, e.ende, e.pause);
       const u = data.users.find((x) => x.id === uid);
       byUser[uid].std += std;
       byUser[uid].kosten += std * (u?.stundensatz || 45);
@@ -264,7 +264,7 @@ const KostenView = () => {
                 <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
                   {(() => {
                     const h = ei.reduce(
-                      (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+                      (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
                       0,
                     );
                     return Number.isInteger(h) ? h : h.toFixed(1);
@@ -739,7 +739,7 @@ const KostenView = () => {
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
             {fH(
               data.stundeneintraege.reduce(
-                (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+                (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
                 0,
               ),
             )}
@@ -795,7 +795,7 @@ const KostenView = () => {
                 (!e.personTyp || e.personTyp === "mitarbeiter"),
             );
             const totalStd = ei.reduce(
-              (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+              (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
               0,
             );
             const lohn = calcLohn(b.id);
@@ -806,7 +806,7 @@ const KostenView = () => {
             ei.forEach((e) => {
               const uid = e.mitarbeiterId;
               if (!byU[uid]) byU[uid] = 0;
-              byU[uid] += parseFloat(bStd(e.beginn, e.ende, e.pause));
+              byU[uid] += bStdNum(e.beginn, e.ende, e.pause);
             });
             return (
               <button
