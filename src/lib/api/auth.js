@@ -1,6 +1,50 @@
 import { supabase } from '../supabase.js';
 
 /**
+ * Map RPC-Profil-Row → konsumierter User-Shape (camelCase).
+ * Single Source of Truth für die Profil-Form, damit alle Login-Pfade
+ * konsistente Felder zurückgeben.
+ */
+function _mapProfile(u) {
+  return {
+    id: u.id,
+    name: u.name,
+    role: u.role,
+    stundensatz: u.stundensatz,
+    username: u.username,
+    isOnboarded: u.is_onboarded,
+  };
+}
+
+/**
+ * Profil aus aktiver Session laden (get_user_by_auth_id RPC).
+ * Wirft bei RPC-Error, returnt null bei leerer Antwort.
+ */
+async function _loadProfile() {
+  const { data: profile, error } = await supabase.rpc('get_user_by_auth_id');
+  if (error) throw error;
+  if (!profile || profile.length === 0) return null;
+  return _mapProfile(profile[0]);
+}
+
+/**
+ * signIn + Profil-Load-Pipeline. Konsolidiert die 3 Login-Funktionen.
+ * @param {string} email
+ * @param {string} password
+ * @param {object} [opts]
+ * @param {boolean} [opts.silent=false] true → falsche Credentials liefern
+ *   null statt Throw (für targeted Login wo "falscher PIN" expected ist).
+ */
+async function _signInAndLoadProfile(email, password, { silent = false } = {}) {
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (silent) return null;
+    throw error;
+  }
+  return _loadProfile();
+}
+
+/**
  * Mode C Login: PIN → lookup → signInWithPassword → Profil
  */
 export async function login(pin) {
@@ -10,32 +54,8 @@ export async function login(pin) {
   if (!lookupData || lookupData.length === 0) return null;
 
   const found = lookupData[0];
-
-  // Wenn User nicht onboarded ist, geben wir das zurück (Mode B)
-  // Wir müssen trotzdem signIn machen, damit die Session existiert
   const email = found.username + '@ma-construction.local';
-
-  // 2. signInWithPassword
-  const { error: signInErr } = await supabase.auth.signInWithPassword({
-    email,
-    password: pin,
-  });
-  if (signInErr) throw signInErr;
-
-  // 3. Profil laden via RPC
-  const { data: profile, error: profileErr } = await supabase.rpc('get_user_by_auth_id');
-  if (profileErr) throw profileErr;
-  if (!profile || profile.length === 0) return null;
-
-  const user = profile[0];
-  return {
-    id: user.id,
-    name: user.name,
-    role: user.role,
-    stundensatz: user.stundensatz,
-    username: user.username,
-    isOnboarded: user.is_onboarded,
-  };
+  return _signInAndLoadProfile(email, pin);
 }
 
 /**
@@ -46,31 +66,13 @@ export async function login(pin) {
  */
 export async function loginAsUser(username, pin) {
   const email = username + '@ma-construction.local';
-  const { error: signInErr } = await supabase.auth.signInWithPassword({
-    email,
-    password: pin,
-  });
-  if (signInErr) return null;
-
-  const { data: profile, error: profileErr } = await supabase.rpc('get_user_by_auth_id');
-  if (profileErr || !profile || profile.length === 0) return null;
-
-  const user = profile[0];
-  return {
-    id: user.id,
-    name: user.name,
-    role: user.role,
-    stundensatz: user.stundensatz,
-    username: user.username,
-    isOnboarded: user.is_onboarded,
-  };
+  return _signInAndLoadProfile(email, pin, { silent: true });
 }
 
 /**
  * Mode A Login: Username + Onboarding-PIN → lookup → signInWithPassword
  */
 export async function loginWithUsername(username, onboardingPin) {
-  // 1. Lookup: Username + Onboarding-PIN → auth_id
   const { data: lookupData, error: lookupErr } = await supabase.rpc('lookup_user_for_onboarding', {
     username_input: username,
     onboarding_pin_input: onboardingPin,
@@ -80,27 +82,7 @@ export async function loginWithUsername(username, onboardingPin) {
 
   const found = lookupData[0];
   const email = found.username + '@ma-construction.local';
-
-  // 2. signInWithPassword (Passwort = Onboarding-PIN)
-  const { error: signInErr } = await supabase.auth.signInWithPassword({
-    email,
-    password: onboardingPin,
-  });
-  if (signInErr) throw signInErr;
-
-  // 3. Profil laden
-  const { data: profile, error: profileErr } = await supabase.rpc('get_user_by_auth_id');
-  if (profileErr) throw profileErr;
-  if (!profile || profile.length === 0) return null;
-
-  const user = profile[0];
-  return {
-    id: user.id,
-    name: user.name,
-    role: user.role,
-    stundensatz: user.stundensatz,
-    username: user.username,
-  };
+  return _signInAndLoadProfile(email, onboardingPin);
 }
 
 /**
@@ -135,19 +117,11 @@ export async function signOut() {
 export async function getCurrentUser() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return null;
-
-  const { data: profile, error } = await supabase.rpc('get_user_by_auth_id');
-  if (error || !profile || profile.length === 0) return null;
-
-  const user = profile[0];
-  return {
-    id: user.id,
-    name: user.name,
-    role: user.role,
-    stundensatz: user.stundensatz,
-    username: user.username,
-    isOnboarded: user.is_onboarded,
-  };
+  try {
+    return await _loadProfile();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -157,7 +131,6 @@ export async function getCurrentUser() {
  * Der `username`-Parameter bleibt aus Backwards-Compat-Gründen erhalten,
  * wird aber nicht mehr benötigt (updateUser wirkt auf den aktuellen User).
  */
-// eslint-disable-next-line no-unused-vars
 export async function reAuthWithPin(username, newPin) {
   const { error } = await supabase.auth.updateUser({ password: newPin });
   if (error) throw error;
