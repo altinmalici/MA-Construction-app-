@@ -13,7 +13,9 @@ const WI = ({ w, style: s }) => {
   ) : w === "wind" ? (
     <Wind {...p} />
   ) : (
-    <Sun {...p} />
+    // Neutraler Fallback: Cloud statt Sun, damit unbekannte/leere Werte
+    // nicht fälschlich Sonnenschein suggerieren.
+    <Cloud {...p} />
   );
 };
 
