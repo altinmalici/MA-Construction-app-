@@ -282,7 +282,7 @@ Diese Tasks sind **nicht phase-gebunden** und werden eingeschoben, wenn sie gera
 | F-01 | `<Card>`, `<SectionHeader>`, `<IconButton>`, `<ListRow>` Komponenten extrahieren, Inline-Styles sukzessive ersetzen | groß | 🔴 TODO |
 | F-02 | Auth: `_signInAndLoadProfile(email, pwd)` Helper extrahieren, 5 Login-Funktionen konsolidieren | klein | 🔴 TODO |
 | F-03 | API-Returns konsistent machen (überall mapped Object ODER überall ID) | klein | 🔴 TODO |
-| F-04 | `bStdNum()` Number-Variante neben `bStd()` (String) extrahieren — spart 30+ `parseFloat`-Calls | klein | 🔴 TODO |
+| F-04 | `bStdNum()` Number-Variante neben `bStd()` (String) extrahieren — spart 30+ `parseFloat`-Calls | klein | 🟢 DONE |
 | F-05 | `Hdr.jsx` `large` vs compact: gemeinsame Sub-Renders | klein | 🔴 TODO |
 | F-06 | `WI.jsx` Wetter-Icon-Default auf neutral (`Cloud`) statt `Sun` | klein | 🟢 DONE |
 | F-07 | ESLint-Cleanup-Sprint: 50 Errors + 5 Warnings abarbeiten | mittel | 🔴 TODO |
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · F-04 · c8286c1 · `bStdNum(b,e,p)` als Number-Variante neben `bStd` (jetzt String-Wrapper). 15 `parseFloat(bStd(...))`-Aufrufe in 5 Screens (TagView, ProfilView, KostenView, StundenUebersicht, MeineStd) + `aggregateEinsaetze` umgestellt. +6 Vitest.
 - 2026-04-27 · F-06 · 07e2f52 · WI Default-Fall (unbekanntes/leeres `w`) auf `Cloud` statt `Sun` umgestellt — neutraler Fallback, vermeidet falsche Sonnenschein-Implikation bei fehlenden Daten.
 - 2026-04-27 · F-08 · 1831173 · pg-Package (8.20.0) aus devDependencies entfernt — ungenutzt seit Phase 1, Frontend hat keinen Import (Grep über src/+scripts/ leer). −162 Zeilen package-lock.
 - 2026-04-20 · 3.Y · 2677e5e · RegView Datum-Range + Multi-Bericht-Export: State von `sd` auf `vonDatum`+`bisDatum` (Default beide = heute, kein Regression-Risk). Quick-Buttons Heute/Woche/Monat/Alle (Chip-Style). 4 neue Helper in `helpers.js` (TDD, +18 Vitest): `getReportDates` (silent-swap, ISO-lex-sort), `getCurrentWeekRange` (Mo-So, JS Sonntag=0 korrigiert), `getCurrentMonthRange` (Schaltjahr-tauglich), `getBaustelleFullRange`. Auto-Modus: 0 → Empty-State, 1 → wie 3.X, N>1 → Summary-Card (Anzahl/Range/Mannstunden-Total) + 1 Vorschau + "+N weitere"-Hinweis. `reportHtml` zu pure-function `buildReportHtml({bs, datum, eintraege, berichtNr, forPrint})` für Multi-Render refactored. Multi-Print: hidden iframe (iOS-tauglich), `page-break-after:always` zwischen Berichten, dynamic `<title>` als Default-PDF-Dateiname.
