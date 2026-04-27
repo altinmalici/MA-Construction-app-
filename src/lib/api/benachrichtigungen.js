@@ -30,7 +30,8 @@ export async function create(n) {
     .select()
     .single();
   if (error) throw error;
-  return data;
+  // F-03: API-Returns app-weit konsistent als id-String.
+  return data.id;
 }
 
 export async function markAllRead() {

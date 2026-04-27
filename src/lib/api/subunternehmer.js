@@ -16,7 +16,8 @@ export async function create({ name, gewerk, telefon }) {
     .select()
     .single();
   if (error) throw error;
-  return { id: data.id, name: data.name, gewerk: data.gewerk, telefon: data.telefon };
+  // F-03: API-Returns app-weit konsistent als id-String.
+  return data.id;
 }
 
 export async function remove(id) {

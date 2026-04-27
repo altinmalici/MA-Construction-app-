@@ -32,7 +32,8 @@ export async function create(k) {
     .select()
     .single();
   if (error) throw error;
-  return data;
+  // F-03: API-Returns app-weit konsistent als id-String.
+  return data.id;
 }
 
 export async function remove(id) {
