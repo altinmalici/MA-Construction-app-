@@ -241,7 +241,7 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 | 6-02 | AppContext: Realtime-Updates mergen ohne Full-Refresh | mittel | 🔴 TODO |
 | 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🔴 TODO |
 | 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🔴 TODO |
-| 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🔴 TODO |
+| 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🟢 DONE |
 | 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🔴 TODO |
 | 6-07 | Vitest-Coverage auf wichtigste Helpers ausdehnen (`bStd`, Datum-Utils, Filter-Helpers) | mittel | 🔴 TODO |
 
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · 6-05 · 6b0f3d2 · `bautagebuch.update(id, entry)` + `kalender.update(id, entry)` API-Funktionen + Action-Wrapper. stripUndefined-Pattern; Junction-Sync (anwesende/mitarbeiter) als DELETE+INSERT mit `undefined`-Skip. Aktuelle UI nutzt noch delete+create — Update-Pfad bereit für Edit-Modi in BtbView/KalView.
 - 2026-04-27 · F-07 · d038fce · ESLint-Cleanup auf 0/0: 8x `catch (e)` ohne Body-Use → `catch`; 5x JSX-destructure-Aliases (`{icon: I}` etc.) mit per-Site eslint-disable + Begründung (eslint-plugin-react nicht installiert); Toast-Ref-Sync in useEffect statt Render-Body; PromptModal/AppContext-Seed/useAppData/MitForm legitime async/one-shot setState/exhaustive-deps mit Begründung; `AppContext`-Const-Re-Export entfernt (niemand importiert direkt); `useApp`-Hook eslint-disable für react-refresh (Hook ist Provider-Pair); `MA_Construction_App*.jsx` global-ignore (Pre-Phase-2-Referenz).
 - 2026-04-27 · F-02 · 3dcd655 · `_loadProfile` + `_signInAndLoadProfile(email,pwd,{silent})` Helpers in `auth.js`. 3 Login-Funktionen (`login`, `loginAsUser`, `loginWithUsername`) + `getCurrentUser` teilen jetzt das signIn+Profil-Mapping. `loginWithUsername` liefert jetzt auch `isOnboarded` (vorher fehlend, kein Aufrufer betroffen). −27 Zeilen netto.
 - 2026-04-27 · F-04 · c8286c1 · `bStdNum(b,e,p)` als Number-Variante neben `bStd` (jetzt String-Wrapper). 15 `parseFloat(bStd(...))`-Aufrufe in 5 Screens (TagView, ProfilView, KostenView, StundenUebersicht, MeineStd) + `aggregateEinsaetze` umgestellt. +6 Vitest.
