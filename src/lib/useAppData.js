@@ -223,6 +223,10 @@ export function useAppData() {
         await api.bautagebuch.create(entry);
         await reload('bautagebuch');
       },
+      update: async (id, entry) => {
+        await api.bautagebuch.update(id, entry);
+        await reload('bautagebuch');
+      },
       remove: async (id) => {
         await api.bautagebuch.remove(id);
         await reload('bautagebuch');
@@ -232,6 +236,10 @@ export function useAppData() {
     kalender: {
       create: async (entry) => {
         await api.kalender.create(entry);
+        await reload('kalender');
+      },
+      update: async (id, entry) => {
+        await api.kalender.update(id, entry);
         await reload('kalender');
       },
       remove: async (id) => {
