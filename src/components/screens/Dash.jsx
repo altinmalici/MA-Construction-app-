@@ -10,7 +10,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { G, RED, CS, COLORS } from "../../utils/helpers";
+import { G, RED, CS, COLORS, isInMonth } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 
 const Dash = () => {
@@ -23,6 +23,14 @@ const Dash = () => {
   const todayEntries = data.stundeneintraege.filter(
     (e) => e.datum === todayStr,
   );
+  // BUG-FU-3: Dash-Count mit MeineStd-View synchronisieren — beide
+  // zeigen den aktuellen Monat, nicht all-time. Vorher: "X Einträge"
+  // (lifetime) zeigte größere Zahl als MeineStd (current month) →
+  // Mismatch beim Click.
+  const now = new Date();
+  const meineStdEntriesMonat = data.stundeneintraege.filter(
+    (e) => e.mitarbeiterId === cu.id && isInMonth(e.datum, now.getMonth(), now.getFullYear()),
+  ).length;
   const openMaengel = data.maengel.filter(
     (m) => m.status !== "erledigt",
   ).length;
@@ -111,7 +119,7 @@ const Dash = () => {
           i: FileText,
           c: "#3c3c43",
           l: "Meine Stunden",
-          s: `${data.stundeneintraege.filter((e) => e.mitarbeiterId === cu.id).length} Eintr\u00e4ge`,
+          s: `${meineStdEntriesMonat} Eintr\u00e4ge diesen Monat`,
           n: null,
         },
         {
