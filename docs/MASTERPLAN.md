@@ -285,7 +285,7 @@ Diese Tasks sind **nicht phase-gebunden** und werden eingeschoben, wenn sie gera
 | F-04 | `bStdNum()` Number-Variante neben `bStd()` (String) extrahieren — spart 30+ `parseFloat`-Calls | klein | 🟢 DONE |
 | F-05 | `Hdr.jsx` `large` vs compact: gemeinsame Sub-Renders | klein | 🔴 TODO |
 | F-06 | `WI.jsx` Wetter-Icon-Default auf neutral (`Cloud`) statt `Sun` | klein | 🟢 DONE |
-| F-07 | ESLint-Cleanup-Sprint: 50 Errors + 5 Warnings abarbeiten | mittel | 🔴 TODO |
+| F-07 | ESLint-Cleanup-Sprint: 50 Errors + 5 Warnings abarbeiten | mittel | 🟢 DONE |
 | F-08 | `pg`-Package aus devDependencies entfernen (ungenutzt im Frontend) | klein | 🟢 DONE |
 | F-09 | `BstForm` mit `<Section>`-Pattern refaktorieren (665 Zeilen) | mittel | 🔴 TODO |
 
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · F-07 · d038fce · ESLint-Cleanup auf 0/0: 8x `catch (e)` ohne Body-Use → `catch`; 5x JSX-destructure-Aliases (`{icon: I}` etc.) mit per-Site eslint-disable + Begründung (eslint-plugin-react nicht installiert); Toast-Ref-Sync in useEffect statt Render-Body; PromptModal/AppContext-Seed/useAppData/MitForm legitime async/one-shot setState/exhaustive-deps mit Begründung; `AppContext`-Const-Re-Export entfernt (niemand importiert direkt); `useApp`-Hook eslint-disable für react-refresh (Hook ist Provider-Pair); `MA_Construction_App*.jsx` global-ignore (Pre-Phase-2-Referenz).
 - 2026-04-27 · F-02 · 3dcd655 · `_loadProfile` + `_signInAndLoadProfile(email,pwd,{silent})` Helpers in `auth.js`. 3 Login-Funktionen (`login`, `loginAsUser`, `loginWithUsername`) + `getCurrentUser` teilen jetzt das signIn+Profil-Mapping. `loginWithUsername` liefert jetzt auch `isOnboarded` (vorher fehlend, kein Aufrufer betroffen). −27 Zeilen netto.
 - 2026-04-27 · F-04 · c8286c1 · `bStdNum(b,e,p)` als Number-Variante neben `bStd` (jetzt String-Wrapper). 15 `parseFloat(bStd(...))`-Aufrufe in 5 Screens (TagView, ProfilView, KostenView, StundenUebersicht, MeineStd) + `aggregateEinsaetze` umgestellt. +6 Vitest.
 - 2026-04-27 · F-06 · 07e2f52 · WI Default-Fall (unbekanntes/leeres `w`) auf `Cloud` statt `Sun` umgestellt — neutraler Fallback, vermeidet falsche Sonnenschein-Implikation bei fehlenden Daten.
