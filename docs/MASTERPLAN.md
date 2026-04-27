@@ -240,7 +240,7 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 | 6-01 | Supabase Realtime-Subscriptions für `stundeneintraege`, `maengel`, `benachrichtigungen` | mittel | 🔴 TODO |
 | 6-02 | AppContext: Realtime-Updates mergen ohne Full-Refresh | mittel | 🔴 TODO |
 | 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🔴 TODO |
-| 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🔴 TODO |
+| 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🟡 IN PROGRESS |
 | 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🟢 DONE |
 | 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🔴 TODO |
 | 6-07 | Vitest-Coverage auf wichtigste Helpers ausdehnen (`bStd`, Datum-Utils, Filter-Helpers) | mittel | 🟢 DONE |
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · 6-04 (🟡 Pilot) · db16c26 · `src/lib/api/_request.js`: `requestWithRetry(queryFn, {retries, retryDelayMs, timeoutMs, signal})` mit exponential backoff (3x), Logic-Error-Skip, AbortController-Integration via Promise.race. +6 Vitest. Pilot in `baustellen.getAll` + `stundeneintraege.getAll`. Aufrufer-Impact 0 (signal-Argument optional).
 - 2026-04-27 · F-01 (Phase 2, weiterhin 🟡) · 228035f+1f8eba3+9b0406f+70280e3+15ccf10 · 5 weitere Screens auf Card umgestellt: Dash KPI-Tiles, MitView (resetInfo + Liste), SubView (Liste), MatView (Container), ProfilView (Avatar + 3 Stats + Settings + Baustellen). Insgesamt 7 Screens jetzt mit Card. BstList übersprungen (Listen-Items sind Buttons, würden Card-API-Erweiterung brauchen). BstDet/KostenView/MngView noch unrefactored — als Teil von Folge-Tasks.
 - 2026-04-27 · F-09 · e449a53 · `BstForm` 700 → 646 Zeilen, 6 Sections über neuen `Section`-Wrapper (Card + optionaler SectionHeader): Stammdaten, Kontakt, Zeitraum & Budget, Details, Team, Rechnungsdaten. JSX-Layer-only — Verhalten/State unverändert.
 - 2026-04-27 · BUG-FU-3 · 6dfc1ea · Dash-Tile "Meine Stunden" zeigt jetzt Einträge des aktuellen Monats statt Lifetime-Count → konsistent mit MeineStd-Screen-View. Label-Anpassung "X Einträge diesen Monat" macht Semantik explizit.
