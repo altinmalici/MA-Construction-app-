@@ -82,6 +82,10 @@ export function useAppData() {
 
   useEffect(() => {
     mountedRef.current = true;
+    // setState passiert async im finally-Callback nach loadAll(). Lint sieht
+    // den synchronen loadAll-Aufruf konservativ als Effect-setState — hier
+    // erlaubt: kein cascading render, sondern One-Shot-Init.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAll().finally(() => {
       if (mountedRef.current) setLoading(false);
     });
@@ -219,6 +223,10 @@ export function useAppData() {
         await api.bautagebuch.create(entry);
         await reload('bautagebuch');
       },
+      update: async (id, entry) => {
+        await api.bautagebuch.update(id, entry);
+        await reload('bautagebuch');
+      },
       remove: async (id) => {
         await api.bautagebuch.remove(id);
         await reload('bautagebuch');
@@ -228,6 +236,10 @@ export function useAppData() {
     kalender: {
       create: async (entry) => {
         await api.kalender.create(entry);
+        await reload('kalender');
+      },
+      update: async (id, entry) => {
+        await api.kalender.update(id, entry);
         await reload('kalender');
       },
       remove: async (id) => {

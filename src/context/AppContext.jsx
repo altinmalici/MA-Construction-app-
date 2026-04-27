@@ -7,10 +7,15 @@ import { compressImage, blobToDataURL } from "../utils/image";
 
 const BACKGROUND_LOCK_MS = 120 * 1000;
 
+// AppContext bewusst NICHT exportiert — Konsumenten gehen über useApp().
+// Das hält das Public-API klein und macht React-Refresh happy (Datei
+// exportiert nur Komponenten/Hooks).
 const AppContext = createContext(null);
 
-export { AppContext };
-
+// React-Refresh-Plugin meckert über non-Component-Exports neben einer
+// Komponente — useApp ist als Hook fest mit dem Provider gepaart, ein
+// Auslagern in eine eigene Datei wäre Pseudo-Modularität.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useApp() {
   const ctx = useContext(AppContext);
   if (!ctx) throw new Error("useApp must be used within AppProvider");
@@ -180,6 +185,10 @@ export function AppProvider({ children }) {
       })
       .then(() => console.log("Testbaustelle angelegt (DEV)"))
       .catch((e) => console.error("Seed fehlgeschlagen:", e));
+    // actions.baustellen + data.users absichtlich raus aus deps:
+    // Re-Run würde Mehrfach-Seeds triggern; seededRef + DEV-Guard
+    // sichern den One-Shot-Effekt auch ohne deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, data.baustellen.length]);
 
   const show = (m, t = "success") => {

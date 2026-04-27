@@ -15,6 +15,7 @@ const variants = {
 };
 
 const IconButton = ({
+  // eslint-disable-next-line no-unused-vars -- Icon ist destructure-rename für JSX-Component
   icon: Icon,
   onClick,
   ariaLabel,

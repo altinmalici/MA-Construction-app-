@@ -1,15 +1,19 @@
-// Stunden berechnen: Beginn, Ende, Pause → Dezimalstunden.
-// Nachtschicht-tauglich: wenn Ende <= Beginn (z.B. 22:00→02:00), wird die
-// Differenz auf den Folgetag bezogen (+24h). Math.max(0, …) verhindert
+// Stunden berechnen — Number-Variante. Liefert Dezimalstunden als Number,
+// damit Aggregationen ohne parseFloat()-Wrapping summieren können.
+// Nachtschicht-tauglich: Ende <= Beginn → +24h. Math.max(0, …) verhindert
 // negative Stunden, falls Pause > Schichtlänge ist.
-export const bStd = (b, e, p) => {
-  if (!b || !e) return "0.0";
+export const bStdNum = (b, e, p) => {
+  if (!b || !e) return 0;
   const [bH, bM] = b.split(":").map(Number);
   const [eH, eM] = e.split(":").map(Number);
   const rawDiff = eH * 60 + eM - (bH * 60 + bM);
   const diff = rawDiff < 0 ? rawDiff + 1440 : rawDiff;
-  return Math.max(0, (diff - (p || 0)) / 60).toFixed(1);
+  return Math.max(0, (diff - (p || 0)) / 60);
 };
+
+// Stunden berechnen — String-Variante (formatiert mit 1 Dezimal-Stelle).
+// Für Display-Zwecke. Numerische Aggregationen sollten bStdNum nutzen.
+export const bStd = (b, e, p) => bStdNum(b, e, p).toFixed(1);
 
 // TZ-sicherer Monats-Check auf YYYY-MM-DD-Strings.
 // datum: "2026-04-19" oder "2026-04-19T..." — Zeitanteil wird ignoriert.
@@ -95,7 +99,7 @@ export const getBaustelleFullRange = (stundeneintraege, baustelleId) => {
 export const aggregateEinsaetze = (eintraege) => {
   const map = new Map();
   (eintraege || []).forEach((e) => {
-    const std = parseFloat(bStd(e.beginn, e.ende, e.pause));
+    const std = bStdNum(e.beginn, e.ende, e.pause);
     if (!(std > 0)) return;
     const key = std.toFixed(1);
     map.set(key, (map.get(key) || 0) + 1);

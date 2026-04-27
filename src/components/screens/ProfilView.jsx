@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Save, LogOut } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, P, G, RED, GREEN, CS, IC } from "../../utils/helpers";
+import { bStdNum, P, G, RED, GREEN, CS, IC } from "../../utils/helpers";
 import { ScreenLayout, Bdg, ConfirmModal } from "../ui";
 
 const ProfilView = () => {
@@ -42,7 +42,7 @@ const ProfilView = () => {
     (e) => e.mitarbeiterId === cu.id,
   );
   const totalH = meineStd.reduce(
-    (s, e) => s + parseFloat(bStd(e.beginn, e.ende, e.pause)),
+    (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
     0,
   );
   const meineBs = chef
@@ -83,7 +83,7 @@ const ProfilView = () => {
       setEditMode(false);
       setPin("");
       show("Gespeichert");
-    } catch (e) {
+    } catch {
       show("Fehler beim Speichern", "error");
     }
   };

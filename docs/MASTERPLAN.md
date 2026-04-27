@@ -241,9 +241,9 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 | 6-02 | AppContext: Realtime-Updates mergen ohne Full-Refresh | mittel | 🔴 TODO |
 | 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🔴 TODO |
 | 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🔴 TODO |
-| 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🔴 TODO |
+| 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🟢 DONE |
 | 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🔴 TODO |
-| 6-07 | Vitest-Coverage auf wichtigste Helpers ausdehnen (`bStd`, Datum-Utils, Filter-Helpers) | mittel | 🔴 TODO |
+| 6-07 | Vitest-Coverage auf wichtigste Helpers ausdehnen (`bStd`, Datum-Utils, Filter-Helpers) | mittel | 🟢 DONE |
 
 ---
 
@@ -280,13 +280,13 @@ Diese Tasks sind **nicht phase-gebunden** und werden eingeschoben, wenn sie gera
 | ID | Task | Aufwand | Status |
 |---|---|---|---|
 | F-01 | `<Card>`, `<SectionHeader>`, `<IconButton>`, `<ListRow>` Komponenten extrahieren, Inline-Styles sukzessive ersetzen | groß | 🔴 TODO |
-| F-02 | Auth: `_signInAndLoadProfile(email, pwd)` Helper extrahieren, 5 Login-Funktionen konsolidieren | klein | 🔴 TODO |
+| F-02 | Auth: `_signInAndLoadProfile(email, pwd)` Helper extrahieren, 5 Login-Funktionen konsolidieren | klein | 🟢 DONE |
 | F-03 | API-Returns konsistent machen (überall mapped Object ODER überall ID) | klein | 🔴 TODO |
-| F-04 | `bStdNum()` Number-Variante neben `bStd()` (String) extrahieren — spart 30+ `parseFloat`-Calls | klein | 🔴 TODO |
+| F-04 | `bStdNum()` Number-Variante neben `bStd()` (String) extrahieren — spart 30+ `parseFloat`-Calls | klein | 🟢 DONE |
 | F-05 | `Hdr.jsx` `large` vs compact: gemeinsame Sub-Renders | klein | 🔴 TODO |
-| F-06 | `WI.jsx` Wetter-Icon-Default auf neutral (`Cloud`) statt `Sun` | klein | 🔴 TODO |
-| F-07 | ESLint-Cleanup-Sprint: 50 Errors + 5 Warnings abarbeiten | mittel | 🔴 TODO |
-| F-08 | `pg`-Package aus devDependencies entfernen (ungenutzt im Frontend) | klein | 🔴 TODO |
+| F-06 | `WI.jsx` Wetter-Icon-Default auf neutral (`Cloud`) statt `Sun` | klein | 🟢 DONE |
+| F-07 | ESLint-Cleanup-Sprint: 50 Errors + 5 Warnings abarbeiten | mittel | 🟢 DONE |
+| F-08 | `pg`-Package aus devDependencies entfernen (ungenutzt im Frontend) | klein | 🟢 DONE |
 | F-09 | `BstForm` mit `<Section>`-Pattern refaktorieren (665 Zeilen) | mittel | 🔴 TODO |
 
 ---
@@ -321,6 +321,13 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · 6-07 · c264a59 · helpers.test.js +22 Szenarien (escHtml/fDat/fK/fE/genUsername). Total 166 Vitest (von 144). Coverage für alle pure-Helpers in `src/utils/helpers.js`.
+- 2026-04-27 · 6-05 · 6b0f3d2 · `bautagebuch.update(id, entry)` + `kalender.update(id, entry)` API-Funktionen + Action-Wrapper. stripUndefined-Pattern; Junction-Sync (anwesende/mitarbeiter) als DELETE+INSERT mit `undefined`-Skip. Aktuelle UI nutzt noch delete+create — Update-Pfad bereit für Edit-Modi in BtbView/KalView.
+- 2026-04-27 · F-07 · d038fce · ESLint-Cleanup auf 0/0: 8x `catch (e)` ohne Body-Use → `catch`; 5x JSX-destructure-Aliases (`{icon: I}` etc.) mit per-Site eslint-disable + Begründung (eslint-plugin-react nicht installiert); Toast-Ref-Sync in useEffect statt Render-Body; PromptModal/AppContext-Seed/useAppData/MitForm legitime async/one-shot setState/exhaustive-deps mit Begründung; `AppContext`-Const-Re-Export entfernt (niemand importiert direkt); `useApp`-Hook eslint-disable für react-refresh (Hook ist Provider-Pair); `MA_Construction_App*.jsx` global-ignore (Pre-Phase-2-Referenz).
+- 2026-04-27 · F-02 · 3dcd655 · `_loadProfile` + `_signInAndLoadProfile(email,pwd,{silent})` Helpers in `auth.js`. 3 Login-Funktionen (`login`, `loginAsUser`, `loginWithUsername`) + `getCurrentUser` teilen jetzt das signIn+Profil-Mapping. `loginWithUsername` liefert jetzt auch `isOnboarded` (vorher fehlend, kein Aufrufer betroffen). −27 Zeilen netto.
+- 2026-04-27 · F-04 · c8286c1 · `bStdNum(b,e,p)` als Number-Variante neben `bStd` (jetzt String-Wrapper). 15 `parseFloat(bStd(...))`-Aufrufe in 5 Screens (TagView, ProfilView, KostenView, StundenUebersicht, MeineStd) + `aggregateEinsaetze` umgestellt. +6 Vitest.
+- 2026-04-27 · F-06 · 07e2f52 · WI Default-Fall (unbekanntes/leeres `w`) auf `Cloud` statt `Sun` umgestellt — neutraler Fallback, vermeidet falsche Sonnenschein-Implikation bei fehlenden Daten.
+- 2026-04-27 · F-08 · 1831173 · pg-Package (8.20.0) aus devDependencies entfernt — ungenutzt seit Phase 1, Frontend hat keinen Import (Grep über src/+scripts/ leer). −162 Zeilen package-lock.
 - 2026-04-20 · 3.Y · 2677e5e · RegView Datum-Range + Multi-Bericht-Export: State von `sd` auf `vonDatum`+`bisDatum` (Default beide = heute, kein Regression-Risk). Quick-Buttons Heute/Woche/Monat/Alle (Chip-Style). 4 neue Helper in `helpers.js` (TDD, +18 Vitest): `getReportDates` (silent-swap, ISO-lex-sort), `getCurrentWeekRange` (Mo-So, JS Sonntag=0 korrigiert), `getCurrentMonthRange` (Schaltjahr-tauglich), `getBaustelleFullRange`. Auto-Modus: 0 → Empty-State, 1 → wie 3.X, N>1 → Summary-Card (Anzahl/Range/Mannstunden-Total) + 1 Vorschau + "+N weitere"-Hinweis. `reportHtml` zu pure-function `buildReportHtml({bs, datum, eintraege, berichtNr, forPrint})` für Multi-Render refactored. Multi-Print: hidden iframe (iOS-tauglich), `page-break-after:always` zwischen Berichten, dynamic `<title>` als Default-PDF-Dateiname.
 - 2026-04-20 · 3.X · 1a7e142 · RegView komplett auf neues Regiebericht-Layout: Header mit MA-Badge + Bericht-Nr. (chronologischer Tag-Index pro Baustelle, 2-stellig), Stammdaten-KV-Tabelle, aggregierte Einsatz-Tabelle ("3 Mann × 8h = 24h Mannstunden" statt Personen-Zeilen) via neuem `aggregateEinsaetze`-Helper, Tätigkeiten-Bullets, "An-/Abfahrt: 1×", optionaler Bemerkungs-Block (zukunftssicher, kein DB-Feld aktuell), leere Unterschrifts-Box 156×22mm, "MA Construction"-Footer. Inline-Edit + edits-State raus (Korrekturen via SteView). PDF + On-Screen teilen `reportHtml({forPrint})`. +4 Vitest-Szenarien.
 - 2026-04-20 · 4-07 · 26341cb+30f3124 · sync_baustelle_junctions RPC (PL/pgSQL, SECURITY DEFINER, Chef-only via is_chef-Gate, ON CONFLICT DO NOTHING bei INSERTs); baustellen.syncJunctions ruft jetzt RPC statt 4 separate Queries (2x DELETE + 2x INSERT) — atomar mit Rollback bei Fehler. Behoben: zwischen DELETE und INSERT konnte ein Netz-Abbruch eine Baustelle ohne Mitarbeiter-Zuordnungen hinterlassen. **Phase 4 komplett (7/7).**

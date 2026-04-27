@@ -89,7 +89,7 @@ const Login = () => {
         wrongAttempt();
         setPin("");
       }
-    } catch (e) {
+    } catch {
       setErr("Verbindungsfehler");
       setPin("");
     } finally {
@@ -113,7 +113,7 @@ const Login = () => {
         wrongAttempt();
         setObPin("");
       }
-    } catch (e) {
+    } catch {
       setErr("Verbindungsfehler");
     } finally {
       setChecking(false);
@@ -145,7 +145,7 @@ const Login = () => {
         setCu(u);
         nav("dash");
       }
-    } catch (e) {
+    } catch {
       setErr("Fehler");
       setConfirmPin("");
       setNewPin("");
@@ -567,7 +567,11 @@ const Login = () => {
                 setPin("");
                 setErr("");
                 if (sessionUser) {
-                  try { await actions.auth.signOut(); } catch {}
+                  try {
+                    await actions.auth.signOut();
+                  } catch {
+                    /* signOut beim User-Switch best-effort */
+                  }
                 }
               }}
               style={{

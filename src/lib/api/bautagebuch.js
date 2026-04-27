@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { stripUndefined } from '../../utils/objects.js';
 
 export async function getAll() {
   const { data, error } = await supabase
@@ -58,6 +59,40 @@ export async function create(entry) {
     }
   }
   return data.id;
+}
+
+export async function update(id, entry) {
+  const { anwesende, ...fields } = entry;
+  const row = stripUndefined({
+    baustelle_id: fields.baustelleId,
+    datum: fields.datum,
+    wetter: fields.wetter,
+    temperatur: fields.temperatur,
+    arbeiten: fields.arbeiten,
+    besonderheiten: fields.besonderheiten,
+    behinderungen: fields.behinderungen,
+  });
+  if (Object.keys(row).length > 0) {
+    const { error } = await supabase.from('bautagebuch').update(row).eq('id', id);
+    if (error) throw error;
+  }
+
+  // Junction-Sync nur wenn anwesende explizit übergeben (undefined = lassen).
+  // Pattern wie baustellen.syncJunctions: DELETE + INSERT, hier zwei
+  // separate Statements (4-07-RPC betrifft nur baustellen-Junctions).
+  if (anwesende !== undefined) {
+    const { error: delErr } = await supabase
+      .from('bautagebuch_anwesende')
+      .delete()
+      .eq('bautagebuch_id', id);
+    if (delErr) throw delErr;
+    if (anwesende.length > 0) {
+      const { error: insErr } = await supabase
+        .from('bautagebuch_anwesende')
+        .insert(anwesende.map((uid) => ({ bautagebuch_id: id, user_id: uid })));
+      if (insErr) throw insErr;
+    }
+  }
 }
 
 export async function remove(id) {

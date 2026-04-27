@@ -9,8 +9,12 @@ const DURATIONS = {
 };
 
 const Toast = ({ message, type = "success", onDone }) => {
+  // Aktuelles onDone in Ref spiegeln, damit der Timer nicht bei jedem
+  // Parent-Re-Render mit neuem onDone-Callback resettet wird.
   const onDoneRef = useRef(onDone);
-  onDoneRef.current = onDone;
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  });
 
   useEffect(() => {
     const ms = DURATIONS[type] ?? DURATIONS.success;

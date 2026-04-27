@@ -35,7 +35,7 @@ const NotifView = () => {
   const delN = async (id) => {
     try {
       await actions.benachrichtigungen.remove(id);
-    } catch (e) {
+    } catch {
       show("Fehler", "error");
     }
   };
