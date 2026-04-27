@@ -98,7 +98,7 @@ Während der UI-Verifikation von 4-06 entdeckt — Fixes bewusst nach Phase 4 ge
 
 - 🔴 **Stundeneinträge in „Stundenübersicht" nicht anklickbar** → kein Detail-View mit Foto-Anzeige. Feature-Gap, hat 4-06-UI-Verifikation indirekt blockiert (Fotos sind in DB als Pfade, aber kein Screen rendert sie). Fix wahrscheinlich `SteView.jsx` (Listen-Item → onClick → Detail-Drawer).
 - 🟢 ~~**DokView Download-Button hängt in „Lädt..."**~~ → gefixt 2026-04-27 (Tag 4 Task 1) via Anchor-Click statt `window.open` (iOS-PWA-tauglich). try/finally war bereits korrekt.
-- 🔴 **Stundenübersicht zeigt „6 Einträge" aber rendert nur 3** (Pagination-Bug?). Header-Count und gerendertes Array divergieren — vermutlich Filter-Mismatch (z.B. nur eigene Einträge gerendert, alle gezählt) oder ein abgeschnittenes `.slice(0, 3)`.
+- 🟢 ~~**Stundenübersicht zeigt „6 Einträge" aber rendert nur 3**~~ → gefixt 2026-04-27 (Tag 4 Task 2). Root-Cause: Dash-Tile zeigte Lifetime-Count, MeineStd-Screen aber den aktuellen Monat. Dash filtert jetzt `isInMonth(now)` und labelt explizit "diesen Monat".
 
 ---
 
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · BUG-FU-3 · 6dfc1ea · Dash-Tile "Meine Stunden" zeigt jetzt Einträge des aktuellen Monats statt Lifetime-Count → konsistent mit MeineStd-Screen-View. Label-Anpassung "X Einträge diesen Monat" macht Semantik explizit.
 - 2026-04-27 · BUG-FU-2 · aa78592 · DokView Download nutzt jetzt Anchor-Click statt `window.open` (iOS-PWA-tauglich, Popup-Blocker umgangen). try/finally-Pattern war bereits korrekt — Hardening + Repro-Schutz.
 - 2026-04-27 · Sync-Verifikation (Tag 3) · — · Alle 19 Tasks die im Autopilot Tag 1+2 als "bereits done" geskippt waren wurden gegen `git log --all` und Code-Inspektion verifiziert. Status-Tabelle ist sync. Brief-Tasks 5-04 (`b5b34e6`), 3c-SLIDER (`a0a979e`), 3c-TOAST (`3621a87`) ebenfalls bereits in main — Spot-Check der Live-Files bestätigt: viewport ohne `user-scalable`/`maximum-scale` (WCAG 1.4.4-Kommentar), BstDet hat `debounceRef`+`pendingRef`+Cleanup, Toast hat `aria-label="Schließen"`-Button. Keine neuen Code-Commits in Tag 3.
 - 2026-04-27 · F-01 (Phase 1, 🟡 ongoing) · c27087a · 3 neue UI-Komponenten angelegt (`Card`, `SectionHeader`, `ListRow`) + an 2 Demo-Stellen testweise verwendet (MehrView SectionHeader+Card; TagView 3x Card). `IconButton` existierte bereits aus 3c-TOUCH. Kein app-weiter Rollout — wird Stück-für-Stück ersetzt wenn betroffene Screens sowieso angefasst werden.
