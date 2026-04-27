@@ -1,11 +1,13 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
+import { requestWithRetry } from './_request.js';
 
-export async function getAll() {
-  const { data, error } = await supabase
-    .from('kalender')
-    .select('*')
-    .order('datum');
+export async function getAll({ signal } = {}) {
+  // 6-04: Retry/Abort/Timeout-Wrapper. Junction-Query bleibt direkt.
+  const { data, error } = await requestWithRetry(
+    () => supabase.from('kalender').select('*').order('datum'),
+    { signal },
+  );
   if (error) throw error;
 
   // Fetch mitarbeiter junction
