@@ -281,7 +281,7 @@ Diese Tasks sind **nicht phase-gebunden** und werden eingeschoben, wenn sie gera
 |---|---|---|---|
 | F-01 | `<Card>`, `<SectionHeader>`, `<IconButton>`, `<ListRow>` Komponenten extrahieren, Inline-Styles sukzessive ersetzen | groß | 🔴 TODO |
 | F-02 | Auth: `_signInAndLoadProfile(email, pwd)` Helper extrahieren, 5 Login-Funktionen konsolidieren | klein | 🟢 DONE |
-| F-03 | API-Returns konsistent machen (überall mapped Object ODER überall ID) | klein | 🔴 TODO |
+| F-03 | API-Returns konsistent machen (überall mapped Object ODER überall ID) | klein | 🟢 DONE |
 | F-04 | `bStdNum()` Number-Variante neben `bStd()` (String) extrahieren — spart 30+ `parseFloat`-Calls | klein | 🟢 DONE |
 | F-05 | `Hdr.jsx` `large` vs compact: gemeinsame Sub-Renders | klein | 🟢 DONE |
 | F-06 | `WI.jsx` Wetter-Icon-Default auf neutral (`Cloud`) statt `Sun` | klein | 🟢 DONE |
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · F-03 · 1713a32 · API-Returns vereinheitlicht: 6 row-based `create()` (maengel, stundeneintraege, subunternehmer, benachrichtigungen, kosten, dokumente) returnen jetzt `data.id` (string) statt mapped Object oder raw row. Sonderfälle: `dokumente.createWithFile` bleibt `{id, storagePath}` (Caller braucht Pfad), `users.create`/`createForOnboarding` bleiben RPC-Result (UUID-string). Aufrufer-Impact: 0 (BstForm konsumiert bereits ID).
 - 2026-04-27 · F-05 · 9e0f81e · `Hdr` BackButton in interne Sub-Komponente extrahiert (iconSize/fontSize/marginClass parametrisiert) — Duplikat zwischen large + compact Branch entfernt. Title-Styles bleiben pro Branch (zu divergent).
 - 2026-04-27 · 6-07 · c264a59 · helpers.test.js +22 Szenarien (escHtml/fDat/fK/fE/genUsername). Total 166 Vitest (von 144). Coverage für alle pure-Helpers in `src/utils/helpers.js`.
 - 2026-04-27 · 6-05 · 6b0f3d2 · `bautagebuch.update(id, entry)` + `kalender.update(id, entry)` API-Funktionen + Action-Wrapper. stripUndefined-Pattern; Junction-Sync (anwesende/mitarbeiter) als DELETE+INSERT mit `undefined`-Skip. Aktuelle UI nutzt noch delete+create — Update-Pfad bereit für Edit-Modi in BtbView/KalView.
