@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useRef, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { useAppData } from "../lib/useAppData.js";
 import { G, P, BTN, RED } from "../utils/helpers";
-import { Toast, Spinner } from "../components/ui";
+import { Toast, Spinner, Clock } from "../components/ui";
 import { compressImage, blobToDataURL } from "../utils/image";
 
 const BACKGROUND_LOCK_MS = 120 * 1000;
@@ -49,11 +49,9 @@ export function AppProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const fileRef = useRef(null);
   const [photoCb, setPhotoCb] = useState(null);
-  const [clockTime, setClockTime] = useState(new Date());
-  useEffect(() => {
-    const t = setInterval(() => setClockTime(new Date()), 30000);
-    return () => clearInterval(t);
-  }, []);
+  // clockTime wurde lokalisiert in <Clock />-Komponente (Audit P-MEDIUM):
+  // vorher löste die Minutentick-State-Update einen App-weiten Re-Render
+  // aus, weil clockTime im AppContext-Value steckte.
 
   // Auth session init: gültige Session wird beim App-Start HART invalidiert
   // (signOut), damit kein altes JWT silently RLS-Queries machen kann (z.B.
@@ -395,7 +393,6 @@ export function AppProvider({ children }) {
     mitSummary,
     setMitSummary,
     fileRef,
-    clockTime,
   };
 
   return (
@@ -413,12 +410,7 @@ export function AppProvider({ children }) {
         >
           <div className="device-frame">
             <div className="device-statusbar">
-              <span className="device-time">
-                {clockTime.toLocaleTimeString("de-DE", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
+              <Clock />
               <div className="device-notch" />
               <div className="device-indicators">
                 <svg width="17" height="11" viewBox="0 0 17 11" fill="#1a1a1a">
