@@ -11,6 +11,11 @@ import {
   getCurrentWeekRange,
   getCurrentMonthRange,
   getBaustelleFullRange,
+  escHtml,
+  fDat,
+  fK,
+  fE,
+  genUsername,
 } from "./helpers.js";
 
 describe("parseDecimal (Komma + Punkt)", () => {
@@ -395,5 +400,80 @@ describe("getBaustelleFullRange (frühester-spätester Eintrag)", () => {
     expect(
       getBaustelleFullRange([{ baustelleId: "B", datum: "2026-04-15" }], "A"),
     ).toBeNull();
+  });
+});
+
+describe("escHtml (XSS-safe Escape)", () => {
+  it("ersetzt < > & \" '", () => {
+    expect(escHtml("<script>alert('x')</script>")).toBe(
+      "&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt;",
+    );
+  });
+  it("escapt & zuerst (kein doppeltes Escape)", () => {
+    expect(escHtml("a & b")).toBe("a &amp; b");
+    expect(escHtml("&lt;")).toBe("&amp;lt;");
+  });
+  it("leerer/null/undefined String → ''", () => {
+    expect(escHtml("")).toBe("");
+    expect(escHtml(null)).toBe("");
+    expect(escHtml(undefined)).toBe("");
+  });
+  it("Number wird zu String konvertiert", () => {
+    expect(escHtml(42)).toBe("42");
+  });
+});
+
+describe("fDat / fK (Datum-Formatierung)", () => {
+  it("fDat: 'Mo, 03.04.2026' Format (Wochentag-Suffix variiert je Locale)", () => {
+    // Node 22+: 'Mo., 13.04.2026'; Browsers: 'Mo, 13.04.2026'
+    expect(fDat("2026-04-13")).toMatch(/^Mo\.?,? 13\.04\.2026$/);
+  });
+  it("fK: kurz '03.04.'", () => {
+    expect(fK("2026-04-13")).toBe("13.04.");
+  });
+});
+
+describe("fE (Euro-Formatierung)", () => {
+  it("formatiert 1234.56 als 1.234,56 €", () => {
+    expect(fE(1234.56)).toMatch(/1\.234,56/);
+    expect(fE(1234.56)).toMatch(/€/);
+  });
+  it("0 → 0,00 €", () => {
+    expect(fE(0)).toMatch(/0,00/);
+  });
+  it("kleine Zahlen mit Cent: 0.5", () => {
+    expect(fE(0.5)).toMatch(/0,50/);
+  });
+});
+
+describe("genUsername", () => {
+  it("Standard 'Altin Malici' → 'a.malici'", () => {
+    expect(genUsername("Altin Malici", [])).toBe("a.malici");
+  });
+  it("Umlaute werden konvertiert: 'Jürgen Müller' → 'j.mueller'", () => {
+    expect(genUsername("Jürgen Müller", [])).toBe("j.mueller");
+  });
+  it("ß → ss: 'Klaus Strauß' → 'k.strauss'", () => {
+    expect(genUsername("Klaus Strauß", [])).toBe("k.strauss");
+  });
+  it("Konflikt: 'a.malici' belegt → 'al.malici'", () => {
+    expect(genUsername("Altin Malici", ["a.malici"])).toBe("al.malici");
+  });
+  it("Mehrere Konflikte → längere Prefixe", () => {
+    expect(
+      genUsername("Altin Malici", ["a.malici", "al.malici", "alt.malici"]),
+    ).toBe("alti.malici");
+  });
+  it("Single-Name fallback: 'Madonna' → 'madonna'", () => {
+    expect(genUsername("Madonna", [])).toBe("madonna");
+  });
+  it("Numerischer Fallback wenn alle Prefixes belegt", () => {
+    const existing = [];
+    for (let i = 1; i <= 5; i++) {
+      existing.push("altin".slice(0, i) + ".malici");
+    }
+    existing.push("altin.malici");
+    const u = genUsername("Altin Malici", existing);
+    expect(u).toMatch(/^altin\.malici\d+$/);
   });
 });
