@@ -2,13 +2,15 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStd, bStdNum, fDat, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
-import { ScreenLayout, Empty, IconButton } from "../ui";
+import { ScreenLayout, Empty, IconButton, StundenDetailModal } from "../ui";
 
 const MeineStd = () => {
   const { data, cu, goBack } = useApp();
   const h = new Date();
   const [mo, setMo] = useState(h.getMonth());
   const [jr, setJr] = useState(h.getFullYear());
+  // BUG-FU-1: Click auf Einzeleintrag → Detail-Modal mit Foto-Anzeige.
+  const [detail, setDetail] = useState(null);
   if (!cu) return null;
   const pv = () => {
     setMo((m) => {
@@ -184,13 +186,18 @@ const MeineStd = () => {
                         (b) => b.id === e.baustelleId,
                       );
                       return (
-                        <div
+                        <button
                           key={e.id}
+                          onClick={() => setDetail(e)}
                           style={{
                             padding: 10,
                             borderRadius: 10,
                             background: "#f2f2f7",
                             fontSize: 13,
+                            border: "none",
+                            width: "100%",
+                            textAlign: "left",
+                            cursor: "pointer",
                           }}
                         >
                           <div className="flex justify-between items-start">
@@ -209,7 +216,7 @@ const MeineStd = () => {
                           <p style={{ color: "#8e8e93", marginTop: 2 }}>
                             {e.arbeit}
                           </p>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -218,6 +225,17 @@ const MeineStd = () => {
             })}
         </div>
       )}
+      <StundenDetailModal
+        open={!!detail}
+        eintrag={detail}
+        baustelle={
+          detail
+            ? data.baustellen.find((b) => b.id === detail.baustelleId)
+            : null
+        }
+        userName={cu?.name}
+        onClose={() => setDetail(null)}
+      />
     </ScreenLayout>
   );
 };
