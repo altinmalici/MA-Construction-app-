@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · F-01 (Phase 2, weiterhin 🟡) · 228035f+1f8eba3+9b0406f+70280e3+15ccf10 · 5 weitere Screens auf Card umgestellt: Dash KPI-Tiles, MitView (resetInfo + Liste), SubView (Liste), MatView (Container), ProfilView (Avatar + 3 Stats + Settings + Baustellen). Insgesamt 7 Screens jetzt mit Card. BstList übersprungen (Listen-Items sind Buttons, würden Card-API-Erweiterung brauchen). BstDet/KostenView/MngView noch unrefactored — als Teil von Folge-Tasks.
 - 2026-04-27 · F-09 · e449a53 · `BstForm` 700 → 646 Zeilen, 6 Sections über neuen `Section`-Wrapper (Card + optionaler SectionHeader): Stammdaten, Kontakt, Zeitraum & Budget, Details, Team, Rechnungsdaten. JSX-Layer-only — Verhalten/State unverändert.
 - 2026-04-27 · BUG-FU-3 · 6dfc1ea · Dash-Tile "Meine Stunden" zeigt jetzt Einträge des aktuellen Monats statt Lifetime-Count → konsistent mit MeineStd-Screen-View. Label-Anpassung "X Einträge diesen Monat" macht Semantik explizit.
 - 2026-04-27 · BUG-FU-2 · aa78592 · DokView Download nutzt jetzt Anchor-Click statt `window.open` (iOS-PWA-tauglich, Popup-Blocker umgangen). try/finally-Pattern war bereits korrekt — Hardening + Repro-Schutz.
