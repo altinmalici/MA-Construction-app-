@@ -30,7 +30,9 @@ export async function create(m) {
     .select()
     .single();
   if (error) throw error;
-  return mapRow(data);
+  // F-03: API-Returns app-weit konsistent als id-String. Aufrufer holen
+  // sich das volle Object via reload + Lookup, falls benötigt.
+  return data.id;
 }
 
 export async function updateStatus(id, status) {

@@ -34,7 +34,9 @@ export async function create(doc) {
     .select()
     .single();
   if (error) throw error;
-  return data;
+  // F-03: API-Returns app-weit konsistent als id-String. createWithFile
+  // bleibt Sonderfall (returnt {id, storagePath} weil Caller den Pfad braucht).
+  return data.id;
 }
 
 /**

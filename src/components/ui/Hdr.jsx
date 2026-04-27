@@ -1,6 +1,23 @@
 import { ChevronLeft } from "lucide-react";
 import { P } from "../../utils/helpers";
 
+// Gemeinsamer Back-Button für large + compact. Nur die Größen weichen ab,
+// das Markup (Icon + "Zurück"-Label) ist identisch — wir lokalisieren das
+// hier statt es in beiden Branches zu duplizieren.
+const BackButton = ({ onBack, iconSize, fontSize, marginClass }) => {
+  if (!onBack) return null;
+  return (
+    <button
+      onClick={onBack}
+      className={`flex items-center gap-1 ${marginClass}`}
+      style={{ color: P }}
+    >
+      <ChevronLeft size={iconSize} />
+      <span style={{ fontSize }}>Zurück</span>
+    </button>
+  );
+};
+
 const Hdr = ({ title, onBack, right, large }) => {
   if (large)
     return (
@@ -11,16 +28,14 @@ const Hdr = ({ title, onBack, right, large }) => {
           background: "#f2f2f7",
         }}
       >
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 -ml-1 mb-2"
-            style={{ color: P }}
-          >
-            <ChevronLeft size={20} />
-            <span style={{ fontSize: 15 }}>Zurück</span>
-          </button>
-        )}
+        <div className="mb-2">
+          <BackButton
+            onBack={onBack}
+            iconSize={20}
+            fontSize={15}
+            marginClass="-ml-1"
+          />
+        </div>
         <div className="flex items-end justify-between">
           <h1
             style={{
@@ -41,16 +56,12 @@ const Hdr = ({ title, onBack, right, large }) => {
   return (
     <div className="ios-compact-header">
       <div className="flex items-center gap-3">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 -ml-2"
-            style={{ color: P }}
-          >
-            <ChevronLeft size={22} />
-            <span style={{ fontSize: 17 }}>Zurück</span>
-          </button>
-        )}
+        <BackButton
+          onBack={onBack}
+          iconSize={22}
+          fontSize={17}
+          marginClass="-ml-2"
+        />
         <h1
           className="flex-1 truncate text-center"
           style={{ fontSize: 17, fontWeight: 600, color: "#000" }}

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, bStdNum, IC, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout } from "../ui";
+import { bStd, bStdNum, IC } from "../../utils/helpers";
+import { Empty, ScreenLayout, Card } from "../ui";
 
 const TagView = () => {
   const { data, goBack, eName } = useApp();
@@ -29,29 +29,13 @@ const TagView = () => {
           marginBottom: 12,
         }}
       >
-        <div
-          style={{
-            borderRadius: 12,
-            padding: 14,
-            background: "white",
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
             {te.length}
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Einträge</p>
-        </div>
-        <div
-          style={{
-            borderRadius: 12,
-            padding: 14,
-            background: "white",
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        </Card>
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
             {(() => {
               const t = te.reduce(
@@ -63,7 +47,7 @@ const TagView = () => {
             h
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Gesamt</p>
-        </div>
+        </Card>
       </div>
       {te.length === 0 ? (
         <Empty icon={Clock} text="Keine Einträge an diesem Tag" />
@@ -72,15 +56,7 @@ const TagView = () => {
           {te.map((e) => {
             const bs = data.baustellen.find((b) => b.id === e.baustelleId);
             return (
-              <div
-                key={e.id}
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: "white",
-                  boxShadow: CS,
-                }}
-              >
+              <Card key={e.id}>
                 <div
                   className="flex justify-between items-start"
                   style={{ marginBottom: 4 }}
@@ -113,7 +89,7 @@ const TagView = () => {
                     Material: {e.material}
                   </p>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>

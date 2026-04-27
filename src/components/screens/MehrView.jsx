@@ -13,8 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { CS } from "../../utils/helpers";
-import { ScreenLayout } from "../ui";
+import { ScreenLayout, SectionHeader, Card } from "../ui";
 
 const MehrView = () => {
   const { data, cu, nav, unread, prevV, goBack, setSb } =
@@ -108,26 +107,8 @@ const MehrView = () => {
     <ScreenLayout large title="Mehr" onBack={prevV ? goBack : undefined}>
       {sections.map((sec) => (
         <div key={sec.title} style={{ marginBottom: 24 }}>
-          <p
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#8e8e93",
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-              paddingBottom: 8,
-            }}
-          >
-            {sec.title}
-          </p>
-          <div
-            style={{
-              background: "white",
-              borderRadius: 12,
-              overflow: "hidden",
-              boxShadow: CS,
-            }}
-          >
+          <SectionHeader>{sec.title}</SectionHeader>
+          <Card padding={0} style={{ overflow: "hidden" }}>
             {/* eslint-disable-next-line no-unused-vars -- I ist destructure-rename für JSX-Component */}
             {sec.items.map(({ k, i: I, l, s, badge }, idx) => (
               <button
@@ -199,7 +180,7 @@ const MehrView = () => {
                 <ChevronRight size={18} style={{ color: "#c7c7cc" }} />
               </button>
             ))}
-          </div>
+          </Card>
         </div>
       ))}
     </ScreenLayout>
