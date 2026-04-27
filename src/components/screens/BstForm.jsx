@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { Check, Save } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { CS, BTN, IC, parseDecimal } from "../../utils/helpers";
-import { ScreenLayout, Spinner, ConfirmModal } from "../ui";
+import { BTN, IC, parseDecimal } from "../../utils/helpers";
+import { ScreenLayout, Spinner, ConfirmModal, Section } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const BstForm = () => {
@@ -97,16 +97,7 @@ const BstForm = () => {
       title={ex ? "Bearbeiten" : "Neue Baustelle"}
       onBack={handleBack}
     >
-      {/* Card: Grunddaten */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          marginBottom: 16,
-          overflow: "hidden",
-          boxShadow: CS,
-        }}
-      >
+      <Section title="Stammdaten">
         <div style={{ padding: "12px 16px" }}>
           <label
             style={{
@@ -185,18 +176,9 @@ const BstForm = () => {
             ))}
           </div>
         </div>
-      </div>
+      </Section>
 
-      {/* Card: Kontakt */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          marginBottom: 16,
-          overflow: "hidden",
-          boxShadow: CS,
-        }}
-      >
+      <Section title="Kontakt">
         <div style={{ padding: "12px 16px" }}>
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
@@ -259,18 +241,9 @@ const BstForm = () => {
             className={IC}
           />
         </div>
-      </div>
+      </Section>
 
-      {/* Card: Zeitraum & Budget */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          marginBottom: 16,
-          overflow: "hidden",
-          boxShadow: CS,
-        }}
-      >
+      <Section title="Zeitraum & Budget">
         <div style={{ padding: "12px 16px" }}>
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
@@ -339,18 +312,9 @@ const BstForm = () => {
             className={IC}
           />
         </div>
-      </div>
+      </Section>
 
-      {/* Card: Details */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          marginBottom: 16,
-          overflow: "hidden",
-          boxShadow: CS,
-        }}
-      >
+      <Section title="Details">
         <div style={{ padding: "12px 16px" }}>
           <div
             style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
@@ -414,18 +378,9 @@ const BstForm = () => {
             className={IC + " resize-none"}
           />
         </div>
-      </div>
+      </Section>
 
-      {/* Card: Team */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          marginBottom: 16,
-          overflow: "hidden",
-          boxShadow: CS,
-        }}
-      >
+      <Section title="Team">
         <div style={{ padding: "12px 16px" }}>
           <p
             style={{
@@ -549,19 +504,10 @@ const BstForm = () => {
             </div>
           )}
         </div>
-      </div>
+      </Section>
 
-      {/* Card: Rechnungsdaten (nur Chef) */}
       {chef && (
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            marginBottom: 16,
-            overflow: "hidden",
-            boxShadow: CS,
-          }}
-        >
+        <Section title="Rechnungsdaten">
           <div
             style={{
               padding: "12px 16px",
@@ -656,7 +602,7 @@ const BstForm = () => {
               className={IC}
             />
           </div>
-        </div>
+        </Section>
       )}
 
       <button
