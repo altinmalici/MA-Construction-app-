@@ -1,10 +1,12 @@
 import { supabase } from '../supabase.js';
+import { requestWithRetry } from './_request.js';
 
-export async function getAll() {
-  const { data, error } = await supabase
-    .from('subunternehmer')
-    .select('*')
-    .order('created_at');
+export async function getAll({ signal } = {}) {
+  // 6-04: Retry/Abort/Timeout-Wrapper.
+  const { data, error } = await requestWithRetry(
+    () => supabase.from('subunternehmer').select('*').order('created_at'),
+    { signal },
+  );
   if (error) throw error;
   return data.map(s => ({ id: s.id, name: s.name, gewerk: s.gewerk || '', telefon: s.telefon || '' }));
 }
