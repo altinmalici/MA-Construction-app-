@@ -287,7 +287,7 @@ Diese Tasks sind **nicht phase-gebunden** und werden eingeschoben, wenn sie gera
 | F-06 | `WI.jsx` Wetter-Icon-Default auf neutral (`Cloud`) statt `Sun` | klein | 🟢 DONE |
 | F-07 | ESLint-Cleanup-Sprint: 50 Errors + 5 Warnings abarbeiten | mittel | 🟢 DONE |
 | F-08 | `pg`-Package aus devDependencies entfernen (ungenutzt im Frontend) | klein | 🟢 DONE |
-| F-09 | `BstForm` mit `<Section>`-Pattern refaktorieren (665 Zeilen) | mittel | 🔴 TODO |
+| F-09 | `BstForm` mit `<Section>`-Pattern refaktorieren (665 Zeilen) | mittel | 🟢 DONE |
 
 ---
 
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · F-09 · e449a53 · `BstForm` 700 → 646 Zeilen, 6 Sections über neuen `Section`-Wrapper (Card + optionaler SectionHeader): Stammdaten, Kontakt, Zeitraum & Budget, Details, Team, Rechnungsdaten. JSX-Layer-only — Verhalten/State unverändert.
 - 2026-04-27 · BUG-FU-3 · 6dfc1ea · Dash-Tile "Meine Stunden" zeigt jetzt Einträge des aktuellen Monats statt Lifetime-Count → konsistent mit MeineStd-Screen-View. Label-Anpassung "X Einträge diesen Monat" macht Semantik explizit.
 - 2026-04-27 · BUG-FU-2 · aa78592 · DokView Download nutzt jetzt Anchor-Click statt `window.open` (iOS-PWA-tauglich, Popup-Blocker umgangen). try/finally-Pattern war bereits korrekt — Hardening + Repro-Schutz.
 - 2026-04-27 · Sync-Verifikation (Tag 3) · — · Alle 19 Tasks die im Autopilot Tag 1+2 als "bereits done" geskippt waren wurden gegen `git log --all` und Code-Inspektion verifiziert. Status-Tabelle ist sync. Brief-Tasks 5-04 (`b5b34e6`), 3c-SLIDER (`a0a979e`), 3c-TOAST (`3621a87`) ebenfalls bereits in main — Spot-Check der Live-Files bestätigt: viewport ohne `user-scalable`/`maximum-scale` (WCAG 1.4.4-Kommentar), BstDet hat `debounceRef`+`pendingRef`+Cleanup, Toast hat `aria-label="Schließen"`-Button. Keine neuen Code-Commits in Tag 3.
