@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { G, RED, CS, COLORS, isInMonth } from "../../utils/helpers";
-import { ScreenLayout } from "../ui";
+import { ScreenLayout, Card } from "../ui";
 
 const Dash = () => {
   const { data, cu, chef, nav, unread, setSb, setEm } = useApp();
@@ -343,15 +343,7 @@ const Dash = () => {
           marginBottom: 24,
         }}
       >
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 14,
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p
             style={{
               fontSize: 24,
@@ -363,16 +355,8 @@ const Dash = () => {
             {aktiveBst}
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>Aktiv</p>
-        </div>
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 14,
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        </Card>
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p
             style={{
               fontSize: 24,
@@ -386,13 +370,10 @@ const Dash = () => {
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>
             Erfasst
           </p>
-        </div>
-        <div
+        </Card>
+        <Card
+          padding={14}
           style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 14,
-            boxShadow: CS,
             textAlign: "center",
             ...(chef && openMaengel > 0
               ? { border: "0.5px solid rgba(255,59,48,0.25)" }
@@ -418,7 +399,7 @@ const Dash = () => {
           >
             {chef ? "M\u00e4ngel" : "Termine"}
           </p>
-        </div>
+        </Card>
       </div>
 
       {/* ── Section: Module ── */}
