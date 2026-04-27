@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Plus, X, Briefcase, Phone, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { IC, BTN, CS } from "../../utils/helpers";
-import { Empty, Bdg, ScreenLayout, Spinner, ConfirmModal, IconButton } from "../ui";
+import { IC, BTN } from "../../utils/helpers";
+import { Empty, Bdg, ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const SubView = () => {
@@ -136,15 +136,7 @@ const SubView = () => {
               (b.subunternehmer || []).includes(s.id),
             );
             return (
-              <div
-                key={s.id}
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: "white",
-                  boxShadow: CS,
-                }}
-              >
+              <Card key={s.id}>
                 <div
                   className="flex items-center gap-3"
                   style={{ marginBottom: 8 }}
@@ -192,7 +184,7 @@ const SubView = () => {
                     bs.map((b) => <Bdg key={b.id} text={b.kunde} />)
                   )}
                 </div>
-              </div>
+              </Card>
             );
           })
         )}
