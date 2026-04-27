@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Save, LogOut } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStdNum, P, G, RED, GREEN, CS, IC } from "../../utils/helpers";
-import { ScreenLayout, Bdg, ConfirmModal } from "../ui";
+import { bStdNum, P, G, RED, GREEN, IC } from "../../utils/helpers";
+import { ScreenLayout, Bdg, ConfirmModal, Card } from "../ui";
 
 const ProfilView = () => {
   const {
@@ -113,15 +113,7 @@ const ProfilView = () => {
         style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}
       >
         {/* Avatar & Name */}
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 20,
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        <Card padding={20} style={{ textAlign: "center" }}>
           <div
             style={{
               width: 64,
@@ -164,7 +156,7 @@ const ProfilView = () => {
           <p style={{ fontSize: 13, color: "#8e8e93", marginTop: 4 }}>
             {chef ? "Bauleiter" : "Handwerker"}
           </p>
-        </div>
+        </Card>
 
         {/* Statistiken */}
         <div
@@ -174,59 +166,28 @@ const ProfilView = () => {
             gap: 8,
           }}
         >
-          <div
-            style={{
-              background: "white",
-              borderRadius: 12,
-              padding: 14,
-              boxShadow: CS,
-              textAlign: "center",
-            }}
-          >
+          <Card padding={14} style={{ textAlign: "center" }}>
             <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
               {totalH.toFixed(0)}h
             </p>
             <p style={{ fontSize: 12, color: "#8e8e93" }}>Stunden</p>
-          </div>
-          <div
-            style={{
-              background: "white",
-              borderRadius: 12,
-              padding: 14,
-              boxShadow: CS,
-              textAlign: "center",
-            }}
-          >
+          </Card>
+          <Card padding={14} style={{ textAlign: "center" }}>
             <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
               {meineStd.length}
             </p>
             <p style={{ fontSize: 12, color: "#8e8e93" }}>Einträge</p>
-          </div>
-          <div
-            style={{
-              background: "white",
-              borderRadius: 12,
-              padding: 14,
-              boxShadow: CS,
-              textAlign: "center",
-            }}
-          >
+          </Card>
+          <Card padding={14} style={{ textAlign: "center" }}>
             <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
               {meineBs.length}
             </p>
             <p style={{ fontSize: 12, color: "#8e8e93" }}>Baustellen</p>
-          </div>
+          </Card>
         </div>
 
         {/* Einstellungen */}
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            overflow: "hidden",
-            boxShadow: CS,
-          }}
-        >
+        <Card padding={0} style={{ overflow: "hidden" }}>
           <div
             style={{
               padding: "14px 16px",
@@ -299,17 +260,10 @@ const ProfilView = () => {
               <Bdg text={chef ? "Bauleiter" : "Handwerker"} />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Baustellen */}
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            overflow: "hidden",
-            boxShadow: CS,
-          }}
-        >
+        <Card padding={0} style={{ overflow: "hidden" }}>
           <div
             style={{
               padding: "14px 16px",
@@ -366,7 +320,7 @@ const ProfilView = () => {
               ))
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Buttons */}
         {editMode ? (
