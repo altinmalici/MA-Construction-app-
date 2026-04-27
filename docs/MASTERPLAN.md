@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-28 · Merge Tag 4 nach main · 4b3f280 · 18 Commits aus `autopilot-2026-04-27` per `--no-ff` integriert + gepusht (Vercel Auto-Deploy). Phase 4 Beobachtungs-Bugs (BUG-FU-1/2/3) sind live. F-09 abgeschlossen, F-01 in Phase 2 (7 Screens), 6-04 als Pilot live.
 - 2026-04-27 · STOP Tag 4 · — · Tasks 6-03a (KostenView 949 Z. → List/Det/Form) + 6-03b (SteView 778 Z. → List/Det/Form) NICHT angefangen. Beide haben starken Cross-Component-Daten-Flow (calcLohn, byKategorie, getVal/edits) der entweder in AppContext gehoben oder via Props/Context durchgereicht werden müsste. Brief-Stop-Bedingung "> 30 Min pro Datei" greift. Splits brauchen eigene fokussierte Sessions mit explizitem State-Lifting-Plan.
 - 2026-04-27 · BUG-FU-1 · 4d92038 · `StundenDetailModal`-Komponente (Bottom-Sheet mit PhotoGrid read-only). Integration in StundenUebersicht + MeineStd: Listen-Item ist jetzt klickbar, Modal zeigt alle Fotos + Tätigkeit + Material + Bemerkung + Baustelle + Mitarbeiter. Phase-4-Followup-Bug abgehakt.
 - 2026-04-27 · 6-04 (🟡 Pilot) · db16c26 · `src/lib/api/_request.js`: `requestWithRetry(queryFn, {retries, retryDelayMs, timeoutMs, signal})` mit exponential backoff (3x), Logic-Error-Skip, AbortController-Integration via Promise.race. +6 Vitest. Pilot in `baustellen.getAll` + `stundeneintraege.getAll`. Aufrufer-Impact 0 (signal-Argument optional).
