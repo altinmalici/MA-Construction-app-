@@ -83,7 +83,7 @@ const ProfilView = () => {
       setEditMode(false);
       setPin("");
       show("Gespeichert");
-    } catch (e) {
+    } catch {
       show("Fehler beim Speichern", "error");
     }
   };

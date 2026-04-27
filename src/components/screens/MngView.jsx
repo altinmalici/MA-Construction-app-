@@ -89,7 +89,7 @@ const MngView = () => {
     try {
       await actions.maengel.updateStatus(id, st);
       show(st === "erledigt" ? "Erledigt" : "In Arbeit");
-    } catch (e) {
+    } catch {
       show("Fehler", "error");
     }
   };

@@ -82,6 +82,10 @@ export function useAppData() {
 
   useEffect(() => {
     mountedRef.current = true;
+    // setState passiert async im finally-Callback nach loadAll(). Lint sieht
+    // den synchronen loadAll-Aufruf konservativ als Effect-setState — hier
+    // erlaubt: kein cascading render, sondern One-Shot-Init.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadAll().finally(() => {
       if (mountedRef.current) setLoading(false);
     });

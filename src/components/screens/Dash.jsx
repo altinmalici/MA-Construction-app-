@@ -436,6 +436,7 @@ const Dash = () => {
           gap: 8,
         }}
       >
+        {/* eslint-disable-next-line no-unused-vars -- I ist destructure-rename für JSX-Component */}
         {widgetItems.map(({ k, i: I, c, l, s, n }) => (
           <button
             key={k}

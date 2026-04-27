@@ -28,6 +28,10 @@ const MitForm = () => {
     }
     const existing = data.users.map((u) => u.username).filter(Boolean);
     setUn(genUsername(n.trim(), existing));
+    // Absichtlich nur auf Name-Änderung lauschen — sobald der User den
+    // Username manuell ändert, soll die Auto-Generierung pausieren bis
+    // Name sich erneut ändert. data.users/ex bewusst ausgelassen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [n]);
   const save = () =>
     withSaving(async () => {

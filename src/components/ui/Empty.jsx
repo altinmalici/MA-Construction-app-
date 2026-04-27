@@ -1,4 +1,5 @@
-const Empty = ({ icon: I, text }) => (
+// eslint-disable-next-line no-unused-vars -- Icon ist destructure-rename für JSX-Component (jsx-uses-vars-Plugin nicht installiert)
+const Empty = ({ icon: Icon, text }) => (
   <div style={{ textAlign: "center", padding: "60px 20px" }}>
     <div
       style={{
@@ -12,7 +13,7 @@ const Empty = ({ icon: I, text }) => (
         margin: "0 auto 16px",
       }}
     >
-      <I size={28} style={{ color: "#3c3c43" }} />
+      <Icon size={28} style={{ color: "#3c3c43" }} />
     </div>
     <p
       style={{ fontSize: 17, fontWeight: 600, color: "#000", marginBottom: 8 }}

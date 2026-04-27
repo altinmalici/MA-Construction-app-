@@ -225,7 +225,6 @@ const SteView = () => {
       {showList && chef ? (
         <div className="space-y-2">
           {[...bsEintraege].reverse().map((e) => {
-            const bs = data.baustellen.find((b) => b.id === e.baustelleId);
             return (
               <div
                 key={e.id}

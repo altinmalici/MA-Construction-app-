@@ -106,7 +106,7 @@ const MehrView = () => {
   ];
   return (
     <ScreenLayout large title="Mehr" onBack={prevV ? goBack : undefined}>
-      {sections.map((sec, si) => (
+      {sections.map((sec) => (
         <div key={sec.title} style={{ marginBottom: 24 }}>
           <p
             style={{
@@ -128,6 +128,7 @@ const MehrView = () => {
               boxShadow: CS,
             }}
           >
+            {/* eslint-disable-next-line no-unused-vars -- I ist destructure-rename für JSX-Component */}
             {sec.items.map(({ k, i: I, l, s, badge }, idx) => (
               <button
                 key={k}

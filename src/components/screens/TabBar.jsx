@@ -50,6 +50,7 @@ const TabBar = () => {
       ];
   return (
     <div className="tab-bar">
+      {/* eslint-disable-next-line no-unused-vars -- I ist destructure-rename für JSX-Component */}
       {tabs.map(({ id, i: I, l }) => (
         <button
           key={id}

@@ -5,7 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // dist: build output; MA_Construction_App*.jsx: eingefrorene Pre-Phase-2-
+  // Monolith-Referenz (siehe MASTERPLAN §8), wird nie wieder gebaut.
+  globalIgnores(['dist', 'MA_Construction_App*.jsx']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

@@ -20,7 +20,12 @@ export default function PromptModal({
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef(null);
 
+  // Beim Öffnen den aktuellen defaultValue als Initial-Wert übernehmen.
+  // Derived-from-prop-Pattern, bewusst hier per Effect (anstatt key={}) —
+  // sonst gehen ungespeicherte Eingaben beim Re-Open mit gleichem
+  // defaultValue verloren wenn die Komponente nur disabled war.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setValue(defaultValue);
   }, [open, defaultValue]);
 

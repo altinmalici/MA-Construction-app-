@@ -32,7 +32,7 @@ const MitView = () => {
       await actions.users.resetOnboardingPin(m.id, pin, username);
       setResetInfo({ name: m.name, username, pin });
       show("Neuer PIN erstellt");
-    } catch (e) {
+    } catch {
       show("Fehler", "error");
     }
   };
@@ -40,7 +40,7 @@ const MitView = () => {
     try {
       await actions.users.toggleActive(m.id, !m.isActive);
       show(m.isActive ? "Deaktiviert" : "Aktiviert");
-    } catch (e) {
+    } catch {
       show("Fehler", "error");
     }
   };

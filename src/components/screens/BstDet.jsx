@@ -243,6 +243,7 @@ const BstDet = () => {
             a: () => nav("btb"),
             cl: "#3c3c43",
           },
+          // eslint-disable-next-line no-unused-vars -- I ist destructure-rename für JSX-Component
         ].map(({ i: I, l, a, c, cl }) => (
           <button
             key={l}
