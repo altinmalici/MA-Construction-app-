@@ -97,7 +97,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 Während der UI-Verifikation von 4-06 entdeckt — Fixes bewusst nach Phase 4 gepusht, um den Storage-Migrations-Track nicht zu brechen:
 
 - 🔴 **Stundeneinträge in „Stundenübersicht" nicht anklickbar** → kein Detail-View mit Foto-Anzeige. Feature-Gap, hat 4-06-UI-Verifikation indirekt blockiert (Fotos sind in DB als Pfade, aber kein Screen rendert sie). Fix wahrscheinlich `SteView.jsx` (Listen-Item → onClick → Detail-Drawer).
-- 🔴 **DokView Download-Button hängt in „Lädt..."** (Regression aus 4-03). Vermutlich `getDocumentUrl` returnt zwar URL, aber `window.open` oder das Loading-Flag wird nicht zurückgesetzt. Repro: Dokument anklicken → State bleibt im Spinner.
+- 🟢 ~~**DokView Download-Button hängt in „Lädt..."**~~ → gefixt 2026-04-27 (Tag 4 Task 1) via Anchor-Click statt `window.open` (iOS-PWA-tauglich). try/finally war bereits korrekt.
 - 🔴 **Stundenübersicht zeigt „6 Einträge" aber rendert nur 3** (Pagination-Bug?). Header-Count und gerendertes Array divergieren — vermutlich Filter-Mismatch (z.B. nur eigene Einträge gerendert, alle gezählt) oder ein abgeschnittenes `.slice(0, 3)`.
 
 ---
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · BUG-FU-2 · aa78592 · DokView Download nutzt jetzt Anchor-Click statt `window.open` (iOS-PWA-tauglich, Popup-Blocker umgangen). try/finally-Pattern war bereits korrekt — Hardening + Repro-Schutz.
 - 2026-04-27 · Sync-Verifikation (Tag 3) · — · Alle 19 Tasks die im Autopilot Tag 1+2 als "bereits done" geskippt waren wurden gegen `git log --all` und Code-Inspektion verifiziert. Status-Tabelle ist sync. Brief-Tasks 5-04 (`b5b34e6`), 3c-SLIDER (`a0a979e`), 3c-TOAST (`3621a87`) ebenfalls bereits in main — Spot-Check der Live-Files bestätigt: viewport ohne `user-scalable`/`maximum-scale` (WCAG 1.4.4-Kommentar), BstDet hat `debounceRef`+`pendingRef`+Cleanup, Toast hat `aria-label="Schließen"`-Button. Keine neuen Code-Commits in Tag 3.
 - 2026-04-27 · F-01 (Phase 1, 🟡 ongoing) · c27087a · 3 neue UI-Komponenten angelegt (`Card`, `SectionHeader`, `ListRow`) + an 2 Demo-Stellen testweise verwendet (MehrView SectionHeader+Card; TagView 3x Card). `IconButton` existierte bereits aus 3c-TOUCH. Kein app-weiter Rollout — wird Stück-für-Stück ersetzt wenn betroffene Screens sowieso angefasst werden.
 - 2026-04-27 · F-03 · 1713a32 · API-Returns vereinheitlicht: 6 row-based `create()` (maengel, stundeneintraege, subunternehmer, benachrichtigungen, kosten, dokumente) returnen jetzt `data.id` (string) statt mapped Object oder raw row. Sonderfälle: `dokumente.createWithFile` bleibt `{id, storagePath}` (Caller braucht Pfad), `users.create`/`createForOnboarding` bleiben RPC-Result (UUID-string). Aufrufer-Impact: 0 (BstForm konsumiert bereits ID).
