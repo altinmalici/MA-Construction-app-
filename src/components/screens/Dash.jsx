@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Clock,
   Building2,
@@ -15,36 +16,59 @@ import { ScreenLayout, Card } from "../ui";
 
 const Dash = () => {
   const { data, cu, chef, nav, unread, setSb, setEm } = useApp();
-  if (!cu) return null;
-  const mb = chef
-    ? data.baustellen
-    : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
+
+  // Audit P-MEDIUM: Widget-Counts memoized — vorher O(n) filter pro
+  // Render je Modul. Mit useMemo werden die Filter nur neu berechnet,
+  // wenn die zugrunde liegende Datenliste sich tatsächlich ändert.
   const todayStr = new Date().toISOString().split("T")[0];
-  const todayEntries = data.stundeneintraege.filter(
-    (e) => e.datum === todayStr,
+
+  const mb = useMemo(
+    () =>
+      chef
+        ? data.baustellen
+        : data.baustellen.filter((b) => b.mitarbeiter.includes(cu?.id)),
+    [chef, data.baustellen, cu?.id],
   );
-  // BUG-FU-3: Dash-Count mit MeineStd-View synchronisieren — beide
-  // zeigen den aktuellen Monat, nicht all-time. Vorher: "X Einträge"
-  // (lifetime) zeigte größere Zahl als MeineStd (current month) →
-  // Mismatch beim Click.
-  const now = new Date();
-  const meineStdEntriesMonat = data.stundeneintraege.filter(
-    (e) => e.mitarbeiterId === cu.id && isInMonth(e.datum, now.getMonth(), now.getFullYear()),
-  ).length;
-  const openMaengel = data.maengel.filter(
-    (m) => m.status !== "erledigt",
-  ).length;
-  const todayTermine = data.kalender.filter((t) => t.datum === todayStr).length;
+  const todayEntries = useMemo(
+    () => data.stundeneintraege.filter((e) => e.datum === todayStr),
+    [data.stundeneintraege, todayStr],
+  );
+  // BUG-FU-3: synchronisiert mit MeineStd-View (aktueller Monat).
+  const meineStdEntriesMonat = useMemo(() => {
+    const now = new Date();
+    return data.stundeneintraege.filter(
+      (e) =>
+        e.mitarbeiterId === cu?.id &&
+        isInMonth(e.datum, now.getMonth(), now.getFullYear()),
+    ).length;
+  }, [data.stundeneintraege, cu?.id]);
+  const openMaengel = useMemo(
+    () => data.maengel.filter((m) => m.status !== "erledigt").length,
+    [data.maengel],
+  );
+  const todayTermine = useMemo(
+    () => data.kalender.filter((t) => t.datum === todayStr).length,
+    [data.kalender, todayStr],
+  );
+  const aktiveBst = useMemo(
+    () => mb.filter((b) => b.status === "aktiv").length,
+    [mb],
+  );
+  const heuteErfasst = useMemo(
+    () =>
+      chef
+        ? todayEntries.length
+        : todayEntries.filter((e) => e.mitarbeiterId === cu?.id).length,
+    [chef, todayEntries, cu?.id],
+  );
+
+  if (!cu) return null;
   const vorname = cu.name.split(" ")[0];
   const initials = cu.name
     .split(" ")
     .map((w) => w[0])
     .join("")
     .toUpperCase();
-  const aktiveBst = mb.filter((b) => b.status === "aktiv").length;
-  const heuteErfasst = chef
-    ? todayEntries.length
-    : todayEntries.filter((e) => e.mitarbeiterId === cu.id).length;
 
   const widgetItems = chef
     ? [
