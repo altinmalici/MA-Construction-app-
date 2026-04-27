@@ -96,7 +96,7 @@ Diese werden in den passenden Phase-3-Teil-Tasks gelöst, sind hier nur zur Nach
 
 Während der UI-Verifikation von 4-06 entdeckt — Fixes bewusst nach Phase 4 gepusht, um den Storage-Migrations-Track nicht zu brechen:
 
-- 🔴 **Stundeneinträge in „Stundenübersicht" nicht anklickbar** → kein Detail-View mit Foto-Anzeige. Feature-Gap, hat 4-06-UI-Verifikation indirekt blockiert (Fotos sind in DB als Pfade, aber kein Screen rendert sie). Fix wahrscheinlich `SteView.jsx` (Listen-Item → onClick → Detail-Drawer).
+- 🟢 ~~**Stundeneinträge in „Stundenübersicht" nicht anklickbar**~~ → gefixt 2026-04-27 (Tag 4 Task 6). Neue `StundenDetailModal`-Komponente (Bottom-Sheet mit PhotoGrid read-only). Integration in StundenUebersicht (Chef-View) und MeineStd (Mitarbeiter-View). SteView (Form-Screen) bleibt unberührt — die Detail-Anzeige in den Listen-Screens reicht.
 - 🟢 ~~**DokView Download-Button hängt in „Lädt..."**~~ → gefixt 2026-04-27 (Tag 4 Task 1) via Anchor-Click statt `window.open` (iOS-PWA-tauglich). try/finally war bereits korrekt.
 - 🟢 ~~**Stundenübersicht zeigt „6 Einträge" aber rendert nur 3**~~ → gefixt 2026-04-27 (Tag 4 Task 2). Root-Cause: Dash-Tile zeigte Lifetime-Count, MeineStd-Screen aber den aktuellen Monat. Dash filtert jetzt `isInMonth(now)` und labelt explizit "diesen Monat".
 
@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-27 · BUG-FU-1 · 4d92038 · `StundenDetailModal`-Komponente (Bottom-Sheet mit PhotoGrid read-only). Integration in StundenUebersicht + MeineStd: Listen-Item ist jetzt klickbar, Modal zeigt alle Fotos + Tätigkeit + Material + Bemerkung + Baustelle + Mitarbeiter. Phase-4-Followup-Bug abgehakt.
 - 2026-04-27 · 6-04 (🟡 Pilot) · db16c26 · `src/lib/api/_request.js`: `requestWithRetry(queryFn, {retries, retryDelayMs, timeoutMs, signal})` mit exponential backoff (3x), Logic-Error-Skip, AbortController-Integration via Promise.race. +6 Vitest. Pilot in `baustellen.getAll` + `stundeneintraege.getAll`. Aufrufer-Impact 0 (signal-Argument optional).
 - 2026-04-27 · F-01 (Phase 2, weiterhin 🟡) · 228035f+1f8eba3+9b0406f+70280e3+15ccf10 · 5 weitere Screens auf Card umgestellt: Dash KPI-Tiles, MitView (resetInfo + Liste), SubView (Liste), MatView (Container), ProfilView (Avatar + 3 Stats + Settings + Baustellen). Insgesamt 7 Screens jetzt mit Card. BstList übersprungen (Listen-Items sind Buttons, würden Card-API-Erweiterung brauchen). BstDet/KostenView/MngView noch unrefactored — als Teil von Folge-Tasks.
 - 2026-04-27 · F-09 · e449a53 · `BstForm` 700 → 646 Zeilen, 6 Sections über neuen `Section`-Wrapper (Card + optionaler SectionHeader): Stammdaten, Kontakt, Zeitraum & Budget, Details, Team, Rechnungsdaten. JSX-Layer-only — Verhalten/State unverändert.
