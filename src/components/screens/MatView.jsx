@@ -1,7 +1,7 @@
 import { Package } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fK, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout } from "../ui";
+import { fK } from "../../utils/helpers";
+import { Empty, ScreenLayout, Card } from "../ui";
 
 const MatView = () => {
   const { data, goBack } = useApp();
@@ -24,15 +24,7 @@ const MatView = () => {
           <Empty icon={Package} text="Noch kein Material erfasst" />
         ) : (
           Object.entries(mp).map(([bs, items]) => (
-            <div
-              key={bs}
-              style={{
-                borderRadius: 12,
-                background: "white",
-                boxShadow: CS,
-                overflow: "hidden",
-              }}
-            >
+            <Card key={bs} padding={0} style={{ overflow: "hidden" }}>
               <div
                 style={{
                   padding: "12px 16px",
@@ -53,7 +45,7 @@ const MatView = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           ))
         )}
       </div>

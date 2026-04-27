@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, User, Trash2, Edit3, Users, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fE, genUsername, genPin, BTN, RED, GREEN, CS } from "../../utils/helpers";
-import { Empty, Bdg, ScreenLayout, ConfirmModal } from "../ui";
+import { Empty, Bdg, ScreenLayout, ConfirmModal, Card } from "../ui";
 
 const MitView = () => {
   const { data, actions, show, goBack, setEditUser, nav } =
@@ -85,15 +85,7 @@ const MitView = () => {
       }
     >
       {resetInfo && (
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 16,
-            boxShadow: CS,
-            marginBottom: 12,
-          }}
-        >
+        <Card style={{ marginBottom: 12 }}>
           <div
             className="flex items-center justify-between"
             style={{ marginBottom: 8 }}
@@ -163,7 +155,7 @@ const MitView = () => {
           >
             Per WhatsApp senden
           </button>
-        </div>
+        </Card>
       )}
       <div className="space-y-2">
         {ma.length === 0 ? (
@@ -175,15 +167,9 @@ const MitView = () => {
             );
             const st = getStatus(m);
             return (
-              <div
+              <Card
                 key={m.id}
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: "white",
-                  boxShadow: CS,
-                  opacity: m.isActive ? 1 : 0.6,
-                }}
+                style={{ opacity: m.isActive ? 1 : 0.6 }}
               >
                 <div
                   className="flex items-center gap-3"
@@ -318,7 +304,7 @@ const MitView = () => {
                     <Trash2 size={14} />
                   </button>
                 </div>
-              </div>
+              </Card>
             );
           })
         )}

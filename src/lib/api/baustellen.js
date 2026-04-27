@@ -1,5 +1,6 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
+import { requestWithRetry } from './_request.js';
 
 // Whitelist allowed for partial single-field updates via updateField().
 // Other columns (kunde, adresse, budget, details, ...) must go through
@@ -11,12 +12,14 @@ export const BAUSTELLE_UPDATABLE_FIELDS = Object.freeze([
   'fortschritt',
 ]);
 
-export async function getAll() {
-  // Fetch baustellen with junction tables
-  const { data: bsList, error } = await supabase
-    .from('baustellen')
-    .select('*')
-    .order('created_at');
+export async function getAll({ signal } = {}) {
+  // Fetch baustellen mit Retry-Wrapper (6-04). Junction-Tables im
+  // Promise.all bleiben "nackt" — sie folgen der Haupt-Query und
+  // teilen sich konzeptuell denselben Fehler-Pfad.
+  const { data: bsList, error } = await requestWithRetry(
+    () => supabase.from('baustellen').select('*').order('created_at'),
+    { signal },
+  );
   if (error) throw error;
 
   // Fetch all junction entries at once

@@ -44,11 +44,23 @@ const DokView = () => {
     setDownloadingId(d.id);
     try {
       const url = await dokumenteApi.getDocumentUrl(d.storagePath, 60);
-      window.open(url, "_blank", "noopener,noreferrer");
+      // BUG-FU-2: window.open() scheitert in iOS-PWA praktisch immer
+      // (Popup-Blocker, kein User-Gesture-Context nach await). Anchor-
+      // Click ist robuster — Browser behandelt es als Download-Intent
+      // statt als neuen Tab.
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (err) {
       console.error("[DokView.download]", err);
       show(err?.message || "Download fehlgeschlagen", "error");
     } finally {
+      // Defensive: Spinner-State explizit zurücksetzen, auch wenn der
+      // Try-Block synchron fertig wurde.
       setDownloadingId(null);
     }
   };

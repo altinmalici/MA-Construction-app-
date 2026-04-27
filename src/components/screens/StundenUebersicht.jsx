@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStdNum, fK, P, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
-import { ScreenLayout, Empty, IconButton } from "../ui";
+import { ScreenLayout, Empty, IconButton, StundenDetailModal } from "../ui";
 
 const StundenUebersicht = () => {
   const { data, cu, goBack } = useApp();
@@ -10,6 +10,8 @@ const StundenUebersicht = () => {
   const [mo, setMo] = useState(now.getMonth());
   const [jr, setJr] = useState(now.getFullYear());
   const [open, setOpen] = useState(null);
+  // BUG-FU-1: Click auf Einzeleintrag → Detail-Modal mit Foto-Anzeige.
+  const [detail, setDetail] = useState(null);
   const pv = () => {
     setMo((m) => {
       if (m === 0) {
@@ -333,13 +335,18 @@ const StundenUebersicht = () => {
                         );
                         const h = bStdNum(e.beginn, e.ende, e.pause);
                         return (
-                          <div
+                          <button
                             key={e.id}
+                            onClick={() => setDetail({ eintrag: e, user: u })}
                             style={{
                               padding: "10px 12px",
                               borderRadius: 10,
                               background: "#f2f2f7",
                               fontSize: 13,
+                              border: "none",
+                              width: "100%",
+                              textAlign: "left",
+                              cursor: "pointer",
                             }}
                           >
                             <div className="flex justify-between">
@@ -359,7 +366,7 @@ const StundenUebersicht = () => {
                                 {e.arbeit}
                               </p>
                             )}
-                          </div>
+                          </button>
                         );
                       })}
                   </div>
@@ -369,6 +376,17 @@ const StundenUebersicht = () => {
           ))}
         </div>
       )}
+      <StundenDetailModal
+        open={!!detail}
+        eintrag={detail?.eintrag}
+        baustelle={
+          detail
+            ? data.baustellen.find((b) => b.id === detail.eintrag.baustelleId)
+            : null
+        }
+        userName={detail?.user?.name}
+        onClose={() => setDetail(null)}
+      />
     </ScreenLayout>
   );
 };
