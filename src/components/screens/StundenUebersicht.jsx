@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStdNum, fK, P, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
-import { ScreenLayout, Empty, IconButton, StundenDetailModal } from "../ui";
+import { bStdNum, fK, P, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
 const StundenUebersicht = () => {
   const { data, cu, goBack } = useApp();
@@ -90,12 +90,9 @@ const StundenUebersicht = () => {
         Stundenübersicht
       </h1>
       {/* Monatsauswahl */}
-      <div
+      <Card
+        padding={14}
         style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 14,
-          boxShadow: CS,
           marginBottom: 16,
           display: "flex",
           alignItems: "center",
@@ -122,7 +119,7 @@ const StundenUebersicht = () => {
           ariaLabel="Nächster Monat"
           style={{ borderRadius: 22 }}
         />
-      </div>
+      </Card>
       {/* KPI */}
       <div
         style={{
@@ -132,15 +129,7 @@ const StundenUebersicht = () => {
           marginBottom: 16,
         }}
       >
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 14,
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p
             style={{
               fontSize: 24,
@@ -152,16 +141,8 @@ const StundenUebersicht = () => {
             {fH(totalStd)}
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>Gesamt</p>
-        </div>
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 14,
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        </Card>
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p
             style={{
               fontSize: 24,
@@ -175,16 +156,8 @@ const StundenUebersicht = () => {
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>
             Arbeitstage
           </p>
-        </div>
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 14,
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        </Card>
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p
             style={{
               fontSize: 24,
@@ -198,7 +171,7 @@ const StundenUebersicht = () => {
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>
             Mitarbeiter
           </p>
-        </div>
+        </Card>
       </div>
       {/* Pro Mitarbeiter */}
       {byUser.length === 0 ? (
@@ -206,15 +179,7 @@ const StundenUebersicht = () => {
       ) : (
         <div className="space-y-2">
           {byUser.map(({ user: u, std, entries, byBs }) => (
-            <div
-              key={u.id}
-              style={{
-                background: "white",
-                borderRadius: 12,
-                boxShadow: CS,
-                overflow: "hidden",
-              }}
-            >
+            <Card key={u.id} padding={0} style={{ overflow: "hidden" }}>
               <button
                 onClick={() => setOpen(open === u.id ? null : u.id)}
                 style={{
@@ -372,7 +337,7 @@ const StundenUebersicht = () => {
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}
