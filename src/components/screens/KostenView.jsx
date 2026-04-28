@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStdNum, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
@@ -51,34 +51,47 @@ const KostenView = () => {
       ? data.baustellen
       : data.baustellen.filter((b) => b.status === fl);
 
-  // Lohnkosten berechnen pro Baustelle
-  const calcLohn = (bid) => {
-    const ei = data.stundeneintraege.filter(
-      (e) => e.baustelleId === bid && isMitarbeiterEntry(e),
-    );
-    return ei.reduce((s, e) => {
-      const u = data.users.find((x) => x.id === e.mitarbeiterId);
+  // Audit P-MEDIUM: Aggregations-Map einmal pro Daten-Refresh berechnen.
+  // Vorher: calcLohn / calcTotal / calcKat liefen pro Baustelle 3-4× und
+  // jeder Call war O(n) über stundeneintraege bzw. kosten.
+  // Jetzt: einmaliger Pass über alle drei Listen (users/stundeneintraege/
+  // kosten) → Map { [baustelleId]: {lohn, kategorien: {kat: betrag}} }.
+  // calc*-Reader sind jetzt O(1).
+  const byBaustelleAggregat = useMemo(() => {
+    const map = {};
+    data.baustellen.forEach((b) => {
+      map[b.id] = { lohn: 0, kategorien: {} };
+    });
+    const userById = new Map(data.users.map((u) => [u.id, u]));
+    data.stundeneintraege.forEach((e) => {
+      if (!isMitarbeiterEntry(e)) return;
+      const entry = map[e.baustelleId];
+      if (!entry) return;
+      const u = userById.get(e.mitarbeiterId);
       const std = bStdNum(e.beginn, e.ende, e.pause);
-      return s + std * (u?.stundensatz || 45);
-    }, 0);
-  };
+      entry.lohn += std * (u?.stundensatz || 45);
+    });
+    data.kosten.forEach((k) => {
+      const entry = map[k.baustelleId];
+      if (!entry) return;
+      const cat = k.kategorie || "sonstiges";
+      entry.kategorien[cat] = (entry.kategorien[cat] || 0) + (k.betrag || 0);
+    });
+    return map;
+  }, [data.baustellen, data.stundeneintraege, data.users, data.kosten]);
 
-
-  // Gesamtkosten pro Baustelle
+  const calcLohn = (bid) => byBaustelleAggregat[bid]?.lohn || 0;
   const calcTotal = (bid) => {
-    const lohn = calcLohn(bid);
-    const extra = data.kosten
-      .filter((k) => k.baustelleId === bid)
-      .reduce((s, k) => s + (k.betrag || 0), 0);
-    return lohn + extra;
+    const e = byBaustelleAggregat[bid];
+    if (!e) return 0;
+    const extra = Object.values(e.kategorien).reduce((s, v) => s + v, 0);
+    return e.lohn + extra;
   };
-
-  // Kosten nach Kategorie pro Baustelle
   const calcKat = (bid, kat) => {
-    if (kat === "lohn") return calcLohn(bid);
-    return data.kosten
-      .filter((k) => k.baustelleId === bid && k.kategorie === kat)
-      .reduce((s, k) => s + (k.betrag || 0), 0);
+    const e = byBaustelleAggregat[bid];
+    if (!e) return 0;
+    if (kat === "lohn") return e.lohn;
+    return e.kategorien[kat] || 0;
   };
 
   // Gesamtkosten aller Baustellen

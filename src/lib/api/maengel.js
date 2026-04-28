@@ -1,11 +1,13 @@
 import { supabase } from '../supabase.js';
 import { deletePhotos } from '../storage.js';
+import { requestWithRetry } from './_request.js';
 
-export async function getAll() {
-  const { data, error } = await supabase
-    .from('maengel')
-    .select('*')
-    .order('created_at');
+export async function getAll({ signal } = {}) {
+  // 6-04: Retry/Abort/Timeout-Wrapper.
+  const { data, error } = await requestWithRetry(
+    () => supabase.from('maengel').select('*').order('created_at'),
+    { signal },
+  );
   if (error) throw error;
   return data.map(mapRow);
 }
