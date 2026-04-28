@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-28 · Spacing-Fixes · e41dbf6+b6566ca+c7a9e3a · Nach Altin-iPhone-Verifikation: BtbView Form/Liste auf flex+gap=12 + Save-Button marginTop (e41dbf6); RegView Outer-Wrapper auf flex+gap=12 + Drucken-Button marginTop (b6566ca); TabBar Anchoring via 1px Top-Border + dezenter Top-Shadow + Background-Opazität 0.94 (c7a9e3a).
 - 2026-04-28 · F-01 (Phase 3) · f65eb1a+948a294+07e0594+97cb671+c875d89+02898ad · Card-Pattern auf 6 weiteren Screens (BtbView, KalView, StundenUebersicht, MeineStd, RegView, BstDet — 4/9 Stellen). NotifView SKIP (conditional background+shadow nicht durch Card-API darstellbar). Insgesamt 13 Screens jetzt mit Card. F-01 weiter 🟡 — Forms (BstForm/MitForm) + LoginView + restliche BstDet-Stellen folgen wenn betroffen.
 - 2026-04-28 · D3 · de55d9d · KostenView calcLohn/calcTotal/calcKat über useMemo + byBaustelleAggregat-Map; 1 Pass über stundeneintraege ersetzt 4× O(n) pro Baustelle (Audit P-MEDIUM)
 - 2026-04-28 · D2 · d093854 · Dash widget-counts mit useMemo; Filter pro Modul nur bei data-Change (Audit P-MEDIUM)
