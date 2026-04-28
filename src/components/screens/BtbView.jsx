@@ -96,9 +96,12 @@ const BtbView = () => {
     >
       {sf && (
         <div
-          className="space-y-2"
           style={{
-            paddingBottom: 16,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            paddingBottom: 20,
+            marginBottom: 16,
             borderBottom: "0.5px solid rgba(0,0,0,0.08)",
           }}
         >
@@ -184,6 +187,7 @@ const BtbView = () => {
             disabled={saving}
             style={{
               width: "100%",
+              marginTop: 4,
               padding: "16px 24px",
               borderRadius: 14,
               color: "white",
@@ -205,7 +209,9 @@ const BtbView = () => {
           </button>
         </div>
       )}
-      <div className="space-y-2">
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: 12 }}
+      >
         {ls.length === 0 ? (
           <Empty
             icon={ClipboardList}
