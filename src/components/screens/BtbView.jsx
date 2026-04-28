@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Plus, X, Save, ClipboardList, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fDat, IC, BTN, RED, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton } from "../ui";
+import { fDat, IC, BTN, RED } from "../../utils/helpers";
+import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const BtbView = () => {
@@ -215,15 +215,7 @@ const BtbView = () => {
           [...ls].reverse().map((e) => {
             const bs = data.baustellen.find((b) => b.id === e.baustelleId);
             return (
-              <div
-                key={e.id}
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: "white",
-                  boxShadow: CS,
-                }}
-              >
+              <Card key={e.id}>
                 <div
                   className="flex justify-between items-start"
                   style={{ marginBottom: 6 }}
@@ -267,7 +259,7 @@ const BtbView = () => {
                       .join(", ")}
                   </p>
                 )}
-              </div>
+              </Card>
             );
           })
         )}
