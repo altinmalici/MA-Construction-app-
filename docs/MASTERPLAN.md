@@ -321,6 +321,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-28 · F-01 (Phase 3) · f65eb1a+948a294+07e0594+97cb671+c875d89+02898ad · Card-Pattern auf 6 weiteren Screens (BtbView, KalView, StundenUebersicht, MeineStd, RegView, BstDet — 4/9 Stellen). NotifView SKIP (conditional background+shadow nicht durch Card-API darstellbar). Insgesamt 13 Screens jetzt mit Card. F-01 weiter 🟡 — Forms (BstForm/MitForm) + LoginView + restliche BstDet-Stellen folgen wenn betroffen.
 - 2026-04-28 · D3 · de55d9d · KostenView calcLohn/calcTotal/calcKat über useMemo + byBaustelleAggregat-Map; 1 Pass über stundeneintraege ersetzt 4× O(n) pro Baustelle (Audit P-MEDIUM)
 - 2026-04-28 · D2 · d093854 · Dash widget-counts mit useMemo; Filter pro Modul nur bei data-Change (Audit P-MEDIUM)
 - 2026-04-28 · D1 · 4f92497 · Clock aus AppContext extrahiert in eigene Komponente; 30s-Tick triggert nicht mehr App-weiten Re-Render (Audit P-MEDIUM)
