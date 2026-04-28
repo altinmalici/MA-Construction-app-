@@ -193,12 +193,9 @@ const BstDet = () => {
         </Card>
       </div>
       {/* Quick Actions */}
-      <div
+      <Card
+        padding={8}
         style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 8,
-          boxShadow: CS,
           marginBottom: 16,
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -263,7 +260,7 @@ const BstDet = () => {
             )}
           </button>
         ))}
-      </div>
+      </Card>
       {/* Details */}
       <Card style={{ marginBottom: 16 }}>
         <p
@@ -306,15 +303,7 @@ const BstDet = () => {
         </div>
       </Card>
       {/* Team */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          boxShadow: CS,
-        }}
-      >
+      <Card style={{ marginBottom: 16 }}>
         <p
           style={{
             fontSize: 13,
@@ -337,7 +326,7 @@ const BstDet = () => {
             return s ? <Bdg key={id} text={s.name} /> : null;
           })}
         </div>
-      </div>
+      </Card>
       {/* Rechnungsdaten (nur Chef) */}
       {chef && (
         <div
