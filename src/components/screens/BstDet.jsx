@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { P, CS, BTN, RED, fK, bStd } from "../../utils/helpers";
-import { ScreenLayout, PBar, Bdg, ConfirmModal } from "../ui";
+import { ScreenLayout, PBar, Bdg, ConfirmModal, Card } from "../ui";
 
 const BstDet = () => {
   const { sb, data, chef, goBack, actions, show, nav, setEm, eName } =
@@ -123,15 +123,7 @@ const BstDet = () => {
         {fr.kunde}
       </h1>
       {/* Fortschritt */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          boxShadow: CS,
-        }}
-      >
+      <Card style={{ marginBottom: 16 }}>
         <div
           className="flex justify-between items-center"
           style={{ marginBottom: 8 }}
@@ -172,7 +164,7 @@ const BstDet = () => {
             }}
           />
         )}
-      </div>
+      </Card>
       {/* Info */}
       <div
         style={{
@@ -182,14 +174,7 @@ const BstDet = () => {
           marginBottom: 16,
         }}
       >
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 16,
-            boxShadow: CS,
-          }}
-        >
+        <Card>
           <p style={{ fontSize: 13, color: "#8e8e93", marginBottom: 6 }}>
             Kontakt
           </p>
@@ -199,20 +184,13 @@ const BstDet = () => {
           <p style={{ fontSize: 13, color: "#3c3c43", marginTop: 2 }}>
             {fr.telefon || "-"}
           </p>
-        </div>
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 16,
-            boxShadow: CS,
-          }}
-        >
+        </Card>
+        <Card>
           <p style={{ fontSize: 13, color: "#8e8e93", marginBottom: 6 }}>
             Zugang
           </p>
           <p style={{ fontSize: 13, color: "#3c3c43" }}>{fr.zugang || "-"}</p>
-        </div>
+        </Card>
       </div>
       {/* Quick Actions */}
       <div
@@ -287,15 +265,7 @@ const BstDet = () => {
         ))}
       </div>
       {/* Details */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          boxShadow: CS,
-        }}
-      >
+      <Card style={{ marginBottom: 16 }}>
         <p
           style={{
             fontSize: 13,
@@ -334,7 +304,7 @@ const BstDet = () => {
             <span style={{ color: "#000" }}>{fr.details?.arbeiten || "-"}</span>
           </div>
         </div>
-      </div>
+      </Card>
       {/* Team */}
       <div
         style={{

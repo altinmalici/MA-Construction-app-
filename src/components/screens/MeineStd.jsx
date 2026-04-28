@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, bStdNum, fDat, CS, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
-import { ScreenLayout, Empty, IconButton, StundenDetailModal } from "../ui";
+import { bStd, bStdNum, fDat, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
 const MeineStd = () => {
   const { data, cu, goBack } = useApp();
@@ -90,48 +90,24 @@ const MeineStd = () => {
           marginBottom: 12,
         }}
       >
-        <div
-          style={{
-            borderRadius: 12,
-            padding: 14,
-            background: "white",
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
             {moH.toFixed(1)}h
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Monat</p>
-        </div>
-        <div
-          style={{
-            borderRadius: 12,
-            padding: 14,
-            background: "white",
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        </Card>
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
             {me.length}
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Einträge</p>
-        </div>
-        <div
-          style={{
-            borderRadius: 12,
-            padding: 14,
-            background: "white",
-            boxShadow: CS,
-            textAlign: "center",
-          }}
-        >
+        </Card>
+        <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
             {totalH.toFixed(1)}h
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Gesamt</p>
-        </div>
+        </Card>
       </div>
       {me.length === 0 ? (
         <Empty icon={Clock} text="Keine Stunden in diesem Monat" />
@@ -145,15 +121,7 @@ const MeineStd = () => {
                 0,
               );
               return (
-                <div
-                  key={w}
-                  style={{
-                    borderRadius: 12,
-                    background: "white",
-                    boxShadow: CS,
-                    overflow: "hidden",
-                  }}
-                >
+                <Card key={w} padding={0} style={{ overflow: "hidden" }}>
                   <div
                     className="flex justify-between items-center"
                     style={{
@@ -220,7 +188,7 @@ const MeineStd = () => {
                       );
                     })}
                   </div>
-                </div>
+                </Card>
               );
             })}
         </div>

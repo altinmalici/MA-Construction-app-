@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Plus, X, Save, ClipboardList, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fDat, IC, BTN, RED, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton } from "../ui";
+import { fDat, IC, BTN, RED } from "../../utils/helpers";
+import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const BtbView = () => {
@@ -96,9 +96,12 @@ const BtbView = () => {
     >
       {sf && (
         <div
-          className="space-y-2"
           style={{
-            paddingBottom: 16,
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            paddingBottom: 20,
+            marginBottom: 16,
             borderBottom: "0.5px solid rgba(0,0,0,0.08)",
           }}
         >
@@ -184,6 +187,7 @@ const BtbView = () => {
             disabled={saving}
             style={{
               width: "100%",
+              marginTop: 4,
               padding: "16px 24px",
               borderRadius: 14,
               color: "white",
@@ -205,7 +209,9 @@ const BtbView = () => {
           </button>
         </div>
       )}
-      <div className="space-y-2">
+      <div
+        style={{ display: "flex", flexDirection: "column", gap: 12 }}
+      >
         {ls.length === 0 ? (
           <Empty
             icon={ClipboardList}
@@ -215,15 +221,7 @@ const BtbView = () => {
           [...ls].reverse().map((e) => {
             const bs = data.baustellen.find((b) => b.id === e.baustelleId);
             return (
-              <div
-                key={e.id}
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: "white",
-                  boxShadow: CS,
-                }}
-              >
+              <Card key={e.id}>
                 <div
                   className="flex justify-between items-start"
                   style={{ marginBottom: 6 }}
@@ -267,7 +265,7 @@ const BtbView = () => {
                       .join(", ")}
                   </p>
                 )}
-              </div>
+              </Card>
             );
           })
         )}

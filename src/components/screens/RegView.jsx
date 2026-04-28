@@ -11,10 +11,9 @@ import {
   getBaustelleFullRange,
   BTN,
   IC,
-  CS,
   P,
 } from "../../utils/helpers";
-import { ScreenLayout, SigPad } from "../ui";
+import { ScreenLayout, SigPad, Card } from "../ui";
 
 const fH = (h) => (Number.isInteger(h) ? h + " h" : h.toFixed(1) + " h");
 
@@ -478,7 +477,14 @@ const RegView = () => {
 
   return (
     <ScreenLayout title="Regieberichte" onBack={goBack}>
-      <div className="space-y-2" style={{ paddingBottom: 32 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          paddingBottom: 32,
+        }}
+      >
         <select
           value={bi}
           onChange={(e) => sBi(e.target.value)}
@@ -542,29 +548,23 @@ const RegView = () => {
 
         {/* Empty State */}
         {reportDates.length === 0 && (
-          <div
+          <Card
+            padding={24}
             style={{
-              background: "white",
-              borderRadius: 12,
-              padding: 24,
-              boxShadow: CS,
               textAlign: "center",
               color: "#8e8e93",
               fontSize: 14,
             }}
           >
             Keine Einträge in diesem Zeitraum.
-          </div>
+          </Card>
         )}
 
         {/* Summary Card — nur bei Multi */}
         {reportDates.length > 1 && (
-          <div
+          <Card
+            padding={14}
             style={{
-              background: "white",
-              borderRadius: 12,
-              padding: 14,
-              boxShadow: CS,
               display: "flex",
               flexDirection: "column",
               gap: 2,
@@ -581,19 +581,13 @@ const RegView = () => {
             <div style={{ fontSize: 13, color: "#8e8e93", marginTop: 2 }}>
               Gesamt: {fH(rangeGesamt)} Mannstunden
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Vorschau — nur erster Bericht */}
         {reportDates.length > 0 && (
           <>
-            <div
-              style={{
-                background: "white",
-                borderRadius: 12,
-                padding: 16,
-                boxShadow: CS,
-              }}
+            <Card
               dangerouslySetInnerHTML={{ __html: previewHtml || "" }}
             />
             {reportDates.length > 1 && (
@@ -609,14 +603,7 @@ const RegView = () => {
                 {reportDates.length - 1 === 1 ? "" : "e"} beim Drucken
               </p>
             )}
-            <div
-              style={{
-                background: "white",
-                borderRadius: 12,
-                padding: 16,
-                boxShadow: CS,
-              }}
-            >
+            <Card>
               <p style={{ color: "#8e8e93", fontSize: 13, marginBottom: 6 }}>
                 Unterschrift Auftraggeber:
               </p>
@@ -625,7 +612,7 @@ const RegView = () => {
                 onSave={(s) => sSig(s)}
                 onClear={() => sSig(null)}
               />
-            </div>
+            </Card>
           </>
         )}
 
@@ -634,6 +621,7 @@ const RegView = () => {
           disabled={reportDates.length === 0}
           style={{
             width: "100%",
+            marginTop: 8,
             padding: "16px 24px",
             borderRadius: 14,
             color: "white",

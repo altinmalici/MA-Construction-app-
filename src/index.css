@@ -143,10 +143,14 @@ select {
   align-items: flex-start;
   padding: 8px 0 0;
   padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  background: rgba(249, 249, 249, 0.88);
+  background: rgba(249, 249, 249, 0.94);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-top: 0.5px solid rgba(0, 0, 0, 0.12);
+  /* Visueller Anker: 1px Border + dezenter Top-Shadow heben die TabBar
+     vom Content-Bereich ab. Vorher 0.5px Border ohne Shadow → wirkte
+     unter dem Content "frei schwebend". */
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
   min-height: 83px;
   overflow: visible;
   border-radius: 0;
