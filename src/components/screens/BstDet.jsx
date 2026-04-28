@@ -329,15 +329,7 @@ const BstDet = () => {
       </Card>
       {/* Rechnungsdaten (nur Chef) */}
       {chef && (
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
-            boxShadow: CS,
-          }}
-        >
+        <Card style={{ marginBottom: 16 }}>
           <p
             style={{
               fontSize: 13,
@@ -371,18 +363,10 @@ const BstDet = () => {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
       {/* Einträge */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          boxShadow: CS,
-        }}
-      >
+      <Card style={{ marginBottom: 16 }}>
         <p
           style={{
             fontSize: 13,
@@ -436,7 +420,7 @@ const BstDet = () => {
               </div>
             ))
         )}
-      </div>
+      </Card>
       <button
         onClick={() => nav("ste")}
         style={{
