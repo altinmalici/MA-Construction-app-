@@ -9,7 +9,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { P, CS, BTN, RED, fK, bStd } from "../../utils/helpers";
+import { P, BTN, RED, fK, bStd } from "../../utils/helpers";
 import { ScreenLayout, PBar, Bdg, ConfirmModal, Card } from "../ui";
 
 const BstDet = () => {
@@ -386,16 +386,11 @@ const BstDet = () => {
             .slice(-3)
             .reverse()
             .map((e) => (
-              <div
+              <Card
                 key={e.id}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  background: "white",
-                  boxShadow: CS,
-                  marginBottom: 6,
-                  fontSize: 13,
-                }}
+                radius={10}
+                padding="10px 12px"
+                style={{ marginBottom: 6, fontSize: 13 }}
               >
                 <div className="flex justify-between">
                   <span style={{ color: "#000" }}>
@@ -417,7 +412,7 @@ const BstDet = () => {
                 <p style={{ color: "#000", fontWeight: 600, marginTop: 2 }}>
                   {bStd(e.beginn, e.ende, e.pause)}h
                 </p>
-              </div>
+              </Card>
             ))
         )}
       </Card>
