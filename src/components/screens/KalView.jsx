@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, X, Save, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fDat, fK, IC, BTN, CS, P, PD } from "../../utils/helpers";
-import { ScreenLayout, Spinner, ConfirmModal, IconButton } from "../ui";
+import { fDat, fK, IC, BTN, P, PD } from "../../utils/helpers";
+import { ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const KalView = () => {
@@ -89,15 +89,7 @@ const KalView = () => {
   return (
     <ScreenLayout large title="Kalender" onBack={prevV ? goBack : undefined}>
       {/* Kalender Card */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 20,
-          marginBottom: 24,
-          boxShadow: CS,
-        }}
-      >
+      <Card padding={20} style={{ marginBottom: 24 }}>
         {/* Monat Navigation */}
         <div
           style={{
@@ -214,7 +206,7 @@ const KalView = () => {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* Ausgewählter Tag */}
       {selDay && (
@@ -254,15 +246,7 @@ const KalView = () => {
           )}
 
           {sf && (
-            <div
-              style={{
-                background: "white",
-                borderRadius: 12,
-                padding: 16,
-                boxShadow: CS,
-              }}
-              className="space-y-2"
-            >
+            <Card className="space-y-2">
               <div>
                 <label
                   style={{
@@ -367,7 +351,7 @@ const KalView = () => {
                 {saving ? <Spinner size={18} color="white" /> : <Save size={18} />}
                 {saving ? "Speichere..." : "Speichern"}
               </button>
-            </div>
+            </Card>
           )}
 
           {dayTermine.length === 0 && !sf && (
@@ -385,15 +369,7 @@ const KalView = () => {
           {dayTermine.map((t) => {
             const bs = data.baustellen.find((b) => b.id === t.baustelleId);
             return (
-              <div
-                key={t.id}
-                style={{
-                  background: "white",
-                  borderRadius: 12,
-                  padding: "12px 16px",
-                  boxShadow: CS,
-                }}
-              >
+              <Card key={t.id} padding="12px 16px">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <span
@@ -428,7 +404,7 @@ const KalView = () => {
                     </button>
                   )}
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -456,15 +432,7 @@ const KalView = () => {
           {tm.map((t) => {
             const bs = data.baustellen.find((b) => b.id === t.baustelleId);
             return (
-              <div
-                key={t.id}
-                style={{
-                  background: "white",
-                  borderRadius: 12,
-                  padding: "12px 16px",
-                  boxShadow: CS,
-                }}
-              >
+              <Card key={t.id} padding="12px 16px">
                 <div className="flex justify-between">
                   <span
                     style={{ fontSize: 15, fontWeight: 600, color: "#000" }}
@@ -478,7 +446,7 @@ const KalView = () => {
                 {bs && (
                   <p style={{ fontSize: 13, color: "#3c3c43" }}>{bs.kunde}</p>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>
