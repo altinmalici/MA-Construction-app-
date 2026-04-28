@@ -477,7 +477,14 @@ const RegView = () => {
 
   return (
     <ScreenLayout title="Regieberichte" onBack={goBack}>
-      <div className="space-y-2" style={{ paddingBottom: 32 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          paddingBottom: 32,
+        }}
+      >
         <select
           value={bi}
           onChange={(e) => sBi(e.target.value)}
@@ -614,6 +621,7 @@ const RegView = () => {
           disabled={reportDates.length === 0}
           style={{
             width: "100%",
+            marginTop: 8,
             padding: "16px 24px",
             borderRadius: 14,
             color: "white",
