@@ -240,7 +240,7 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 | 6-01 | Supabase Realtime-Subscriptions für `stundeneintraege`, `maengel`, `benachrichtigungen` | mittel | 🔴 TODO |
 | 6-02 | AppContext: Realtime-Updates mergen ohne Full-Refresh | mittel | 🔴 TODO |
 | 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🔴 TODO |
-| 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🟡 IN PROGRESS |
+| 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🟢 DONE |
 | 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🟢 DONE |
 | 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🔴 TODO |
 | 6-07 | Vitest-Coverage auf wichtigste Helpers ausdehnen (`bStd`, Datum-Utils, Filter-Helpers) | mittel | 🟢 DONE |
@@ -321,6 +321,10 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-28 · D3 · de55d9d · KostenView calcLohn/calcTotal/calcKat über useMemo + byBaustelleAggregat-Map; 1 Pass über stundeneintraege ersetzt 4× O(n) pro Baustelle (Audit P-MEDIUM)
+- 2026-04-28 · D2 · d093854 · Dash widget-counts mit useMemo; Filter pro Modul nur bei data-Change (Audit P-MEDIUM)
+- 2026-04-28 · D1 · 4f92497 · Clock aus AppContext extrahiert in eigene Komponente; 30s-Tick triggert nicht mehr App-weiten Re-Render (Audit P-MEDIUM)
+- 2026-04-28 · 6-04 (Rollout) · 19cb054+77a95bd+c5d8c6b+f367aa1+68d8b68+3a9c9ae+2df3fa7+242e912 · requestWithRetry in 8 weiteren API-Modulen (bautagebuch, benachrichtigungen, dokumente, kalender, kosten, maengel, subunternehmer, users); RPCs ausgenommen. **6-04 komplett.**
 - 2026-04-28 · Merge Tag 4 nach main · 4b3f280 · 18 Commits aus `autopilot-2026-04-27` per `--no-ff` integriert + gepusht (Vercel Auto-Deploy). Phase 4 Beobachtungs-Bugs (BUG-FU-1/2/3) sind live. F-09 abgeschlossen, F-01 in Phase 2 (7 Screens), 6-04 als Pilot live.
 - 2026-04-27 · STOP Tag 4 · — · Tasks 6-03a (KostenView 949 Z. → List/Det/Form) + 6-03b (SteView 778 Z. → List/Det/Form) NICHT angefangen. Beide haben starken Cross-Component-Daten-Flow (calcLohn, byKategorie, getVal/edits) der entweder in AppContext gehoben oder via Props/Context durchgereicht werden müsste. Brief-Stop-Bedingung "> 30 Min pro Datei" greift. Splits brauchen eigene fokussierte Sessions mit explizitem State-Lifting-Plan.
 - 2026-04-27 · BUG-FU-1 · 4d92038 · `StundenDetailModal`-Komponente (Bottom-Sheet mit PhotoGrid read-only). Integration in StundenUebersicht + MeineStd: Listen-Item ist jetzt klickbar, Modal zeigt alle Fotos + Tätigkeit + Material + Bemerkung + Baustelle + Mitarbeiter. Phase-4-Followup-Bug abgehakt.
