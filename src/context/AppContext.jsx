@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useRef, useEffect } from "react";
+import { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
 import { AlertCircle } from "lucide-react";
 import { useAppData } from "../lib/useAppData.js";
+import { useRealtime } from "../lib/useRealtime.js";
 import { G, P, BTN, RED } from "../utils/helpers";
 import { Toast, Spinner, Clock } from "../components/ui";
 import { compressImage, blobToDataURL } from "../utils/image";
@@ -23,8 +24,66 @@ export function useApp() {
 }
 
 export function AppProvider({ children }) {
-  const { data, loading, error: dataError, actions } = useAppData();
+  const { data, loading, error: dataError, actions, mergeIncomingRow } = useAppData();
   const [cu, setCu] = useState(null);
+
+  // 6-02: Realtime-Subscriptions für 3 zeitkritische Tabellen.
+  // Nur aktiv wenn cu existiert (kein Subscribe vor Login). Cleanup
+  // bei Logout läuft automatisch via useRealtime-useEffect-Return.
+  // RLS gilt: Mitarbeiter sehen nur Events für eigene Baustellen.
+  const realtimeEnabled = !!cu;
+  const onStundenInsert = useCallback(
+    (row) => mergeIncomingRow("stundeneintraege", row, "INSERT"),
+    [mergeIncomingRow],
+  );
+  const onStundenUpdate = useCallback(
+    (row) => mergeIncomingRow("stundeneintraege", row, "UPDATE"),
+    [mergeIncomingRow],
+  );
+  const onStundenDelete = useCallback(
+    (row) => mergeIncomingRow("stundeneintraege", row, "DELETE"),
+    [mergeIncomingRow],
+  );
+  const onMaengelInsert = useCallback(
+    (row) => mergeIncomingRow("maengel", row, "INSERT"),
+    [mergeIncomingRow],
+  );
+  const onMaengelUpdate = useCallback(
+    (row) => mergeIncomingRow("maengel", row, "UPDATE"),
+    [mergeIncomingRow],
+  );
+  const onMaengelDelete = useCallback(
+    (row) => mergeIncomingRow("maengel", row, "DELETE"),
+    [mergeIncomingRow],
+  );
+  const onNotifInsert = useCallback(
+    (row) => mergeIncomingRow("benachrichtigungen", row, "INSERT"),
+    [mergeIncomingRow],
+  );
+  const onNotifUpdate = useCallback(
+    (row) => mergeIncomingRow("benachrichtigungen", row, "UPDATE"),
+    [mergeIncomingRow],
+  );
+  const onNotifDelete = useCallback(
+    (row) => mergeIncomingRow("benachrichtigungen", row, "DELETE"),
+    [mergeIncomingRow],
+  );
+  useRealtime("stundeneintraege", {
+    onInsert: onStundenInsert,
+    onUpdate: onStundenUpdate,
+    onDelete: onStundenDelete,
+  }, { enabled: realtimeEnabled });
+  useRealtime("maengel", {
+    onInsert: onMaengelInsert,
+    onUpdate: onMaengelUpdate,
+    onDelete: onMaengelDelete,
+  }, { enabled: realtimeEnabled });
+  useRealtime("benachrichtigungen", {
+    onInsert: onNotifInsert,
+    onUpdate: onNotifUpdate,
+    onDelete: onNotifDelete,
+  }, { enabled: realtimeEnabled });
+
   const [sessionUser, setSessionUser] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [v, setVRaw] = useState("login");
