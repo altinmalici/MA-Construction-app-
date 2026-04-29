@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AlertCircle, Clock, Bell, X } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { RED, CS } from "../../utils/helpers";
-import { Empty, ScreenLayout, ConfirmModal } from "../ui";
+import { Empty, ScreenLayout, ConfirmModal, Card } from "../ui";
 
 const NotifView = () => {
   const { data, actions, show, goBack, chef } = useApp();
@@ -83,11 +83,12 @@ const NotifView = () => {
             const I = ti[n.typ] || Bell;
             const bs = data.baustellen.find((b) => b.id === n.baustelleId);
             return (
-              <div
+              // F-01 Phase 4: Card-Default-Padding/Radius nutzen, conditional
+              // background+shadow für gelesen-State per style-Override (letzter
+              // spread-Wert gewinnt). Visual identisch zur Pre-Card-Version.
+              <Card
                 key={n.id}
                 style={{
-                  padding: 16,
-                  borderRadius: 12,
                   background: n.gelesen ? "#f2f2f7" : "white",
                   boxShadow: n.gelesen ? "none" : CS,
                 }}
@@ -139,7 +140,7 @@ const NotifView = () => {
                     <X size={16} />
                   </button>
                 </div>
-              </div>
+              </Card>
             );
           })
         )}
