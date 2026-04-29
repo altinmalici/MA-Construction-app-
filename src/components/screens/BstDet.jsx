@@ -9,7 +9,7 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { P, CS, BTN, RED, fK, bStd } from "../../utils/helpers";
+import { P, BTN, RED, fK, bStd } from "../../utils/helpers";
 import { ScreenLayout, PBar, Bdg, ConfirmModal, Card } from "../ui";
 
 const BstDet = () => {
@@ -193,12 +193,9 @@ const BstDet = () => {
         </Card>
       </div>
       {/* Quick Actions */}
-      <div
+      <Card
+        padding={8}
         style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 8,
-          boxShadow: CS,
           marginBottom: 16,
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -263,7 +260,7 @@ const BstDet = () => {
             )}
           </button>
         ))}
-      </div>
+      </Card>
       {/* Details */}
       <Card style={{ marginBottom: 16 }}>
         <p
@@ -306,15 +303,7 @@ const BstDet = () => {
         </div>
       </Card>
       {/* Team */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          boxShadow: CS,
-        }}
-      >
+      <Card style={{ marginBottom: 16 }}>
         <p
           style={{
             fontSize: 13,
@@ -337,18 +326,10 @@ const BstDet = () => {
             return s ? <Bdg key={id} text={s.name} /> : null;
           })}
         </div>
-      </div>
+      </Card>
       {/* Rechnungsdaten (nur Chef) */}
       {chef && (
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 16,
-            boxShadow: CS,
-          }}
-        >
+        <Card style={{ marginBottom: 16 }}>
           <p
             style={{
               fontSize: 13,
@@ -382,18 +363,10 @@ const BstDet = () => {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
       {/* Einträge */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 16,
-          marginBottom: 16,
-          boxShadow: CS,
-        }}
-      >
+      <Card style={{ marginBottom: 16 }}>
         <p
           style={{
             fontSize: 13,
@@ -413,16 +386,11 @@ const BstDet = () => {
             .slice(-3)
             .reverse()
             .map((e) => (
-              <div
+              <Card
                 key={e.id}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  background: "white",
-                  boxShadow: CS,
-                  marginBottom: 6,
-                  fontSize: 13,
-                }}
+                radius={10}
+                padding="10px 12px"
+                style={{ marginBottom: 6, fontSize: 13 }}
               >
                 <div className="flex justify-between">
                   <span style={{ color: "#000" }}>
@@ -444,10 +412,10 @@ const BstDet = () => {
                 <p style={{ color: "#000", fontWeight: 600, marginTop: 2 }}>
                   {bStd(e.beginn, e.ende, e.pause)}h
                 </p>
-              </div>
+              </Card>
             ))
         )}
-      </div>
+      </Card>
       <button
         onClick={() => nav("ste")}
         style={{
