@@ -1,19 +1,20 @@
 import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
-import { useApp } from "../../context/AppContext";
-import { bStdNum, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
-import { ScreenLayout, PBar, Empty, IconButton } from "../ui";
-import { useSaving } from "../../hooks/useSaving";
-import { useKostenAggregat, KAT_LABELS, KAT_COLORS } from "./KostenView/aggregations.js";
-import KostenDetail from "./KostenView/Detail.jsx";
-import KostenForm from "./KostenView/Form.jsx";
+import { useApp } from "../../../context/AppContext";
+import { bStdNum, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../../utils/helpers";
+import { ScreenLayout, PBar, Empty, IconButton } from "../../ui";
+import { useSaving } from "../../../hooks/useSaving";
+import { useKostenAggregat, KAT_LABELS, KAT_COLORS } from "./aggregations.js";
+import KostenForm from "./Form.jsx";
 
-const KostenView = () => {
+/**
+ * KostenView Liste (6-03a Phase 2). Hält alle Form/Filter-State + Handlers.
+ * onSelectBs-Prop wird vom Parent (index.jsx) gehalten — Routing zur Detail-
+ * View liegt im Container.
+ */
+const List = ({ onSelectBs }) => {
   const { data, actions, show, goBack, cu, addN } = useApp();
   const { saving, withSaving } = useSaving();
-  // confirmDeleteKost/doDeleteKost wurden mit Detail-Block in Detail.jsx
-  // verschoben (waren nur dort genutzt).
-  const [selBs, setSelBs] = useState(null);
   const [sf, setSf] = useState(false);
   const [fl, setFl] = useState("alle");
   const [kf, sKf] = useState({
@@ -124,22 +125,7 @@ const KostenView = () => {
     show("CSV exportiert");
   };
 
-  // 6-03a Phase 2: Detail-Ansicht in Sub-Component KostenView/Detail.jsx
-  // ausgelagert. Aggregat + onAddKosten-Callback dorthin durchgereicht.
-  if (selBs) {
-    return (
-      <KostenDetail
-        bsId={selBs.id}
-        aggregat={{ calcLohn, calcTotal, calcKat }}
-        onBack={() => setSelBs(null)}
-        onAddKosten={(bid) => {
-          sKf({ ...kf, baustelleId: String(bid) });
-          setSf(true);
-          setSelBs(null);
-        }}
-      />
-    );
-  }
+  // Routing zur Detail-View liegt im Parent (index.jsx).
 
   // Hauptübersicht
   return (
@@ -297,7 +283,7 @@ const KostenView = () => {
             return (
               <button
                 key={b.id}
-                onClick={() => setSelBs(b)}
+                onClick={() => onSelectBs(b)}
                 className="w-full text-left"
                 style={{
                   padding: 16,
@@ -437,4 +423,4 @@ const KostenView = () => {
   );
 };
 
-export default KostenView;
+export default List;
