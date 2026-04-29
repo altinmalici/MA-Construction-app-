@@ -237,12 +237,12 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 
 | ID | Task | Aufwand | Status |
 |---|---|---|---|
-| 6-01 | Supabase Realtime-Subscriptions für `stundeneintraege`, `maengel`, `benachrichtigungen` | mittel | 🔴 TODO |
-| 6-02 | AppContext: Realtime-Updates mergen ohne Full-Refresh | mittel | 🔴 TODO |
+| 6-01 | Supabase Realtime-Subscriptions für `stundeneintraege`, `maengel`, `benachrichtigungen` | mittel | 🟢 DONE |
+| 6-02 | AppContext: Realtime-Updates mergen ohne Full-Refresh | mittel | 🟢 DONE |
 | 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🟡 IN PROGRESS — 6-03a KostenView komplett gesplittet (5 Dateien). 6-03b SteView Plan vorbereitet (`docs/refactoring/6-03b-steview-split.md`), Execution offen wegen Klärungsbedarf (4 offene Fragen im Plan). |
 | 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🟢 DONE |
 | 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🟢 DONE |
-| 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🔴 TODO |
+| 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🟡 IN PROGRESS — Vorbereitung 2026-04-29: Seed-Script (`scripts/seed-perf-test-data.mjs`), Profiling-Guide + statische Analyse (`docs/performance/`). Eigentliches Profiling muss Altin manuell mit `--apply` laufen lassen. |
 | 6-07 | Vitest-Coverage auf wichtigste Helpers ausdehnen (`bStd`, Datum-Utils, Filter-Helpers) | mittel | 🟢 DONE |
 
 ---
@@ -321,6 +321,9 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-29 · 6-02 · 81e7538+5c0382f+9068ecb · `mergeIncomingRow` in useAppData (INSERT-Dedup, UPDATE-Merge, DELETE-Filter — alle by ID) + 3 useRealtime-Subscriptions im AppProvider (stundeneintraege/maengel/benachrichtigungen mit useCallback-stable-Handlern, enabled=!!cu) + Smoke-Test-Doku (`docs/realtime/manual-smoke-test.md`). +6 Vitest. Phase 6 Realtime live.
+- 2026-04-29 · 6-01 · aa3626e · `useRealtime`-Hook in `src/lib/useRealtime.js` (postgres_changes-Wrapper mit AbortController-cleanup via removeChannel, enabled-Gate, filter-Option). +6 Vitest-Szenarien (Mount/Unmount, enabled=false, INSERT/UPDATE/DELETE-Forwarding, filter).
+- 2026-04-29 · 6-06 (Vorbereitung) · 4992c11+76252a7+4f78401 · Perf-Profiling-Vorbereitung: Seed-Script `scripts/seed-perf-test-data.mjs` (10k Stunden / 100 Baustellen / 500 Mängel, --apply/--cleanup/dry-run-Default), Profiling-Guide (`docs/performance/6-06-profiling-guide.md` — welche Screens, welche Tools, welche Schwellen) + statische Analyse (`docs/performance/6-06-static-analysis.md` — Top-5-Hotspots priorisiert: StundenUebersicht byUser-Pipeline = größter Verdacht). Eigentliches Profiling muss Altin manuell laufen lassen.
 - 2026-04-29 · 6-03b (Plan) · f4b8e8f · SteView Split-Plan in `docs/refactoring/6-03b-steview-split.md` (778 Z. → List/Detail/Form/index). Execution offen wegen 4 Klärungsbedarf-Fragen (showList-UX, Detail-vs-Modal, Edit-Init-Pattern, Saved-Navigation).
 - 2026-04-29 · 6-03a · 1592549+faf5984+f5d4966+dc79528 · KostenView.jsx (922 Z.) komplett in 5 Dateien gesplittet: `KostenView/aggregations.js` (Hook + KAT-Konstanten), `Detail.jsx` (380 Z., useApp + lokales confirmDeleteKost), `Form.jsx` (pure-render Sub-Component), `List.jsx` (alle Hooks + Filter + CSV-Export, onSelectBs Prop), `index.jsx` (Container + Routing). App.jsx-Import unverändert. Plan in `docs/refactoring/6-03a-kostenview-split.md` (eb748a6).
 - 2026-04-29 · F-01 (Phase 4) · 33dd411+f21baf6+5e12166+3f4d543 · BstDet 5/5 restliche Stellen (Quick-Actions, Team, Rechnungsdaten, Einträge-Container, Einträge-Items 9/9 komplett). NotifView via style-override-Pattern (conditional background+shadow überleben den Card-Wrapper) — vorheriger Tag-Lauf-SKIP zurückgenommen.
