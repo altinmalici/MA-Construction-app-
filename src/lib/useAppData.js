@@ -56,6 +56,45 @@ export function useAppData() {
     }
   }, []);
 
+  // 6-02: Merge eines einzelnen Realtime-Events in den lokalen State
+  // ohne Refetch. Dedup gegen lokale Mutation: bei INSERT prüfen, ob ID
+  // schon im State ist (z.B. wenn die optimistic-Mutation des aktuellen
+  // Tabs zuerst war) → SKIP statt Duplikat. UPDATE/DELETE replacen/
+  // entfernen by ID.
+  //
+  // table: 'stundeneintraege' | 'maengel' | 'benachrichtigungen' | ...
+  // op:    'INSERT' | 'UPDATE' | 'DELETE'
+  // row:   das Postgres-Row-Object (snake_case keys aus Supabase!)
+  //        — wir nutzen es nur für die ID-Identität; das gemappte
+  //        Object kommt erst beim nächsten reload, falls nötig.
+  //
+  // KEIN reload, KEIN Full-Refresh — nur lokaler State-Update.
+  const mergeIncomingRow = useCallback((table, row, op) => {
+    if (!row || !row.id) return;
+    if (!mountedRef.current) return;
+    setData((prev) => {
+      const list = prev[table];
+      if (!Array.isArray(list)) return prev;
+      if (op === "INSERT") {
+        if (list.some((r) => r.id === row.id)) return prev; // dedup
+        return { ...prev, [table]: [...list, row] };
+      }
+      if (op === "UPDATE") {
+        const idx = list.findIndex((r) => r.id === row.id);
+        if (idx === -1) return prev; // nicht im State (RLS-gefiltert?) → ignorieren
+        const next = [...list];
+        next[idx] = { ...next[idx], ...row };
+        return { ...prev, [table]: next };
+      }
+      if (op === "DELETE") {
+        const filtered = list.filter((r) => r.id !== row.id);
+        if (filtered.length === list.length) return prev; // nicht im State
+        return { ...prev, [table]: filtered };
+      }
+      return prev;
+    });
+  }, []);
+
   // Reload a single entity
   const reload = useCallback(async (...entities) => {
     const loaders = {
@@ -302,5 +341,5 @@ export function useAppData() {
     loadAll,
   };
 
-  return { data, loading, error, actions };
+  return { data, loading, error, actions, mergeIncomingRow };
 }
