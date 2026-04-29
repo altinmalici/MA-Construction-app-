@@ -239,7 +239,7 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 |---|---|---|---|
 | 6-01 | Supabase Realtime-Subscriptions für `stundeneintraege`, `maengel`, `benachrichtigungen` | mittel | 🔴 TODO |
 | 6-02 | AppContext: Realtime-Updates mergen ohne Full-Refresh | mittel | 🔴 TODO |
-| 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🔴 TODO |
+| 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🟡 IN PROGRESS — 6-03a KostenView komplett gesplittet (5 Dateien). 6-03b SteView Plan vorbereitet (`docs/refactoring/6-03b-steview-split.md`), Execution offen wegen Klärungsbedarf (4 offene Fragen im Plan). |
 | 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🟢 DONE |
 | 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🟢 DONE |
 | 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🔴 TODO |
@@ -279,7 +279,7 @@ Diese Tasks sind **nicht phase-gebunden** und werden eingeschoben, wenn sie gera
 
 | ID | Task | Aufwand | Status |
 |---|---|---|---|
-| F-01 | `<Card>`, `<SectionHeader>`, `<IconButton>`, `<ListRow>` Komponenten extrahieren, Inline-Styles sukzessive ersetzen | groß | 🟡 IN PROGRESS |
+| F-01 | `<Card>`, `<SectionHeader>`, `<IconButton>`, `<ListRow>` Komponenten extrahieren, Inline-Styles sukzessive ersetzen | groß | 🟡 IN PROGRESS — Phase 4 (2026-04-29): BstDet 9/9 abgeschlossen (33dd411, f21baf6, 5e12166), NotifView via style-override-Pattern (3f4d543). Forms (BstForm/MitForm) + LoginView fehlen weiterhin. |
 | F-02 | Auth: `_signInAndLoadProfile(email, pwd)` Helper extrahieren, 5 Login-Funktionen konsolidieren | klein | 🟢 DONE |
 | F-03 | API-Returns konsistent machen (überall mapped Object ODER überall ID) | klein | 🟢 DONE |
 | F-04 | `bStdNum()` Number-Variante neben `bStd()` (String) extrahieren — spart 30+ `parseFloat`-Calls | klein | 🟢 DONE |
@@ -321,6 +321,9 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-04-29 · 6-03b (Plan) · f4b8e8f · SteView Split-Plan in `docs/refactoring/6-03b-steview-split.md` (778 Z. → List/Detail/Form/index). Execution offen wegen 4 Klärungsbedarf-Fragen (showList-UX, Detail-vs-Modal, Edit-Init-Pattern, Saved-Navigation).
+- 2026-04-29 · 6-03a · 1592549+faf5984+f5d4966+dc79528 · KostenView.jsx (922 Z.) komplett in 5 Dateien gesplittet: `KostenView/aggregations.js` (Hook + KAT-Konstanten), `Detail.jsx` (380 Z., useApp + lokales confirmDeleteKost), `Form.jsx` (pure-render Sub-Component), `List.jsx` (alle Hooks + Filter + CSV-Export, onSelectBs Prop), `index.jsx` (Container + Routing). App.jsx-Import unverändert. Plan in `docs/refactoring/6-03a-kostenview-split.md` (eb748a6).
+- 2026-04-29 · F-01 (Phase 4) · 33dd411+f21baf6+5e12166+3f4d543 · BstDet 5/5 restliche Stellen (Quick-Actions, Team, Rechnungsdaten, Einträge-Container, Einträge-Items 9/9 komplett). NotifView via style-override-Pattern (conditional background+shadow überleben den Card-Wrapper) — vorheriger Tag-Lauf-SKIP zurückgenommen.
 - 2026-04-28 · Spacing-Fixes · e41dbf6+b6566ca+c7a9e3a · Nach Altin-iPhone-Verifikation: BtbView Form/Liste auf flex+gap=12 + Save-Button marginTop (e41dbf6); RegView Outer-Wrapper auf flex+gap=12 + Drucken-Button marginTop (b6566ca); TabBar Anchoring via 1px Top-Border + dezenter Top-Shadow + Background-Opazität 0.94 (c7a9e3a).
 - 2026-04-28 · F-01 (Phase 3) · f65eb1a+948a294+07e0594+97cb671+c875d89+02898ad · Card-Pattern auf 6 weiteren Screens (BtbView, KalView, StundenUebersicht, MeineStd, RegView, BstDet — 4/9 Stellen). NotifView SKIP (conditional background+shadow nicht durch Card-API darstellbar). Insgesamt 13 Screens jetzt mit Card. F-01 weiter 🟡 — Forms (BstForm/MitForm) + LoginView + restliche BstDet-Stellen folgen wenn betroffen.
 - 2026-04-28 · D3 · de55d9d · KostenView calcLohn/calcTotal/calcKat über useMemo + byBaustelleAggregat-Map; 1 Pass über stundeneintraege ersetzt 4× O(n) pro Baustelle (Audit P-MEDIUM)
