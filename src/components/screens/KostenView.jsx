@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStdNum, fE, fK, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../utils/helpers";
 import { ScreenLayout, PBar, Empty, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
+import { useKostenAggregat, KAT_LABELS, KAT_COLORS } from "./KostenView/aggregations.js";
 
 const KostenView = () => {
   const { data, actions, show, goBack, cu, addN } = useApp();
@@ -32,18 +33,8 @@ const KostenView = () => {
     betrag: "",
     datum: new Date().toISOString().split("T")[0],
   });
-  const katLabels = {
-    lohn: "Lohnkosten",
-    material: "Material",
-    subunternehmer: "Subunternehmer",
-    sonstiges: "Sonstiges",
-  };
-  const katColors = {
-    lohn: "#007AFF",
-    material: "#FF9500",
-    subunternehmer: "#5856D6",
-    sonstiges: "#8e8e93",
-  };
+  const katLabels = KAT_LABELS;
+  const katColors = KAT_COLORS;
   const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
 
   const bsList =
@@ -51,52 +42,15 @@ const KostenView = () => {
       ? data.baustellen
       : data.baustellen.filter((b) => b.status === fl);
 
-  // Audit P-MEDIUM: Aggregations-Map einmal pro Daten-Refresh berechnen.
-  // Vorher: calcLohn / calcTotal / calcKat liefen pro Baustelle 3-4× und
-  // jeder Call war O(n) über stundeneintraege bzw. kosten.
-  // Jetzt: einmaliger Pass über alle drei Listen (users/stundeneintraege/
-  // kosten) → Map { [baustelleId]: {lohn, kategorien: {kat: betrag}} }.
-  // calc*-Reader sind jetzt O(1).
-  const byBaustelleAggregat = useMemo(() => {
-    const map = {};
-    data.baustellen.forEach((b) => {
-      map[b.id] = { lohn: 0, kategorien: {} };
-    });
-    const userById = new Map(data.users.map((u) => [u.id, u]));
-    data.stundeneintraege.forEach((e) => {
-      if (!isMitarbeiterEntry(e)) return;
-      const entry = map[e.baustelleId];
-      if (!entry) return;
-      const u = userById.get(e.mitarbeiterId);
-      const std = bStdNum(e.beginn, e.ende, e.pause);
-      entry.lohn += std * (u?.stundensatz || 45);
-    });
-    data.kosten.forEach((k) => {
-      const entry = map[k.baustelleId];
-      if (!entry) return;
-      const cat = k.kategorie || "sonstiges";
-      entry.kategorien[cat] = (entry.kategorien[cat] || 0) + (k.betrag || 0);
-    });
-    return map;
-  }, [data.baustellen, data.stundeneintraege, data.users, data.kosten]);
-
-  const calcLohn = (bid) => byBaustelleAggregat[bid]?.lohn || 0;
-  const calcTotal = (bid) => {
-    const e = byBaustelleAggregat[bid];
-    if (!e) return 0;
-    const extra = Object.values(e.kategorien).reduce((s, v) => s + v, 0);
-    return e.lohn + extra;
-  };
-  const calcKat = (bid, kat) => {
-    const e = byBaustelleAggregat[bid];
-    if (!e) return 0;
-    if (kat === "lohn") return e.lohn;
-    return e.kategorien[kat] || 0;
-  };
-
-  // Gesamtkosten aller Baustellen
-  const totalAll = data.baustellen.reduce((s, b) => s + calcTotal(b.id), 0);
-  const budgetAll = data.baustellen.reduce((s, b) => s + (b.budget || 0), 0);
+  // 6-03a Phase 1: Aggregations-Logic in useKostenAggregat-Hook ausgelagert
+  // (siehe ./KostenView/aggregations.js). calc*-Reader und totalAll/budgetAll
+  // werden destrukturiert für unveränderte Aufrufer-Signatur.
+  const { calcLohn, calcTotal, calcKat, totalAll, budgetAll } = useKostenAggregat({
+    baustellen: data.baustellen,
+    stundeneintraege: data.stundeneintraege,
+    users: data.users,
+    kosten: data.kosten,
+  });
 
   const saveKost = () =>
     withSaving(async () => {
