@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStdNum, fK, P, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
@@ -30,35 +30,63 @@ const StundenUebersicht = () => {
       return m + 1;
     });
   };
-  const me = data.stundeneintraege.filter(
-    (e) => isInMonth(e.datum, mo, jr) && isMitarbeiterEntry(e),
-  );
   const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
-  const allUsers = [
-    ...data.users.filter((u) => u.role === "mitarbeiter"),
-    ...(cu ? [cu] : []),
-  ].filter((u, i, a) => a.findIndex((x) => x.id === u.id) === i);
-  const byUser = allUsers
-    .map((u) => {
-      const ue = me.filter((e) => e.mitarbeiterId === u.id);
-      if (ue.length === 0) return null;
-      const std = ue.reduce(
-        (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
-        0,
-      );
-      const byBs = {};
-      ue.forEach((e) => {
-        const b = data.baustellen.find((x) => x.id === e.baustelleId);
-        const k = b?.kunde || "Unbekannt";
-        if (!byBs[k]) byBs[k] = 0;
-        byBs[k] += bStdNum(e.beginn, e.ende, e.pause);
-      });
-      return { user: u, std, entries: ue, byBs };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.std - a.std);
-  const totalStd = byUser.reduce((s, u) => s + u.std, 0);
-  const arbTage = [...new Set(me.map((e) => e.datum))].length;
+
+  // 6-06 Prio 1: byUser-Pipeline memoizen. Vorher pro Render:
+  //   me.filter()  +  allUsers.map(filter+reduce+forEach)  +  byUser.reduce
+  // bei 10k Stunden × 20 Mitarbeitern = ~200k Operationen pro Render.
+  // Jetzt: O(me + me) durch userById/baustelleById-Maps; Re-Compute nur
+  // wenn data oder Monats-Selektion sich ändert.
+  const me = useMemo(
+    () =>
+      data.stundeneintraege.filter(
+        (e) => isInMonth(e.datum, mo, jr) && isMitarbeiterEntry(e),
+      ),
+    [data.stundeneintraege, mo, jr],
+  );
+
+  const allUsers = useMemo(
+    () =>
+      [
+        ...data.users.filter((u) => u.role === "mitarbeiter"),
+        ...(cu ? [cu] : []),
+      ].filter((u, i, a) => a.findIndex((x) => x.id === u.id) === i),
+    [data.users, cu],
+  );
+
+  const byUser = useMemo(() => {
+    // 1 Pass über me: Bucket-Aggregation pro User → Lookup-Map.
+    const baustelleById = new Map(data.baustellen.map((b) => [b.id, b]));
+    const acc = new Map(); // uid → { std, entries, byBs }
+    me.forEach((e) => {
+      let bucket = acc.get(e.mitarbeiterId);
+      if (!bucket) {
+        bucket = { std: 0, entries: [], byBs: {} };
+        acc.set(e.mitarbeiterId, bucket);
+      }
+      const std = bStdNum(e.beginn, e.ende, e.pause);
+      bucket.std += std;
+      bucket.entries.push(e);
+      const k = baustelleById.get(e.baustelleId)?.kunde || "Unbekannt";
+      bucket.byBs[k] = (bucket.byBs[k] || 0) + std;
+    });
+    return allUsers
+      .map((u) => {
+        const b = acc.get(u.id);
+        return b ? { user: u, ...b } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => b.std - a.std);
+  }, [allUsers, me, data.baustellen]);
+
+  const totalStd = useMemo(
+    () => byUser.reduce((s, u) => s + u.std, 0),
+    [byUser],
+  );
+  const arbTage = useMemo(
+    () => new Set(me.map((e) => e.datum)).size,
+    [me],
+  );
   const mitCount = byUser.length;
   return (
     <ScreenLayout>
