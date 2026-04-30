@@ -210,10 +210,16 @@ export function AppProvider({ children }) {
     };
   }, [cu]);
   // Seed: Testbaustelle (NUR Dev-Env, um leere Prod-DB nicht zu überraschen)
+  // Smoke-Test 2026-04-30: Mitarbeiter triggerten den Seed-INSERT, RLS lehnte
+  // ab (42501) und der Console-Error verwirrte den nachfolgenden Lade-Pfad
+  // (data.baustellen blieb leer trotz erfolgreichem GET). Seed läuft jetzt
+  // nur für Chef — Mitarbeiter haben in einer leeren Dev-DB sowieso nichts zu
+  // tun und der Chef seedet selbst beim ersten Login.
   const seededRef = useRef(false);
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     if (loading || seededRef.current || data.baustellen.length > 0) return;
+    if (cu?.role !== "chef") return;
     seededRef.current = true;
     const chefUser = data.users.find((u) => u.role === "chef");
     actions.baustellen
@@ -246,7 +252,7 @@ export function AppProvider({ children }) {
     // Re-Run würde Mehrfach-Seeds triggern; seededRef + DEV-Guard
     // sichern den One-Shot-Effekt auch ohne deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, data.baustellen.length]);
+  }, [loading, data.baustellen.length, cu]);
 
   const show = (m, t = "success") => {
     const id = Date.now() + Math.random();
