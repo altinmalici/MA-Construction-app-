@@ -1,0 +1,11 @@
+=== DRY-RUN ===
+Würde anlegen (Marker: [PERF-TEST]):
+  baustellen           100
+  mitarbeiter          10
+  subunternehmer       50
+  stundeneintraege     10000
+  maengel              500
+  kosten               200
+
+💡 Re-Run mit --apply um zu schreiben.
+💡 Re-Run mit --cleanup um die PERF-TEST-Daten zu löschen.

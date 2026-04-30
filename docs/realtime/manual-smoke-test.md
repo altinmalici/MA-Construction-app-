@@ -132,3 +132,38 @@ Falls Bedarf entsteht: weitere `useRealtime`-Aufrufe im AppProvider sind trivial
 - DevTools Performance-Tab: 60s Recording während aktiver Subscription
 - Erwartung: kein zusätzliches Render-Spike beim Eingang eines Events (nur betroffene Komponenten rerendern wegen `mergeIncomingRow → setData`)
 - Hot-Spot-Verdacht: AppContext-Konsumenten rerendern alle bei jedem `data`-Change → kommt im Folge-Task `useMemo` für Provider-Value (siehe `docs/performance/6-06-static-analysis.md` Cross-Cutting-Befund)
+
+---
+
+## 10. Performance-Profiling-Vorbereitung
+
+Das Realtime-Setup ist die Voraussetzung dafür, dass Live-Updates messbar sind — ohne `seed-perf-test-data` ist die Realität zu klein um Hot-Spots zu erkennen.
+
+**Dry-Run-Output ist committed:** `docs/realtime/seed-dry-run-output.txt` (zeigt ohne DB-Calls was das Skript anlegen würde — Stand 2026-04-30).
+
+### 10.1 Apply gegen Dev-DB (NICHT Prod!)
+
+```bash
+SUPABASE_URL=https://DEIN-DEV-PROJECT.supabase.co \
+SUPABASE_SERVICE_KEY=eyJ... \
+node scripts/seed-perf-test-data.mjs --apply
+```
+
+Dauer: ~30-60s je nach Latenz (10k Stunden in 500er-Batches).
+
+**WARNUNG:** Niemals direkt gegen Prod-DB ohne Backup. Empfohlen: Supabase-Branch oder lokale Dev-DB mit Schema-Dump. Alle Test-Rows tragen den Marker `[PERF-TEST]` in einem Text-Feld — keine Vermischung mit Prod-Daten.
+
+### 10.2 Cleanup
+
+```bash
+SUPABASE_URL=...  SUPABASE_SERVICE_KEY=...  \
+node scripts/seed-perf-test-data.mjs --cleanup
+```
+
+Löscht alle Rows mit `[PERF-TEST]`-Marker (FK-Reihenfolge: stunden/maengel/kosten zuerst, dann subs/users/baustellen).
+
+### 10.3 Profilen
+
+Nach `--apply`: die 5 Top-Verdächtigen-Screens aus `docs/performance/6-06-profiling-guide.md` Abschnitt 1 mit React DevTools Profiler messen. Tabelle in Abschnitt 3 (`leer / prod-aktuell / 10k-perf-test`) ausfüllen. Schwellen für Optimierungs-Pflicht in Abschnitt 4.
+
+Prio-1-Optimierung (StundenUebersicht byUser-Memoization) ist seit `autopilot-2026-04-29-spaet`-Branch gefixt — der Effekt sollte messbar sein gegenüber dem `main`-Stand.
