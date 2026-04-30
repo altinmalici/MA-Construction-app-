@@ -242,7 +242,7 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 | 6-03 | KostenView / SteView in List/Detail/Form aufteilen (aktuell 949 + 728 Zeilen) | groß | 🟡 IN PROGRESS — 6-03a KostenView komplett gesplittet (5 Dateien). 6-03b SteView Plan vorbereitet (`docs/refactoring/6-03b-steview-split.md`), Execution offen wegen Klärungsbedarf (4 offene Fragen im Plan). |
 | 6-04 | API-Wrapper mit AbortController + Retry für GETs | mittel | 🟢 DONE |
 | 6-05 | `bautagebuch` + `kalender` `update()`-Funktionen ergänzen (aktuell nur delete+create) | mittel | 🟢 DONE |
-| 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🟡 IN PROGRESS — Vorbereitung 2026-04-29: Seed-Script (`scripts/seed-perf-test-data.mjs`), Profiling-Guide + statische Analyse (`docs/performance/`). Eigentliches Profiling muss Altin manuell mit `--apply` laufen lassen. |
+| 6-06 | Performance-Profiling mit Testdatensatz 10k Stunden / 100 Baustellen | mittel | 🟡 IN PROGRESS — Vorbereitung 2026-04-29: Seed-Script (`scripts/seed-perf-test-data.mjs`), Profiling-Guide + statische Analyse (`docs/performance/`). Prio-1-Optimierung StundenUebersicht byUser-Aggregation per useMemo umgesetzt 2026-04-30 (`29634fe`). Eigentliches Profiling-Lauf muss Altin manuell mit `--apply` machen. |
 | 6-07 | Vitest-Coverage auf wichtigste Helpers ausdehnen (`bStd`, Datum-Utils, Filter-Helpers) | mittel | 🟢 DONE |
 
 ---
