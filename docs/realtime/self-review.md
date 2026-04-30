@@ -20,19 +20,19 @@
 
 **Empfehlung:** Status-Callback ergänzen: bei `CHANNEL_ERROR` / `TIMED_OUT` einmal `console.warn('[useRealtime] Channel-Error für Tabelle X — Realtime inaktiv. Manueller Refresh nötig.')`. Optional: `onError`-Callback in Hook-API exposen für UI-Banner ("Live-Updates pausiert").
 
-### 3. **MEDIUM** — `useAppData.js:72-96` Dedup ohne updated_at-Vergleich
-**Problem:** `mergeIncomingRow` macht UPDATE als `{ ...next[idx], ...row }` — der eingehende `row` überschreibt blind die lokalen Felder. Bei Out-of-Order-Events (Realtime-Race: zwei UPDATEs in falscher Reihenfolge) kann ein älterer Snapshot den neueren überschreiben.
+### 3. **MEDIUM** — `useAppData.js:72-96` Dedup ohne updated_at-Vergleich ✅ FIXED
+**Problem:** `mergeIncomingRow` machte UPDATE als `{ ...next[idx], ...row }` — der eingehende `row` überschrieb blind die lokalen Felder. Bei Out-of-Order-Events (Realtime-Race: zwei UPDATEs in falscher Reihenfolge) konnte ein älterer Snapshot den neueren überschreiben.
 
-**Aktuell unkritisch:** Postgres `replication` liefert Events üblicherweise in commit-Reihenfolge pro Connection. Race-Window minimal. Aber bei Reconnect/Replay (z.B. nach kurzem Netz-Drop) könnten Events anders ankommen.
+**Aktuell unkritisch (war):** Postgres `replication` liefert Events üblicherweise in commit-Reihenfolge pro Connection. Race-Window minimal. Aber bei Reconnect/Replay (z.B. nach kurzem Netz-Drop) konnten Events anders ankommen.
 
-**Empfehlung:** `updated_at`-Field (oder ähnlich) im UPDATE prüfen: `if (next[idx].updated_at && row.updated_at && row.updated_at < next[idx].updated_at) return prev`. Voraussetzung: Schema hat `updated_at` (aktuell nicht für alle 3 Tabellen — nur `created_at`). Würde DB-Migration brauchen, daher zurzeit keine Action.
+**Fix (Commit `06d2d7d`, 6-02b):** `isNewer(incoming, existing)`-Helper in `useAppData.js`. Wenn der bestehende Eintrag ein `updatedAt` hat, muss das eingehende Event STRIKT neuer sein — sonst behalten wir den Stand. Eingehend ohne `updatedAt` → behalten (sicherer Default, Reihenfolge unbekannt). Bestehender ohne `updatedAt` → akzeptieren (keine Referenz). Test-Coverage in `useAppData.test.js` (älter-skip / neuer-ersetzen / ohne-updatedAt-behalten).
 
-### 4. **MEDIUM** — `useAppData.js:79-80` INSERT-Dedup nutzt snake_case-`row.id`, lokaler State hat camelCase
-**Problem:** Realtime liefert die Postgres-Row direkt (snake_case keys: `baustelle_id`, `mitarbeiter_id`, `created_at` etc.). Lokaler State enthält aber das **gemappte** Object (camelCase: `baustelleId`, `mitarbeiterId`). Der eingefügte Row ist daher **inkonsistent zum Rest des States** und Komponenten, die `e.baustelleId` lesen, sehen `undefined`.
+### 4. **MEDIUM** — `useAppData.js:79-80` INSERT-Dedup nutzt snake_case-`row.id`, lokaler State hat camelCase ✅ FIXED
+**Problem:** Realtime liefert die Postgres-Row direkt (snake_case keys: `baustelle_id`, `mitarbeiter_id`, `created_at` etc.). Lokaler State enthält aber das **gemappte** Object (camelCase: `baustelleId`, `mitarbeiterId`). Der eingefügte Row war daher **inkonsistent zum Rest des States** und Komponenten, die `e.baustelleId` lasen, sahen `undefined`.
 
-**Severity hochgestuft auf HIGH** — das ist ein echter funktionaler Bug, nicht nur Style.
+**Severity hochgestuft auf HIGH** — das war ein echter funktionaler Bug, nicht nur Style.
 
-**Empfehlung:** Pro Tabelle ein Mapper anwenden vor `setData`. Einfachster Pfad: in `mergeIncomingRow` eine Map `{ [table]: mapRowFn }` aufbauen, z.B. importiert aus den jeweiligen `api/*.js`-Modulen (ist heute privat, müsste exportiert werden). Alternative: das initiale `getAll` mappen, beim Realtime-Insert einen `reload(table)` triggern statt `mergeIncomingRow` — verliert aber den ganzen Performance-Gewinn.
+**Fix (Commit `06d2d7d`, 6-02b):** Generischer `mapKeysToCamel`-Helper in `useAppData.js` mappt top-level snake_case-Keys zu camelCase, wird als erster Schritt in `mergeIncomingRow` aufgerufen. Postgres-Realtime-Payloads sind flach, daher keine Rekursion. Test-Coverage in `useAppData.test.js` (alle camelCase-Keys da, alle snake_case-Keys verschwunden).
 
 ### 5. **MEDIUM** — `AppContext.jsx:34-85` Re-Subscribe bei jedem `cu`-Wechsel, auch wenn nur `cu.name` editiert
 **Problem:** `realtimeEnabled = !!cu` — Boolean-Stable. ABER: bei `setCu(newObj)` (z.B. nach PIN-Change in ProfilView) ändert sich `cu` als Referenz, `mergeIncomingRow` ist `useCallback([])` stabil, `realtimeEnabled` Wert bleibt true. Effekt: kein Re-Subscribe. **Tatsächlich OK**, kein Re-Subscribe-Storm.
@@ -62,8 +62,8 @@
 |---|---|---|---|
 | 1 | HIGH | useRealtime.js:30 | Ja — Handler-Ref-Pattern, ~5 Zeilen |
 | 2 | MEDIUM | useRealtime.js:56 | Ja — Status-Callback, ~10 Zeilen |
-| 3 | MEDIUM | useAppData.js:82 | Nein — DB-Schema-Erweiterung nötig |
-| 4 | **HIGH** | useAppData.js:79 | Nein — Mapper-Architektur-Entscheidung |
+| 3 | MEDIUM ✅ FIXED | useAppData.js:82 | Commit `06d2d7d` (6-02b) |
+| 4 | **HIGH** ✅ FIXED | useAppData.js:79 | Commit `06d2d7d` (6-02b) |
 | 5 | LOW | AppContext.jsx | Kein Action |
 | 6 | LOW | useRealtime.js:37 | Ja — useId-Suffix |
 | 7 | LOW | mergeIncomingRow | Trivial |
@@ -72,4 +72,4 @@
 **Empfehlung für Altin nach Merge:**
 Finding **#4 ist der wichtigste** — der Realtime-Insert macht aktuell Rows mit snake_case-Keys in den State. Komponenten, die auf `e.baustelleId` zugreifen, sehen `undefined` für gerade live-eingefügte Einträge. Test bewusst übersehen weil Mocks pure Pass-through sind. **Reproducer:** Browser A bekommt Realtime-INSERT → Eintrag erscheint in der Liste, aber `bs?.kunde`-Lookup liefert `undefined` → "?" als Baustellen-Name.
 
-**Vorgeschlagener Folge-Task:** `6-02b: Realtime-Row-Mapping zu camelCase + updated_at-Dedup`.
+**Vorgeschlagener Folge-Task:** `6-02b: Realtime-Row-Mapping zu camelCase + updated_at-Dedup`. ✅ ERLEDIGT (Commit `06d2d7d`).
