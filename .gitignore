@@ -24,3 +24,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code Workspace-Settings (lokal, nicht ins Repo)
+.claude/settings.local.json
