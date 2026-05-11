@@ -27,3 +27,7 @@ dist-ssr
 
 # Claude Code Workspace-Settings (lokal, nicht ins Repo)
 .claude/settings.local.json
+
+# Python bytecode (von Skill-Scripts)
+__pycache__/
+*.pyc
