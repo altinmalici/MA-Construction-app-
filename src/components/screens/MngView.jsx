@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { Plus, X, AlertCircle, CheckCircle, Trash2, Building2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { fK, IC, BTN, CS, P, RED, GREEN } from "../../utils/helpers";
 import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner, ConfirmModal, IconButton } from "../ui";
@@ -7,12 +7,13 @@ import { useSaving } from "../../hooks/useSaving";
 import { uploadPhoto } from "../../lib/storage";
 
 const MngView = () => {
-  const { sb, chef, cu, data, actions, show, goBack, trigPhoto, addN } =
+  const { sb, chef, cu, data, actions, show, goBack, trigPhoto, addN, setSb, nav } =
     useApp();
   const { saving, withSaving } = useSaving();
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [sf, setSf] = useState(false);
   const [fl, setFl] = useState("alle");
+  const [pf, setPf] = useState("alle");
   const [mf, sMf] = useState({
     titel: "",
     beschreibung: "",
@@ -24,12 +25,16 @@ const MngView = () => {
   const myBs = chef
     ? data.baustellen
     : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
+  // Globaler Modus (!sb) ist read-only und für Mitarbeiter ganz gesperrt.
+  const globalView = !sb;
+  const blockedMitarbeiter = globalView && !chef;
   let ls = sb
     ? data.maengel.filter((m) => m.baustelleId === sb.id)
     : chef
       ? data.maengel
       : data.maengel.filter((m) => myBs.some((b) => b.id === m.baustelleId));
   if (fl !== "alle") ls = ls.filter((m) => m.status === fl);
+  if (pf !== "alle") ls = ls.filter((m) => m.prioritaet === pf);
   const save = () =>
     withSaving(async () => {
       if (!sb?.id) {
@@ -98,20 +103,50 @@ const MngView = () => {
   const pc = { hoch: RED, mittel: P, niedrig: "#8e8e93" };
   const sl = { offen: "Offen", in_arbeit: "In Arbeit", erledigt: "Erledigt" };
   const stc = { offen: RED, in_arbeit: P, erledigt: GREEN };
+  if (blockedMitarbeiter) {
+    return (
+      <ScreenLayout title="Mängel" onBack={goBack}>
+        <Empty
+          icon={Building2}
+          text="Mängel werden pro Baustelle verwaltet — wähle eine Baustelle."
+        />
+        <button
+          onClick={() => nav("bst")}
+          style={{
+            marginTop: 16,
+            width: "100%",
+            padding: "14px 24px",
+            borderRadius: 14,
+            color: "white",
+            fontWeight: 600,
+            fontSize: 15,
+            background: BTN,
+            boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Zu meinen Baustellen
+        </button>
+      </ScreenLayout>
+    );
+  }
   return (
     <ScreenLayout
-      title="Mängelmanagement"
+      title={globalView ? "Mängel-Übersicht" : "Mängelmanagement"}
       onBack={goBack}
       right={
-        <IconButton
-          icon={sf ? X : Plus}
-          variant={sf ? "default" : "primary"}
-          onClick={() => setSf(!sf)}
-          ariaLabel={sf ? "Schließen" : "Mangel erfassen"}
-        />
+        !globalView && (
+          <IconButton
+            icon={sf ? X : Plus}
+            variant={sf ? "default" : "primary"}
+            onClick={() => setSf(!sf)}
+            ariaLabel={sf ? "Schließen" : "Mangel erfassen"}
+          />
+        )
       }
     >
-      {sf && (
+      {sf && !globalView && (
         <div
           className="space-y-2"
           style={{
@@ -231,7 +266,7 @@ const MngView = () => {
           </button>
         </div>
       )}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8, overflowX: "auto", scrollbarWidth: "none" }}>
         {["alle", "offen", "in_arbeit", "erledigt"].map((s) => (
           <button
             key={s}
@@ -243,6 +278,7 @@ const MngView = () => {
               fontWeight: 500,
               border: "none",
               cursor: "pointer",
+              whiteSpace: "nowrap",
               ...(fl === s
                 ? {
                     background: s === "alle" ? BTN : stc[s] || BTN,
@@ -255,6 +291,31 @@ const MngView = () => {
           </button>
         ))}
       </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, overflowX: "auto", scrollbarWidth: "none" }}>
+        {["alle", "hoch", "mittel", "niedrig"].map((p) => (
+          <button
+            key={p}
+            onClick={() => setPf(p)}
+            style={{
+              padding: "8px 16px",
+              borderRadius: 100,
+              fontSize: 13,
+              fontWeight: 500,
+              border: "none",
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              ...(pf === p
+                ? {
+                    background: p === "alle" ? BTN : pc[p] || BTN,
+                    color: "white",
+                  }
+                : { background: "white", boxShadow: CS, color: "#3c3c43" }),
+            }}
+          >
+            {p === "alle" ? "Alle Prioritäten" : p.charAt(0).toUpperCase() + p.slice(1)}
+          </button>
+        ))}
+      </div>
       <div className="space-y-2">
         {ls.length === 0 ? (
           <Empty icon={CheckCircle} text="Keine Mängel vorhanden" />
@@ -264,14 +325,33 @@ const MngView = () => {
             const z =
               data.subunternehmer.find((s) => s.id === m.zustaendig) ||
               data.users.find((u) => u.id === m.zustaendig);
+            const openOnBst = () => {
+              if (!bs) return;
+              setSb(bs);
+              nav("bsd");
+            };
             return (
               <div
                 key={m.id}
+                onClick={globalView ? openOnBst : undefined}
+                role={globalView ? "button" : undefined}
+                tabIndex={globalView ? 0 : undefined}
+                onKeyDown={
+                  globalView
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openOnBst();
+                        }
+                      }
+                    : undefined
+                }
                 style={{
                   padding: 16,
                   borderRadius: 12,
                   background: "white",
                   boxShadow: CS,
+                  cursor: globalView ? "pointer" : "default",
                 }}
               >
                 <div
@@ -342,7 +422,7 @@ const MngView = () => {
                         );
                       })()}
                   </div>
-                  {chef && m.status !== "erledigt" && (
+                  {chef && !globalView && m.status !== "erledigt" && (
                     <div style={{ display: "flex", gap: 8 }}>
                       {m.status === "offen" && (
                         <button
@@ -376,7 +456,7 @@ const MngView = () => {
                       </button>
                     </div>
                   )}
-                  {chef && (
+                  {chef && !globalView && (
                     <IconButton
                       icon={Trash2}
                       variant="subtle"
