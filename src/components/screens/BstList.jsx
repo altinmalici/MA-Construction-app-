@@ -121,7 +121,11 @@ const BstList = () => {
         {ls.length === 0 ? (
           <Empty
             icon={Building2}
-            text="Tippe auf + um eine Baustelle anzulegen"
+            text={
+              chef
+                ? "Tippe auf + um eine Baustelle anzulegen"
+                : "Dir sind aktuell keine Baustellen zugewiesen"
+            }
           />
         ) : (
           ls.map((b) => (
