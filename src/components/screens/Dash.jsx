@@ -11,7 +11,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { G, RED, CS, COLORS, isInMonth } from "../../utils/helpers";
+import { G, RED, P, CS, COLORS, isInMonth } from "../../utils/helpers";
 import { ScreenLayout, Card } from "../ui";
 
 const Dash = () => {
@@ -61,6 +61,19 @@ const Dash = () => {
         : todayEntries.filter((e) => e.mitarbeiterId === cu?.id).length,
     [chef, todayEntries, cu?.id],
   );
+  // Mitarbeiter sieht offene Mängel nur für eigene Baustellen, sortiert
+  // nach Priorität (hoch → niedrig), max 5. Chef nutzt das nicht.
+  const meineOffeneMaengel = useMemo(() => {
+    if (chef) return [];
+    const prio = { hoch: 0, mittel: 1, niedrig: 2 };
+    const myBstIds = new Set(mb.map((b) => b.id));
+    return data.maengel
+      .filter(
+        (m) => m.status !== "erledigt" && myBstIds.has(m.baustelleId),
+      )
+      .sort((a, b) => (prio[a.prioritaet] ?? 9) - (prio[b.prioritaet] ?? 9))
+      .slice(0, 5);
+  }, [chef, data.maengel, mb]);
 
   if (!cu) return null;
   const vorname = cu.name.split(" ")[0];
@@ -144,14 +157,6 @@ const Dash = () => {
           c: "#3c3c43",
           l: "Meine Stunden",
           s: `${meineStdEntriesMonat} Eintr\u00e4ge diesen Monat`,
-          n: null,
-        },
-        {
-          k: "mng",
-          i: AlertCircle,
-          c: COLORS.maengel,
-          l: "M\u00e4ngel melden",
-          s: "Problem melden",
           n: null,
         },
         {
@@ -316,30 +321,6 @@ const Dash = () => {
           >
             <Plus size={16} />
             Baustelle
-          </button>
-        )}
-        {!chef && (
-          <button
-            onClick={() => nav("mng")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "10px 16px",
-              borderRadius: 100,
-              background: "white",
-              boxShadow:
-                "0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04)",
-              color: "#000",
-              fontSize: 14,
-              fontWeight: 600,
-              border: "none",
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <AlertCircle size={16} />
-            Mangel melden
           </button>
         )}
       </div>
@@ -513,6 +494,99 @@ const Dash = () => {
           </button>
         ))}
       </div>
+
+      {!chef && (
+        <>
+          <p
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: "#8e8e93",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              paddingBottom: 8,
+              marginTop: 24,
+            }}
+          >
+            Offene Mängel
+          </p>
+          {meineOffeneMaengel.length === 0 ? (
+            <Card style={{ textAlign: "center", padding: 20 }}>
+              <p style={{ fontSize: 13, color: "#8e8e93" }}>
+                Keine offenen Mängel auf deinen Baustellen.
+              </p>
+            </Card>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {meineOffeneMaengel.map((m) => {
+                const bs = data.baustellen.find((b) => b.id === m.baustelleId);
+                const prioColor = { hoch: RED, mittel: P, niedrig: "#8e8e93" }[
+                  m.prioritaet
+                ];
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      if (!bs) return;
+                      setSb(bs);
+                      nav("bsd");
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: 14,
+                      borderRadius: 12,
+                      background: "white",
+                      boxShadow: CS,
+                      border: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      width: "100%",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 5,
+                        background: prioColor,
+                        flexShrink: 0,
+                      }}
+                      aria-label={`Priorität ${m.prioritaet}`}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 600,
+                          color: "#000",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {m.titel}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          color: "#8e8e93",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {bs?.kunde || "—"}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
     </ScreenLayout>
   );
 };
