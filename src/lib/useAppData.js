@@ -1,6 +1,24 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from './api/index.js';
 
+// 6-02b: Postgres-Realtime-Payloads kommen mit snake_case-Keys; der App-State
+// nutzt camelCase. Generisch top-level Keys mappen — Postgres-Rows sind flach,
+// also keine Rekursion nötig.
+const toCamel = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+const mapKeysToCamel = (row) =>
+  Object.fromEntries(Object.entries(row).map(([k, v]) => [toCamel(k), v]));
+
+// 6-02b: Out-of-Order-Schutz für UPDATE. Wenn der bestehende Eintrag KEIN
+// updatedAt hat (z.B. älterer Seed-Stand vor der Migration), gibt es keine
+// Referenz — wir akzeptieren das Update. Wenn er eines hat, muss das
+// eingehende Event STRIKT neuer sein; fehlt updatedAt im eingehenden Event,
+// behalten wir den Bestand (sicherer Default — Reihenfolge unbekannt).
+const isNewer = (incoming, existing) => {
+  if (!existing.updatedAt) return true;
+  if (!incoming.updatedAt) return false;
+  return incoming.updatedAt > existing.updatedAt;
+};
+
 const emptyData = {
   users: [],
   subunternehmer: [],
@@ -54,6 +72,53 @@ export function useAppData() {
       console.error('Daten laden fehlgeschlagen:', err);
       if (mountedRef.current) setError(err.message);
     }
+  }, []);
+
+  // 6-02: Merge eines einzelnen Realtime-Events in den lokalen State
+  // ohne Refetch. Dedup gegen lokale Mutation: bei INSERT prüfen, ob ID
+  // schon im State ist (z.B. wenn die optimistic-Mutation des aktuellen
+  // Tabs zuerst war) → SKIP statt Duplikat. UPDATE/DELETE replacen/
+  // entfernen by ID.
+  //
+  // 6-02b: Postgres liefert snake_case keys (baustelle_id, updated_at);
+  // App-State erwartet camelCase (baustelleId, updatedAt). Generischer
+  // Mapper unten. Dedup-Vergleich nutzt updatedAt: out-of-order Events
+  // dürfen nie einen neueren State mit älterem Snapshot überschreiben.
+  // Wenn das eingehende Event keinen updated_at hat, behalten wir den
+  // bestehenden Stand (sicherer Default — wir wissen die Reihenfolge nicht).
+  //
+  // table: 'stundeneintraege' | 'maengel' | 'benachrichtigungen' | ...
+  // op:    'INSERT' | 'UPDATE' | 'DELETE'
+  // row:   das Postgres-Row-Object (snake_case keys aus Supabase)
+  //
+  // KEIN reload, KEIN Full-Refresh — nur lokaler State-Update.
+  const mergeIncomingRow = useCallback((table, row, op) => {
+    if (!row || !row.id) return;
+    if (!mountedRef.current) return;
+    const mapped = mapKeysToCamel(row);
+    setData((prev) => {
+      const list = prev[table];
+      if (!Array.isArray(list)) return prev;
+      if (op === "INSERT") {
+        const existing = list.find((r) => r.id === mapped.id);
+        if (existing) return prev; // dedup — erstes wins
+        return { ...prev, [table]: [...list, mapped] };
+      }
+      if (op === "UPDATE") {
+        const idx = list.findIndex((r) => r.id === mapped.id);
+        if (idx === -1) return prev; // nicht im State (RLS-gefiltert?) → ignorieren
+        if (!isNewer(mapped, list[idx])) return prev; // älter/gleich/unbekannt → behalten
+        const next = [...list];
+        next[idx] = { ...next[idx], ...mapped };
+        return { ...prev, [table]: next };
+      }
+      if (op === "DELETE") {
+        const filtered = list.filter((r) => r.id !== mapped.id);
+        if (filtered.length === list.length) return prev; // nicht im State
+        return { ...prev, [table]: filtered };
+      }
+      return prev;
+    });
   }, []);
 
   // Reload a single entity
@@ -302,5 +367,5 @@ export function useAppData() {
     loadAll,
   };
 
-  return { data, loading, error, actions };
+  return { data, loading, error, actions, mergeIncomingRow };
 }
