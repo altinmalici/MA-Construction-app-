@@ -248,6 +248,22 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 
 ---
 
+### 🎯 Phase 6.5 — UX-Refactor: Mängel-Architektur · Status: 🟢 DONE · 2026-05-11
+
+**Ziel:** Mängel werden konzeptuell pro Baustelle verwaltet — nicht als globales Modul. Chef behält globalen Read-only-Überblick, Mitarbeiter führt Mängel nur im Baustellen-Kontext.
+
+| ID | Task | Aufwand | Status |
+|---|---|---|---|
+| 6.5-01 | BstList Empty-State role-abhängig (Chef → "Tippe auf +", Mitarbeiter → "Keine Baustellen zugewiesen") | klein | 🟢 DONE |
+| 6.5-02 | MngView-Form: `baustelleId` aus `sb`-Kontext (Picker entfernt, kein Doppel-Source-of-Truth mehr) | klein | 🟢 DONE |
+| 6.5-03 | MngView role-based: Mitarbeiter ohne `sb` → Blocker; Chef ohne `sb` → read-only Übersicht mit Status- + Prioritäts-Filter, Card-Klick navigiert zu BstDet | mittel | 🟢 DONE |
+| 6.5-04 | Dash für Mitarbeiter: "Mängel melden"-Quick-Action + Widget-Kachel raus, neue Section "Offene Mängel" (max 5, prio-sortiert, Klick → BstDet) | mittel | 🟢 DONE |
+| 6.5-05 | Test-Coverage: MngView-Role-Gate, Dash-Mängel-Liste, BstList-Empty-State (+13 Tests, 188 → 201) | klein | 🟢 DONE |
+
+**Abschluss-Kriterium:** 201/201 Tests grün, Lint 0 Errors, Build grün. Altin verifiziert auf Mobile: Mitarbeiter-Dashboard zeigt korrekt nur eigene Mängel, Chef-MngView ist read-only ohne `sb`, Card-Klick navigiert sauber zu BstDet.
+
+---
+
 ### 🎯 Phase 7 — Lexoffice-Integration · Status: 🔴 TODO · geschätzt tbd
 
 **Ziel:** Stunden, Regieberichte, Materialien aus der App landen per Klick in Lexoffice als Rechnung/Angebot-Entwurf. App bleibt fokussiert, Lexoffice macht Buchhaltung, smarte Brücke dazwischen.
