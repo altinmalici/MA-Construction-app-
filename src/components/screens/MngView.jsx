@@ -14,12 +14,6 @@ const MngView = () => {
   const [sf, setSf] = useState(false);
   const [fl, setFl] = useState("alle");
   const [mf, sMf] = useState({
-    baustelleId:
-      sb?.id ||
-      (chef
-        ? data.baustellen[0]?.id || ""
-        : data.baustellen.find((b) => b.mitarbeiter?.includes(cu?.id))?.id ||
-          ""),
     titel: "",
     beschreibung: "",
     prioritaet: "mittel",
@@ -38,8 +32,8 @@ const MngView = () => {
   if (fl !== "alle") ls = ls.filter((m) => m.status === fl);
   const save = () =>
     withSaving(async () => {
-      if (!mf.baustelleId) {
-        show("Baustelle wählen", "error");
+      if (!sb?.id) {
+        show("Baustelle fehlt", "error");
         return;
       }
       if (!mf.titel.trim()) {
@@ -47,9 +41,6 @@ const MngView = () => {
         return;
       }
       try {
-        // Atomar: Foto-Upload VOR dem Row-Insert. Wenn Upload fehlschlägt,
-        // entsteht keine verwaiste maengel-Row. Pre-insert UUID, damit der
-        // Storage-Pfad die endgültige mangelId enthält.
         const mangelId = crypto.randomUUID();
         const existing = [];
         const blobs = [];
@@ -58,15 +49,13 @@ const MngView = () => {
           else if (f && f.blob) blobs.push(f);
         }
         const uploaded = await Promise.all(
-          blobs.map((p) =>
-            uploadPhoto(p.blob, mf.baustelleId, "maengel", mangelId),
-          ),
+          blobs.map((p) => uploadPhoto(p.blob, sb.id, "maengel", mangelId)),
         );
         const fotos = [...existing, ...uploaded.map((u) => u.path)];
 
         await actions.maengel.create({
           id: mangelId,
-          baustelleId: mf.baustelleId,
+          baustelleId: sb.id,
           titel: mf.titel,
           beschreibung: mf.beschreibung,
           prioritaet: mf.prioritaet,
@@ -76,7 +65,7 @@ const MngView = () => {
           frist: mf.frist,
           fotos,
         });
-        addN("mangel", `Mangel: ${mf.titel}`, mf.baustelleId);
+        addN("mangel", `Mangel: ${mf.titel}`, sb.id);
         show("Erfasst");
         setSf(false);
         sMf({ ...mf, titel: "", beschreibung: "", fotos: [] });
@@ -130,21 +119,6 @@ const MngView = () => {
             borderBottom: "0.5px solid rgba(0,0,0,0.08)",
           }}
         >
-          {!sb && (
-            <select
-              value={mf.baustelleId}
-              onChange={(e) => sMf({ ...mf, baustelleId: e.target.value })}
-              className={IC}
-              style={{ background: "rgba(118,118,128,0.12)", border: "none" }}
-            >
-              <option value="">Baustelle...</option>
-              {myBs.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.kunde}
-                </option>
-              ))}
-            </select>
-          )}
           <input
             value={mf.titel}
             onChange={(e) => sMf({ ...mf, titel: e.target.value })}
