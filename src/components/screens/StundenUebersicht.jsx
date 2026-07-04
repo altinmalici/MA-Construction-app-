@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { bStdNum, fK, P, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { buildLohnCsv, downloadCsv } from "../../utils/lohnexport";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
 const StundenUebersicht = () => {
-  const { data, cu, goBack } = useApp();
+  const { data, cu, chef, goBack } = useApp();
   const now = new Date();
   const [mo, setMo] = useState(now.getMonth());
   const [jr, setJr] = useState(now.getFullYear());
@@ -88,6 +89,22 @@ const StundenUebersicht = () => {
     [me],
   );
   const mitCount = byUser.length;
+
+  const monthLabel = new Date(jr, mo).toLocaleDateString("de-DE", {
+    month: "long",
+    year: "numeric",
+  });
+  const exportLohn = () => {
+    const csv = buildLohnCsv({
+      entries: me,
+      hoursOf: (e) => bStdNum(e.beginn, e.ende, e.pause),
+      userById: new Map(data.users.map((u) => [u.id, u])),
+      baustelleById: new Map(data.baustellen.map((b) => [b.id, b])),
+      monthLabel,
+    });
+    downloadCsv(`Lohnexport_${jr}-${String(mo + 1).padStart(2, "0")}.csv`, csv);
+  };
+
   return (
     <ScreenLayout>
       <div style={{ paddingBottom: 4 }}>
@@ -201,6 +218,35 @@ const StundenUebersicht = () => {
           </p>
         </Card>
       </div>
+      {/* Lohnexport (nur Chef) */}
+      {chef && (
+        <button
+          onClick={exportLohn}
+          disabled={byUser.length === 0}
+          style={{
+            width: "100%",
+            padding: "14px 24px",
+            borderRadius: 14,
+            color: "white",
+            fontWeight: 600,
+            fontSize: 15,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            background: P,
+            border: "none",
+            minHeight: 44,
+            marginBottom: 16,
+            opacity: byUser.length === 0 ? 0.5 : 1,
+            cursor: byUser.length === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          <Download size={18} />
+          Lohnexport {monthLabel} (CSV)
+        </button>
+      )}
+
       {/* Pro Mitarbeiter */}
       {byUser.length === 0 ? (
         <Empty icon={Clock} text="Keine Einträge in diesem Monat" />
