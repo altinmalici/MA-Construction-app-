@@ -141,7 +141,7 @@ const SigPad = ({ onSave, onClear, sig }) => {
           aria-label="Unterschrift löschen"
           style={{
             marginTop: 4,
-            padding: "6px 8px",
+            padding: "10px 8px",
             fontSize: 13,
             color: "#8e8e93",
             display: "inline-flex",
@@ -149,7 +149,7 @@ const SigPad = ({ onSave, onClear, sig }) => {
             gap: 4,
             background: "none",
             border: "none",
-            minHeight: 32,
+            minHeight: 44,
             cursor: "pointer",
           }}
         >

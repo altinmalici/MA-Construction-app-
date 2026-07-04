@@ -215,6 +215,7 @@ const Login = () => {
           key={i}
           onClick={() => tap(n)}
           disabled={n === "" || checking || d}
+          aria-label={n === "del" ? "Letzte Ziffer löschen" : undefined}
           style={{
             height: 80,
             fontSize: n === "del" ? 24 : 32,
@@ -238,6 +239,8 @@ const Login = () => {
   );
   const Dots = ({ value }) => (
     <div
+      role="status"
+      aria-label={`${value.length} von 4 Ziffern eingegeben`}
       style={{
         display: "flex",
         justifyContent: "center",
@@ -260,7 +263,7 @@ const Login = () => {
     </div>
   );
   const ErrLine = () => (
-    <div style={{ height: 24, textAlign: "center" }}>
+    <div role="alert" aria-live="assertive" style={{ height: 24, textAlign: "center" }}>
       {isLocked && !permLocked ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>
           Gesperrt ({lockSec}s)
