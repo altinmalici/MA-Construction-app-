@@ -112,6 +112,13 @@ export default defineConfig({
       template: 'treemap',
     }),
   ],
+  // Prod-Build: console.log/info/debug entfernen (halten den Code sauber und
+  // vermeiden versehentliches Loggen im Feld). console.error/console.warn
+  // bleiben bewusst erhalten — Fehlerdiagnose + ErrorBoundary-Hook. Dev
+  // unberuehrt (kein Minify → Logs sichtbar).
+  esbuild: {
+    pure: ['console.log', 'console.info', 'console.debug'],
+  },
   build: {
     rollupOptions: {
       output: {
