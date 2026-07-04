@@ -469,8 +469,11 @@ select {
   }
 }
 
-/* Real phone: full screen, no device frame */
-@media (max-width: 430px) {
+/* Real phone: full screen, no device frame.
+   Bis 639px (= alle Handys inkl. grosser Modelle/Foldables); ab 640px greift
+   die Desktop-iPhone-Simulation. Vorher nur bis 430px -> Luecke bei grossen
+   Handys. env(safe-area-*) + position:fixed passen sich pro Geraet an. */
+@media (max-width: 639px) {
   .device-wrapper {
     /* Fest an alle 4 Viewport-Kanten pinnen statt height:100% — die
        Prozent-Hoehen-Kette ist auf iOS unzuverlaessig und liess unten eine
