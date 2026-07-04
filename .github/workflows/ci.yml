@@ -1,0 +1,40 @@
+name: CI
+
+# Laeuft bei jedem Push und Pull Request. Bricht ab, bevor kaputter Code
+# nach main (und damit ueber Vercel live) gelangt: Lint + Tests + Build.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      # Build braucht die Supabase-Env-Vars (module-load validiert sie).
+      # In GitHub unter Settings -> Secrets and variables -> Actions anlegen.
+      # Es ist der oeffentliche anon-Key + die Projekt-URL (kein Geheimnis,
+      # steckt ohnehin im Browser-Bundle) — trotzdem als Secret gepflegt.
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
