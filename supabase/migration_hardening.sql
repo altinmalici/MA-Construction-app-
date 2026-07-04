@@ -48,10 +48,13 @@ CREATE INDEX IF NOT EXISTS idx_benach_baustelle   ON benachrichtigungen(baustell
 -- onboarding_pin_expiry — alle unten enthalten).
 -- =============================================================
 REVOKE SELECT ON users FROM anon, authenticated;
+-- An BEIDE Rollen: Die App fragt users auch als anon ab (Start vor Login);
+-- RLS liefert anon ohnehin 0 Zeilen, aber die Spalten-Rechte muessen da sein,
+-- sonst wirft der Start-Load "permission denied".
 GRANT SELECT (
   id, name, role, stundensatz, username,
   onboarding_pin_expiry, is_onboarded, is_active, created_at, auth_id
-) ON users TO authenticated;
+) ON users TO anon, authenticated;
 -- pin_hash und onboarding_pin sind bewusst NICHT in der Liste.
 
 
