@@ -36,6 +36,17 @@ export async function remove(id) {
   if (error) throw error;
 }
 
+// Mehrere Eintraege als freigegeben/offen markieren (Chef-Aktion, #13).
+// Braucht die Spalte stundeneintraege.freigegeben (migration_stunden_freigabe.sql).
+export async function setFreigabe(ids, freigegeben) {
+  if (!ids || ids.length === 0) return;
+  const { error } = await supabase
+    .from('stundeneintraege')
+    .update({ freigegeben })
+    .in('id', ids);
+  if (error) throw error;
+}
+
 function toRow(e) {
   return {
     // Pre-insert UUID erlaubt Foto-Upload mit korrektem Pfad VOR dem Insert.
@@ -72,5 +83,7 @@ function mapRow(r) {
     mitarbeiterId: r.mitarbeiter_id,
     subId: r.sub_id,
     personName: r.person_name || '',
+    // ?? false: bleibt kompatibel, falls die Spalte noch nicht existiert.
+    freigegeben: r.freigegeben ?? false,
   };
 }

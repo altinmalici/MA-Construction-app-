@@ -11,8 +11,8 @@ const baustelleById = new Map([
 ]);
 
 const entries = [
-  { mitarbeiterId: "u1", datum: "2026-07-03", baustelleId: "b1", arbeit: "Fliesen", beginn: "07:00", ende: "16:00", pause: 30, fahrtzeit: 30, h: 8.5 },
-  { mitarbeiterId: "u1", datum: "2026-07-04", baustelleId: "b2", arbeit: "", beginn: "08:00", ende: "12:00", pause: 0, fahrtzeit: 0, h: 4 },
+  { mitarbeiterId: "u1", datum: "2026-07-03", baustelleId: "b1", arbeit: "Fliesen", beginn: "07:00", ende: "16:00", pause: 30, fahrtzeit: 30, h: 8.5, freigegeben: true },
+  { mitarbeiterId: "u1", datum: "2026-07-04", baustelleId: "b2", arbeit: "", beginn: "08:00", ende: "12:00", pause: 0, fahrtzeit: 0, h: 4, freigegeben: false },
   { mitarbeiterId: "u2", datum: "2026-07-03", baustelleId: "b1", arbeit: "Estrich", beginn: "07:00", ende: "15:36", pause: 0, fahrtzeit: 0, h: 8.6 },
 ];
 
@@ -56,6 +56,13 @@ describe("buildLohnCsv", () => {
   it("escaped Semikolon im Baustellennamen", () => {
     const csv = build();
     expect(csv).toContain('"Bau; AG"');
+  });
+
+  it("fuehrt die Freigegeben-Spalte (Ja/Nein)", () => {
+    const csv = build();
+    expect(csv).toContain("Freigegeben");
+    expect(csv).toContain("382,50;Ja"); // freigegeben: true
+    expect(csv).toContain("180,00;Nein"); // freigegeben: false
   });
 
   it("summiert pro Mitarbeiter und Gesamt", () => {

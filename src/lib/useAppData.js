@@ -265,6 +265,10 @@ export function useAppData() {
         await api.stundeneintraege.remove(id);
         await reload('stundeneintraege');
       },
+      setFreigabe: async (ids, freigegeben) => {
+        await api.stundeneintraege.setFreigabe(ids, freigegeben);
+        await reload('stundeneintraege');
+      },
     },
 
     maengel: {

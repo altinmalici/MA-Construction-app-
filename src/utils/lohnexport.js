@@ -57,6 +57,7 @@ export function buildLohnCsv({ entries, hoursOf, userById, baustelleById, monthL
       "Stunden",
       "Stundensatz (EUR)",
       "Betrag (EUR)",
+      "Freigegeben",
     ]),
   );
 
@@ -90,6 +91,7 @@ export function buildLohnCsv({ entries, hoursOf, userById, baustelleById, monthL
         deNum(std),
         deNum(satz),
         deNum(betrag),
+        e.freigegeben ? "Ja" : "Nein",
       ]),
     );
     let s = summary.get(e.mitarbeiterId);

@@ -6,7 +6,7 @@ import { buildLohnCsv, downloadCsv } from "../../utils/lohnexport";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
 const StundenUebersicht = () => {
-  const { data, cu, chef, goBack } = useApp();
+  const { data, cu, chef, actions, show, goBack } = useApp();
   const now = new Date();
   const [mo, setMo] = useState(now.getMonth());
   const [jr, setJr] = useState(now.getFullYear());
@@ -103,6 +103,15 @@ const StundenUebersicht = () => {
       monthLabel,
     });
     downloadCsv(`Lohnexport_${jr}-${String(mo + 1).padStart(2, "0")}.csv`, csv);
+  };
+
+  const toggleFreigabe = async (ids, currentlyAll) => {
+    try {
+      await actions.stundeneintraege.setFreigabe(ids, !currentlyAll);
+      show(currentlyAll ? "Freigabe zurückgenommen" : "Monat freigegeben");
+    } catch (e) {
+      show(e?.message || "Freigabe fehlgeschlagen", "error");
+    }
   };
 
   return (
@@ -252,7 +261,11 @@ const StundenUebersicht = () => {
         <Empty icon={Clock} text="Keine Einträge in diesem Monat" />
       ) : (
         <div className="space-y-2">
-          {byUser.map(({ user: u, std, entries, byBs }) => (
+          {byUser.map(({ user: u, std, entries, byBs }) => {
+            const ids = entries.map((e) => e.id);
+            const allFrei =
+              entries.length > 0 && entries.every((e) => e.freigegeben);
+            return (
             <Card key={u.id} padding={0} style={{ overflow: "hidden" }}>
               <button
                 onClick={() => setOpen(open === u.id ? null : u.id)}
@@ -302,6 +315,14 @@ const StundenUebersicht = () => {
                       {u.name}
                     </p>
                   </div>
+                  {allFrei && (
+                    <span
+                      title="Abgerechnet / freigegeben"
+                      style={{ color: "#34c759", fontSize: 16, fontWeight: 700 }}
+                    >
+                      ✓
+                    </span>
+                  )}
                   <span
                     style={{ fontSize: 20, fontWeight: 700, color: "#000" }}
                   >
@@ -353,6 +374,28 @@ const StundenUebersicht = () => {
               {/* Einzeleinträge aufgeklappt */}
               {open === u.id && (
                 <div style={{ padding: "0 16px 16px" }}>
+                  {chef && (
+                    <button
+                      onClick={() => toggleFreigabe(ids, allFrei)}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        borderRadius: 10,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        marginBottom: 12,
+                        minHeight: 44,
+                        border: allFrei ? "1px solid #d1d5db" : "none",
+                        background: allFrei ? "transparent" : "#34c759",
+                        color: allFrei ? "#8e8e93" : "white",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {allFrei
+                        ? "✓ Abgerechnet – Freigabe aufheben"
+                        : "Monat als abgerechnet freigeben"}
+                    </button>
+                  )}
                   <p
                     style={{
                       fontSize: 13,
@@ -412,7 +455,8 @@ const StundenUebersicht = () => {
                 </div>
               )}
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
       <StundenDetailModal
