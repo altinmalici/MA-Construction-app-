@@ -166,6 +166,21 @@ export function AppProvider({ children }) {
       /* localStorage nicht verfügbar */
     }
   }, [cu]);
+
+  // Daten nach Login mit der jetzt gueltigen Session (neu) laden. `data` wird
+  // sonst nur einmal beim Mount geladen — zu dem Zeitpunkt gibt es aber noch
+  // keine gueltige Session (Boot-Effekt loggt sogar hart aus), also liefert RLS
+  // leere Listen. Ohne diesen Refetch blieb das Dashboard nach dem Login auf 0
+  // stehen, obwohl die Daten in der DB liegen ("gefuehlter Datenverlust").
+  // Loest zugleich die Boot-Race (Mount-loadAll vs. signOut) auf: selbst wenn
+  // der Mount-Load leer/verworfen war, holt dieser Effekt den korrekten Stand.
+  useEffect(() => {
+    if (!cu?.id) return;
+    actions.loadAll();
+    // actions wird pro Render neu erzeugt, loadAll ist aber stabil (useCallback []).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cu?.id]);
+
   const effectiveSessionUser = cu
     ? { name: cu.name, username: cu.username }
     : sessionUser;

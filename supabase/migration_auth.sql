@@ -135,14 +135,19 @@ BEGIN
   new_auth_id := gen_random_uuid();
   INSERT INTO auth.users (
     id, instance_id, email, encrypted_password, email_confirmed_at,
-    aud, role, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    aud, role, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    -- GoTrue erwartet diese Token-Spalten als '' (nicht NULL), sonst crasht
+    -- signInWithPassword mit HTTP 500 "Database error querying schema".
+    confirmation_token, recovery_token, email_change, email_change_token_new,
+    email_change_token_current, phone_change, phone_change_token, reauthentication_token
   ) VALUES (
     new_auth_id, '00000000-0000-0000-0000-000000000000', v_email,
     crypt(p_pin, gen_salt('bf')), now(),
     'authenticated', 'authenticated',
     '{"provider":"email","providers":["email"]}'::jsonb,
     jsonb_build_object('name', p_name),
-    now(), now()
+    now(), now(),
+    '', '', '', '', '', '', '', ''
   );
 
   -- 2. Auth Identity erstellen
@@ -186,14 +191,19 @@ BEGIN
   new_auth_id := gen_random_uuid();
   INSERT INTO auth.users (
     id, instance_id, email, encrypted_password, email_confirmed_at,
-    aud, role, raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    aud, role, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+    -- GoTrue erwartet diese Token-Spalten als '' (nicht NULL), sonst crasht
+    -- signInWithPassword mit HTTP 500 "Database error querying schema".
+    confirmation_token, recovery_token, email_change, email_change_token_new,
+    email_change_token_current, phone_change, phone_change_token, reauthentication_token
   ) VALUES (
     new_auth_id, '00000000-0000-0000-0000-000000000000', v_email,
     crypt(v_temp_password, gen_salt('bf')), now(),
     'authenticated', 'authenticated',
     '{"provider":"email","providers":["email"]}'::jsonb,
     jsonb_build_object('name', p_name),
-    now(), now()
+    now(), now(),
+    '', '', '', '', '', '', '', ''
   );
 
   -- 2. Auth Identity erstellen
@@ -320,3 +330,40 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =============================================================
+-- Einmal-Backfill (2026-07-04): repariert bereits per frueherer
+-- Funktionsversion angelegte auth.users, deren Token-Spalten NULL sind.
+-- Ohne das crasht signInWithPassword mit HTTP 500. Idempotent.
+-- =============================================================
+UPDATE auth.users SET
+  confirmation_token          = COALESCE(confirmation_token, ''),
+  recovery_token              = COALESCE(recovery_token, ''),
+  email_change                = COALESCE(email_change, ''),
+  email_change_token_new      = COALESCE(email_change_token_new, ''),
+  email_change_token_current  = COALESCE(email_change_token_current, ''),
+  phone_change                = COALESCE(phone_change, ''),
+  phone_change_token          = COALESCE(phone_change_token, ''),
+  reauthentication_token      = COALESCE(reauthentication_token, '')
+WHERE confirmation_token IS NULL OR recovery_token IS NULL
+   OR email_change IS NULL OR email_change_token_new IS NULL
+   OR email_change_token_current IS NULL OR phone_change IS NULL
+   OR phone_change_token IS NULL OR reauthentication_token IS NULL;
+
+-- =============================================================
+-- Sicherheit (2026-07-04): Admin-RPCs fuer anon sperren.
+-- Der anon-Key liegt oeffentlich im Browser-Bundle. Ohne diese REVOKEs
+-- kann ein UNAUTHENTIFIZIERTER Aufrufer diese SECURITY-DEFINER-Funktionen
+-- direkt uebers Netz aufrufen (Chef-Account anlegen, User loeschen, PIN setzen).
+-- Hinweis: REVOKE ... FROM PUBLIC reicht NICHT, weil Supabase anon zusaetzlich
+-- ein direktes EXECUTE-Recht gibt -> explizit FROM anon entziehen.
+-- TODO Etappe 2: In-Function-Guards (is_chef() bzw. p_user_id = get_my_user_id())
+-- gegen Rechte-Eskalation durch bereits eingeloggte Mitarbeiter.
+-- =============================================================
+REVOKE EXECUTE ON FUNCTION create_user_with_pin_v2(text,text,text,numeric,text) FROM anon;
+REVOKE EXECUTE ON FUNCTION create_user_with_auth(text,text,numeric,text,timestamptz) FROM anon;
+REVOKE EXECUTE ON FUNCTION delete_user_with_auth(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION reset_onboarding_v2(uuid,text,timestamptz,text) FROM anon;
+REVOKE EXECUTE ON FUNCTION toggle_user_active_v2(uuid,boolean) FROM anon;
+REVOKE EXECUTE ON FUNCTION update_user_pin_v2(uuid,text) FROM anon;
+REVOKE EXECUTE ON FUNCTION complete_onboarding_v2(uuid,text) FROM anon;
