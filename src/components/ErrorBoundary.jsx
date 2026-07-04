@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { logError } from "../lib/errorLog.js";
 
 /**
  * App-weite Error Boundary. Faengt Render-/Lifecycle-Fehler in der
@@ -23,8 +24,12 @@ export class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    // Sichtbar in der Konsole; spaeter hier an Monitoring durchreichen.
     console.error("[ErrorBoundary]", error, info?.componentStack);
+    // An das Monitoring (error_log-Tabelle) melden — best-effort.
+    logError(error?.message || "Render-Fehler", {
+      stack: error?.stack,
+      componentStack: info?.componentStack,
+    });
   }
 
   render() {
