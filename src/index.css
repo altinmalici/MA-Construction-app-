@@ -39,9 +39,11 @@ body {
   overflow: hidden;
 }
 
-/* Mobile safe-area: 60px fallback for browser chrome */
+/* Safe-Area: auf dem echten Geraet den tatsaechlichen Notch-/Dynamic-Island-
+   Wert nutzen (viewport-fit=cover ist gesetzt), mit kleinem Mindestabstand.
+   Die Desktop-iPhone-Simulation ueberschreibt das unten mit festen 60px. */
 :root {
-  --safe-top: 60px;
+  --safe-top: max(env(safe-area-inset-top, 0px), 12px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Brand-Farben — Single Source of Truth.
@@ -272,6 +274,7 @@ select {
 }
 
 .device-frame {
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
