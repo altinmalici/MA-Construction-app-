@@ -359,6 +359,19 @@ const SteView = () => {
                   </option>
                 ))}
               </select>
+              {!chef && mb.length === 0 && (
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: RED,
+                    marginTop: 8,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  Dir ist noch keine Baustelle zugewiesen. Bitte melde dich beim
+                  Bauleiter, damit du Stunden erfassen kannst.
+                </p>
+              )}
             </div>
             {chef && (
               <div
