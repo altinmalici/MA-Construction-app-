@@ -4,6 +4,7 @@ import { useAppData } from "../lib/useAppData.js";
 import { useRealtime } from "../lib/useRealtime.js";
 import { G, P, BTN, RED } from "../utils/helpers";
 import { Toast, Spinner, Clock } from "../components/ui";
+import OfflineBanner from "../components/ui/OfflineBanner";
 import { compressImage, blobToDataURL } from "../utils/image";
 
 const BACKGROUND_LOCK_MS = 120 * 1000;
@@ -543,6 +544,7 @@ export function AppProvider({ children }) {
             </div>
 
             <div className="device-screen">
+              <OfflineBanner />
               <input
                 type="file"
                 ref={fileRef}
