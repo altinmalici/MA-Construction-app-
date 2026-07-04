@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import { Spinner } from "./components/ui";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Eager: kritischer Pfad — Login direkt nach Start, Dash direkt danach,
 // TabBar dauerhaft sichtbar. Alles andere wird on-demand geladen.
@@ -87,8 +88,10 @@ function AppRouter() {
 
 export default function MAConstructionApp() {
   return (
-    <AppProvider>
-      <AppRouter />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <AppRouter />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
