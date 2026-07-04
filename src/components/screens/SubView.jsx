@@ -95,6 +95,9 @@ const SubView = () => {
               onChange={(e) => setFt(e.target.value)}
               placeholder="Telefon"
               className={IC}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
               style={{ background: "rgba(118,118,128,0.12)", border: "none" }}
             />
           </div>

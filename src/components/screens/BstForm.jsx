@@ -215,6 +215,9 @@ const BstForm = () => {
                 value={f.telefon}
                 onChange={(e) => sF({ ...f, telefon: e.target.value })}
                 className={IC}
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
               />
             </div>
           </div>
