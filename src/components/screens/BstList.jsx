@@ -109,7 +109,7 @@ const BstList = () => {
                     background: "white",
                     color: "#3c3c43",
                     boxShadow:
-                      "0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04)",
+                      "0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.06)",
                   }),
             }}
           >
