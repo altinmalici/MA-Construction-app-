@@ -255,7 +255,7 @@ const Login = () => {
             width: 15,
             height: 15,
             borderRadius: "50%",
-            transition: "all 0.2s",
+            transition: "background-color 0.2s",
             backgroundColor: value.length > i ? P : "#d1d5db",
           }}
         />
