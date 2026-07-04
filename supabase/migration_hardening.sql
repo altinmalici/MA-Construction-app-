@@ -59,27 +59,35 @@ GRANT SELECT (
 
 
 -- =============================================================
--- TEIL C – Datenintegrität stundeneintraege (#10)
--- Polymorphe Person (mitarbeiter/sub/sonstige) ist per DB nicht gekoppelt.
--- Bei ON DELETE SET NULL wird mitarbeiter_id NULL und die Zeile faellt aus
--- der Auswertung ("verschwundene Stunden").
---
--- SCHRITT 1 – zuerst Alt-Daten bereinigen (sonst schlaegt der CHECK fehl).
--- Verwaiste 'mitarbeiter'-Zeilen ohne mitarbeiter_id auf 'sonstige' setzen
--- und, falls vorhanden, person_name behalten:
---   UPDATE stundeneintraege SET person_typ='sonstige',
---          person_name = COALESCE(NULLIF(person_name,''),'(geloeschter Mitarbeiter)')
---   WHERE person_typ='mitarbeiter' AND mitarbeiter_id IS NULL;
--- (Erst pruefen: SELECT count(*) FROM stundeneintraege
---   WHERE person_typ='mitarbeiter' AND mitarbeiter_id IS NULL;)
---
--- SCHRITT 2 – dann Constraint setzen (verhindert kuenftige Inkonsistenz):
---   ALTER TABLE stundeneintraege ADD CONSTRAINT chk_person_ref CHECK (
---     (person_typ='mitarbeiter' AND mitarbeiter_id IS NOT NULL) OR
---     (person_typ='sub'         AND sub_id        IS NOT NULL) OR
---     (person_typ='sonstige')
---   );
--- Bewusst als Kommentar — bitte SCHRITT 1 verifizieren, dann beide aktivieren.
+-- TEIL C – Datenintegrität stundeneintraege (#10)  [ANGEWANDT 2026-07-04]
+-- Bei ON DELETE SET NULL wird mitarbeiter_id NULL, person_typ bleibt aber
+-- 'mitarbeiter' -> Zeile faellt aus der Auswertung ("verschwundene Stunden").
+-- Ein CHECK-Constraint wuerde das Loeschen solcher Mitarbeiter blockieren
+-- (Konflikt mit dem Cascade-SET-NULL), daher stattdessen ein Trigger, der den
+-- Namen VOR dem Loeschen einfriert. Live angewandt + verifiziert (0 verwaist).
+
+-- 1. Bestehende verwaiste Zeilen retten:
+UPDATE stundeneintraege SET
+  person_typ = 'sonstige',
+  person_name = COALESCE(NULLIF(person_name,''), '(ehemaliger Mitarbeiter)')
+WHERE person_typ = 'mitarbeiter' AND mitarbeiter_id IS NULL;
+
+-- 2. Trigger: beim Loeschen eines Mitarbeiters dessen Stunden auf 'sonstige'
+--    + Namensschnappschuss setzen (laeuft VOR dem Cascade-SET-NULL):
+CREATE OR REPLACE FUNCTION snapshot_deleted_mitarbeiter()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE stundeneintraege
+  SET person_typ = 'sonstige', person_name = OLD.name
+  WHERE mitarbeiter_id = OLD.id AND person_typ = 'mitarbeiter';
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_snapshot_deleted_mitarbeiter ON users;
+CREATE TRIGGER trg_snapshot_deleted_mitarbeiter
+  BEFORE DELETE ON users
+  FOR EACH ROW EXECUTE FUNCTION snapshot_deleted_mitarbeiter();
 
 
 -- =============================================================
@@ -87,8 +95,9 @@ GRANT SELECT (
 -- 1) onboarding_pin hashen statt Klartext: braucht Umbau von
 --    lookup_user_for_onboarding (vergleicht aktuell Klartext) → eigener,
 --    getesteter Schritt.
--- 2) person_name beim Loeschen eines Mitarbeiters per Trigger "einfrieren"
---    (Snapshot), damit die Auswertung den Namen behaelt.
--- 3) PIN-Rate-Limit/Lockout serverseitig (#9) → am besten via Edge Function
+-- 2) PIN-Rate-Limit/Lockout serverseitig (#9) → am besten via Edge Function
 --    vor lookup_user_by_pin; eigener Schritt.
+--
+-- STATUS: Teil A (Indizes), Teil B (Spaltenschutz) und Teil C (Trigger +
+-- Cleanup) sind am 2026-07-04 LIVE angewandt und verifiziert.
 -- =============================================================
