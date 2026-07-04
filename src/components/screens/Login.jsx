@@ -111,6 +111,16 @@ const Login = () => {
         setAttempts(0);
       } else {
         wrongAttempt();
+        // Beim "Erster Zugang" ist die haeufigste Ursache ein ABGELAUFENER
+        // Einladungs-PIN (7 Tage Gueltigkeit) — der Lookup liefert dann leer,
+        // identisch zu einem falschen PIN. Solange die Sperre noch nicht
+        // greift, deshalb eine ehrliche, handlungsleitende Meldung statt des
+        // pauschalen "Falscher PIN".
+        if (attempts + 1 < 3) {
+          setErr(
+            "PIN falsch oder abgelaufen – bitte beim Bauleiter einen neuen Einladungs-PIN anfordern.",
+          );
+        }
         setObPin("");
       }
     } catch {
