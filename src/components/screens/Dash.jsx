@@ -11,7 +11,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { G, RED, P, CS, COLORS, isInMonth } from "../../utils/helpers";
+import { G, BTN, RED, P, CS, COLORS, isInMonth } from "../../utils/helpers";
 import { ScreenLayout, Card } from "../ui";
 
 const Dash = () => {
@@ -281,10 +281,9 @@ const Dash = () => {
             gap: 8,
             padding: "10px 16px",
             borderRadius: 100,
-            background: "white",
-            boxShadow:
-              "0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04)",
-            color: "#000",
+            background: BTN,
+            boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
+            color: "white",
             fontSize: 14,
             fontWeight: 600,
             border: "none",

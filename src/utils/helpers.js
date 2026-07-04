@@ -162,7 +162,9 @@ export const G = `linear-gradient(135deg, ${PD}, ${P}, ${PL})`;
 export const BTN = G;
 export const RED = "#FF3B30";
 export const GREEN = "#34C759";
-export const CS = "0 1px 3px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04)";
+// Premium-Kachel-Schatten: feine Kante (Definition auf hellem BG) + weicher
+// Ambient-Schatten fuer Tiefe ("iOS-Widget"-Gefuehl statt flach).
+export const CS = "0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.06)";
 export const IC = "ios-input";
 
 // Username generieren
