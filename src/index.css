@@ -11,8 +11,11 @@
 }
 
 html {
-  height: 100dvh;
-  height: 100%; /* fallback */
+  height: 100%; /* Fallback fuer alte Browser */
+  height: 100dvh; /* moderne Browser: dynamische Viewport-Hoehe → fuellt den
+                     Bildschirm inkl. iOS-Toolbar/Home-Indikator ganz aus.
+                     WICHTIG: dvh MUSS nach dem 100%-Fallback stehen, sonst
+                     gewinnt 100% und unten bleibt eine graue Leerflaeche. */
   overflow: hidden;
   font-size: 18px;
 }
