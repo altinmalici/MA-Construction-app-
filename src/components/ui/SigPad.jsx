@@ -104,7 +104,7 @@ const SigPad = ({ onSave, onClear, sig }) => {
           ref={ref}
           style={{
             width: "100%",
-            height: 80,
+            height: 140,
             touchAction: "none",
             background: "white",
             cursor: "crosshair",
