@@ -5,6 +5,7 @@ import { CS, BTN, RED, IC, fDat, bStd } from "../../utils/helpers";
 import { ScreenLayout, PhotoGrid, TimePicker, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 import { uploadPhoto } from "../../lib/storage";
+import { enqueueStunde } from "../../lib/offlineQueue";
 
 const SteView = () => {
   const {
@@ -86,6 +87,46 @@ const SteView = () => {
         return;
       }
       const wasEdit = !!editId;
+
+      // OFFLINE: neuer Eintrag ohne Netz → in die Warteschlange statt Fehler.
+      // Foto-Upload braucht Netz, daher offline nur die bereits hochgeladenen
+      // Foto-Pfade; neue Fotos werden ausgelassen (mit Hinweis).
+      if (
+        !editId &&
+        typeof navigator !== "undefined" &&
+        navigator.onLine === false
+      ) {
+        const offlineId = crypto.randomUUID();
+        const hasNewPhotos = fd.fotos.some((f) => f && f.blob);
+        const entry = {
+          ...fd,
+          id: offlineId,
+          fotos: fd.fotos.filter((f) => typeof f === "string"),
+          baustelleId: fd.baustelleId,
+          mitarbeiterId:
+            fd.personTyp === "mitarbeiter" ? fd.mitarbeiterId : null,
+          subId: fd.personTyp === "sub" ? fd.subId : null,
+          personName: fd.personTyp === "sonstige" ? fd.personName.trim() : "",
+        };
+        if (!enqueueStunde(entry)) {
+          show("Speicher voll – konnte offline nicht sichern", "error");
+          return;
+        }
+        actions.stundeneintraege.addLocal(entry);
+        show(
+          hasNewPhotos
+            ? "Offline gespeichert (ohne Foto – kein Netz)"
+            : "Offline gespeichert – synchronisiert bei Empfang",
+        );
+        setSaved("create");
+        setTimeout(() => {
+          sFd(initFd);
+          setSaved(false);
+          if (!chef) nav(sb ? "bsd" : "dash");
+        }, 1200);
+        return;
+      }
+
       try {
         // Atomar: Foto-Upload VOR dem Row-Insert/Update. Bei Create wird
         // die UUID hier client-seitig vergeben, damit der Storage-Pfad

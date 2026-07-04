@@ -182,6 +182,31 @@ export function AppProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cu?.id]);
 
+  // Offline-Warteschlange automatisch abarbeiten: beim Start und sobald wieder
+  // Netz da ist. Bestaetigung, wenn etwas synchronisiert wurde.
+  useEffect(() => {
+    let cancelled = false;
+    const flush = async () => {
+      try {
+        const res = await actions.stundeneintraege.syncOffline();
+        if (!cancelled && res.synced > 0) {
+          show(
+            `${res.synced} offline erfasste${res.synced === 1 ? "r" : ""} Eintrag${res.synced === 1 ? "" : "e"} synchronisiert`,
+          );
+        }
+      } catch {
+        /* vermutlich noch offline → naechster Versuch bei 'online' */
+      }
+    };
+    flush();
+    window.addEventListener("online", flush);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", flush);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const effectiveSessionUser = cu
     ? { name: cu.name, username: cu.username }
     : sessionUser;
