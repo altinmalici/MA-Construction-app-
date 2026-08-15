@@ -5,6 +5,7 @@ import { useRealtime } from "../lib/useRealtime.js";
 import { G, P, BTN, RED } from "../utils/helpers";
 import { Toast, Spinner, Clock } from "../components/ui";
 import OfflineBanner from "../components/ui/OfflineBanner";
+import PendingSyncBadge from "../components/ui/PendingSyncBadge";
 import { compressImage, blobToDataURL } from "../utils/image";
 
 const BACKGROUND_LOCK_MS = 120 * 1000;
@@ -570,6 +571,7 @@ export function AppProvider({ children }) {
 
             <div className="device-screen">
               <OfflineBanner />
+              <PendingSyncBadge />
               <input
                 type="file"
                 ref={fileRef}

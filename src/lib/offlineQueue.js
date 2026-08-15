@@ -29,6 +29,14 @@ function read() {
 function write(arr) {
   try {
     localStorage.setItem(KEY, JSON.stringify(arr));
+    // Signal fuer die UI (Pending-Badge), damit sie sich sofort aktualisiert.
+    try {
+      window.dispatchEvent(
+        new CustomEvent("ma-queue-change", { detail: { size: arr.length } }),
+      );
+    } catch {
+      /* window evtl. nicht verfuegbar (Tests) */
+    }
     return true;
   } catch {
     // localStorage voll/nicht verfuegbar → false, Aufrufer meldet Fehler.
