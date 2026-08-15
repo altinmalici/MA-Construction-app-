@@ -23,7 +23,6 @@ vi.mock("./api/index.js", () => {
       completeOnboarding: vi.fn(),
       signOut: vi.fn(),
       getCurrentUser: vi.fn(),
-      reAuthWithPin: vi.fn(),
       onAuthStateChange: vi.fn(),
     },
     users_extra: {},

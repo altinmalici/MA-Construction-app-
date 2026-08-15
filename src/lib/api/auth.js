@@ -87,9 +87,13 @@ export async function loginWithUsername(username, onboardingPin) {
 
 /**
  * Mode B: Onboarding abschließen (neuen PIN setzen).
- * Synct anschließend auth.users.encrypted_password via updateUser, damit die
- * laufende Session sofort gültig bleibt — kein signOut/signIn-Flip mehr,
- * sonst wäre der User bei kurzem Netz-Drop ungewollt komplett ausgeloggt.
+ * complete_onboarding_v2 setzt auth.users.encrypted_password UND
+ * public.users.pin_hash in einer Transaktion — die laufende Session bleibt
+ * dabei gültig (GoTrue invalidiert Sessions bei DB-seitigem Passwort-Update
+ * nicht). WICHTIG: Hier darf KEIN supabase.auth.updateUser({password})
+ * folgen — GoTrues Passwort-Policy verlangt min. 6 Zeichen und lehnt den
+ * 4-stelligen PIN mit 422 weak_password ab, was das Onboarding nach
+ * bereits erfolgtem DB-Update scheitern ließ (Einladungs-Code verbrannt).
  */
 export async function completeOnboarding(userId, newPin) {
   const { error } = await supabase.rpc('complete_onboarding_v2', {
@@ -97,9 +101,6 @@ export async function completeOnboarding(userId, newPin) {
     p_new_pin: newPin,
   });
   if (error) throw error;
-
-  const { error: updErr } = await supabase.auth.updateUser({ password: newPin });
-  if (updErr) throw updErr;
 }
 
 /**
@@ -122,18 +123,6 @@ export async function getCurrentUser() {
   } catch {
     return null;
   }
-}
-
-/**
- * Sync der Auth-Session nach PIN-Änderung (z.B. ProfilView).
- * Nutzt updateUser statt signOut+signIn — Session bleibt aktiv, keine
- * Race-Condition mit anderen API-Calls, kein onAuthStateChange-Flip.
- * Der `username`-Parameter bleibt aus Backwards-Compat-Gründen erhalten,
- * wird aber nicht mehr benötigt (updateUser wirkt auf den aktuellen User).
- */
-export async function reAuthWithPin(username, newPin) {
-  const { error } = await supabase.auth.updateUser({ password: newPin });
-  if (error) throw error;
 }
 
 /**

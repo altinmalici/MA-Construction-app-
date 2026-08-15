@@ -19,44 +19,34 @@ vi.mock("../supabase.js", () => ({
   },
 }));
 
-const { completeOnboarding, reAuthWithPin } = await import("./auth.js");
+const { completeOnboarding } = await import("./auth.js");
 
-describe("completeOnboarding — kein signOut/signIn-Flip mehr", () => {
+describe("completeOnboarding — nur RPC, kein Client-Auth-Call", () => {
   beforeEach(() => {
     mockSignOut.mockReset();
     mockSignInWithPassword.mockReset();
     mockUpdateUser.mockReset();
     mockRpc.mockReset();
-    // Erste RPC: complete_onboarding_v2 (no error)
-    // Zweite RPC: get_user_by_auth_id (returns profile)
-    mockRpc
-      .mockResolvedValueOnce({ data: null, error: null })
-      .mockResolvedValueOnce({
-        data: [{ username: "alice" }],
-        error: null,
-      });
-    mockUpdateUser.mockResolvedValue({ data: null, error: null });
+    mockRpc.mockResolvedValueOnce({ data: null, error: null });
   });
 
-  it("a) ruft updateUser mit neuem Passwort", async () => {
+  it("a) ruft complete_onboarding_v2 mit User-ID und neuem PIN", async () => {
     await completeOnboarding("user-id-1", "1234");
-    expect(mockUpdateUser).toHaveBeenCalledWith({ password: "1234" });
+    expect(mockRpc).toHaveBeenCalledWith("complete_onboarding_v2", {
+      p_user_id: "user-id-1",
+      p_new_pin: "1234",
+    });
   });
 
-  it("b) ruft KEIN signOut und KEIN signInWithPassword (Session-Kontinuität)", async () => {
+  it("b) ruft KEIN updateUser — GoTrue-Policy (min. 6 Zeichen) lehnt 4-stellige PINs mit 422 weak_password ab", async () => {
+    await completeOnboarding("user-id-1", "1234");
+    expect(mockUpdateUser).not.toHaveBeenCalled();
+  });
+
+  it("c) ruft KEIN signOut und KEIN signInWithPassword (Session-Kontinuität)", async () => {
     await completeOnboarding("user-id-1", "1234");
     expect(mockSignOut).not.toHaveBeenCalled();
     expect(mockSignInWithPassword).not.toHaveBeenCalled();
-  });
-
-  it("c) wirft Error wenn updateUser fehlschlägt", async () => {
-    mockUpdateUser.mockResolvedValue({
-      data: null,
-      error: new Error("update failed"),
-    });
-    await expect(completeOnboarding("user-id-1", "1234")).rejects.toThrow(
-      /update failed/,
-    );
   });
 
   it("d) wirft Error wenn complete_onboarding_v2 RPC fehlschlägt", async () => {
@@ -67,37 +57,6 @@ describe("completeOnboarding — kein signOut/signIn-Flip mehr", () => {
     });
     await expect(completeOnboarding("user-id-1", "1234")).rejects.toThrow(
       /rpc broken/,
-    );
-    expect(mockUpdateUser).not.toHaveBeenCalled();
-  });
-});
-
-describe("reAuthWithPin — kein signOut/signIn-Flip mehr", () => {
-  beforeEach(() => {
-    mockSignOut.mockReset();
-    mockSignInWithPassword.mockReset();
-    mockUpdateUser.mockReset();
-    mockUpdateUser.mockResolvedValue({ data: null, error: null });
-  });
-
-  it("a) ruft updateUser mit neuem Passwort", async () => {
-    await reAuthWithPin("alice", "5678");
-    expect(mockUpdateUser).toHaveBeenCalledWith({ password: "5678" });
-  });
-
-  it("b) ruft KEIN signOut und KEIN signInWithPassword", async () => {
-    await reAuthWithPin("alice", "5678");
-    expect(mockSignOut).not.toHaveBeenCalled();
-    expect(mockSignInWithPassword).not.toHaveBeenCalled();
-  });
-
-  it("c) wirft Error wenn updateUser fehlschlägt", async () => {
-    mockUpdateUser.mockResolvedValue({
-      data: null,
-      error: new Error("auth update broken"),
-    });
-    await expect(reAuthWithPin("alice", "5678")).rejects.toThrow(
-      /auth update broken/,
     );
   });
 });

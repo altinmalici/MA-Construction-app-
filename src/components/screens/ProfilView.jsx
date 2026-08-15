@@ -66,19 +66,14 @@ const ProfilView = () => {
           return;
         }
       }
+      // update_user_pin_v2 synct auth.users.encrypted_password gleich mit —
+      // die aktive Session bleibt gültig, kein Client-seitiges Re-Auth nötig
+      // (supabase.auth.updateUser lehnt 4-stellige PINs mit weak_password ab).
       await actions.users.update(cu.id, {
         name: name.trim(),
         pin: pin || null,
         stundensatz: cu.stundensatz,
       });
-      // Re-auth wenn PIN geändert wurde
-      if (pin && cu.username) {
-        try {
-          await actions.auth.reAuthWithPin(cu.username, pin);
-        } catch (e) {
-          console.error('Re-auth nach PIN-Änderung fehlgeschlagen:', e);
-        }
-      }
       setCu((p) => ({ ...p, name: name.trim() }));
       setEditMode(false);
       setPin("");

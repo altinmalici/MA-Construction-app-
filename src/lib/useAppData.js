@@ -181,9 +181,6 @@ export function useAppData() {
       getCurrentUser: async () => {
         return await api.auth.getCurrentUser();
       },
-      reAuthWithPin: async (username, newPin) => {
-        await api.auth.reAuthWithPin(username, newPin);
-      },
       onAuthStateChange: (callback) => {
         return api.auth.onAuthStateChange(callback);
       },
