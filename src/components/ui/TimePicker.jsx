@@ -124,7 +124,9 @@ const Wheel = ({ options, format, selected, onSelect, disabled }) => {
 const TimePicker = ({
   value,
   onChange,
-  minuteStep = 30,
+  // 15-Minuten-Raster ist Firmenregel (CLAUDE.md): Arbeitszeiten werden
+  // auf Viertelstunden erfasst — passend zur Rundung im Lohnexport.
+  minuteStep = 15,
   disabled = false,
 }) => {
   const { h, m } = parseTime(value);

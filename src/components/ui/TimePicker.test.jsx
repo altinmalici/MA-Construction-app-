@@ -57,6 +57,17 @@ describe('TimePicker component', () => {
     }
   });
 
+
+  it('Default-Raster ist 15 Minuten (Firmenregel: Viertelstunden)', () => {
+    render(<TimePicker value="08:15" onChange={() => {}} />);
+    const wheels = screen.getAllByRole('listbox');
+    const minuteOpts = wheels[1].querySelectorAll('[role="option"]');
+    const minuteLabels = Array.from(minuteOpts).map((el) =>
+      el.textContent.trim(),
+    );
+    expect(minuteLabels).toEqual(['00', '15', '30', '45']);
+  });
+
   it('renders 2 minute options when minuteStep=30', () => {
     render(<TimePicker value="08:30" onChange={() => {}} minuteStep={30} />);
     // Stunden- und Minuten-Wheel sind beide listbox; Minuten ist das zweite.
