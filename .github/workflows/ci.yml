@@ -10,6 +10,14 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # Job-weit statt nur im Build-Schritt: src/lib/supabase.js validiert die
+    # Env-Vars beim Module-Load, und die Tests importieren das Modul indirekt
+    # (z.B. via errorLog.js) — ohne Env schlagen also auch die Tests fehl.
+    # Es ist der oeffentliche anon-Key + die Projekt-URL (kein Geheimnis,
+    # steckt ohnehin im Browser-Bundle) — trotzdem als Secret gepflegt.
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,12 +37,5 @@ jobs:
       - name: Tests
         run: npm test
 
-      # Build braucht die Supabase-Env-Vars (module-load validiert sie).
-      # In GitHub unter Settings -> Secrets and variables -> Actions anlegen.
-      # Es ist der oeffentliche anon-Key + die Projekt-URL (kein Geheimnis,
-      # steckt ohnehin im Browser-Bundle) — trotzdem als Secret gepflegt.
       - name: Build
         run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
