@@ -81,24 +81,79 @@ describe('Einladungs-Link', () => {
     await expect(token(m2.id)).rejects.toThrow(/deaktiviert/);
   });
 
-  it('PIN-Regeln gelten: Format, bereits vergeben; Durchprobieren wird gedrosselt', async () => {
+  it('PIN-Regeln gelten: Format und bereits vergebener PIN; der Link bleibt danach nutzbar', async () => {
     const m = await addMitarbeiter(db, 'Hans Link', 'h.link', '1008');
     const t = await token(m.id);
     await expect(anon(() => q(`SELECT consume_onboarding_token($1, '12')`, [t]))).rejects.toThrow(/4 Ziffern/);
     await expect(anon(() => q(`SELECT consume_onboarding_token($1, '1998')`, [t]))).rejects.toThrow(/bereits vergeben/);
-    let blocked = false;
-    for (let i = 0; i < 10 && !blocked; i++) {
-      try {
-        await anon(() => q(`SELECT consume_onboarding_token($1, '1998')`, [t]));
-      } catch (e) {
-        blocked = /Zu viele Versuche/.test(e.message);
-      }
-    }
-    // "bereits vergeben" rollt den Zaehler zurueck – das Limit greift ueber
-    // die Zahl der ERFOLGREICHEN Aufrufe; ein Token ist nach dem ersten Erfolg
-    // verbraucht, mehr als ein gesetzter PIN pro Einladung ist nicht moeglich.
-    expect(typeof blocked).toBe('boolean');
     expect((await anon(() => q(`SELECT consume_onboarding_token($1, '8181') AS u`, [t])))[0].u).toBe('h.link');
+  });
+
+  it('kein Link fuer Chef-Konten', async () => {
+    const chefId = (await q(`SELECT id FROM users WHERE username = 'a.malici'`))[0].id;
+    await expect(token(chefId)).rejects.toThrow(/Chef-Konten/);
+    // selbst ein direkt eingeschleustes Token wirkt nicht
+    await q(`INSERT INTO onboarding_tokens (user_id, token_hash, expires_at) VALUES ($1, encode(digest($2, 'sha256'), 'hex'), now() + interval '1 day')`, [chefId, 'e'.repeat(48)]);
+    expect(await anon(() => q(`SELECT * FROM validate_onboarding_token($1)`, ['e'.repeat(48)]))).toEqual([]);
+    await expect(anon(() => q(`SELECT consume_onboarding_token($1, '7777')`, ['e'.repeat(48)]))).rejects.toThrow(/ungueltig/);
+    await q(`DELETE FROM onboarding_tokens WHERE user_id = $1`, [chefId]);
+  });
+
+  it('Gueltigkeit: 7 Tage fuer neue, 48 h fuer bereits eingerichtete Mitarbeiter', async () => {
+    const neu = await addMitarbeiter(db, 'Kai Neu', 'k.neu', '1011');
+    await token(neu.id);
+    const alt = await addMitarbeiter(db, 'Lars Alt', 'l.alt', '1012');
+    await as(db, 'authenticated', alt.authId, () => q(`SELECT complete_onboarding_v2($1, '1213')`, [alt.id]));
+    await token(alt.id);
+    const h = async (id) => Number((await q(`SELECT round(extract(epoch FROM (expires_at - now())) / 3600) AS h FROM onboarding_tokens WHERE user_id = $1`, [id]))[0].h);
+    expect(await h(neu.id)).toBe(168);
+    expect(await h(alt.id)).toBe(48);
+  });
+
+  it('offene Links verfallen bei PIN-Wechsel, Deaktivierung und PIN-Reset', async () => {
+    const m = await addMitarbeiter(db, 'Mona Verfall', 'm.verfall', '1013');
+    await as(db, 'authenticated', m.authId, () => q(`SELECT complete_onboarding_v2($1, '1314')`, [m.id]));
+    const open = async () => (await q(`SELECT count(*)::int AS n FROM onboarding_tokens WHERE user_id = $1 AND consumed_at IS NULL`, [m.id]))[0].n;
+    let t = await token(m.id);
+    await as(db, 'authenticated', m.authId, () => q(`SELECT update_user_pin_v2($1, '1315')`, [m.id]));
+    expect(await open()).toBe(0);
+    await expect(anon(() => q(`SELECT consume_onboarding_token($1, '1316')`, [t]))).rejects.toThrow(/ungueltig/);
+    t = await token(m.id);
+    await chef(() => q(`SELECT toggle_user_active_v2($1, false)`, [m.id]));
+    await chef(() => q(`SELECT toggle_user_active_v2($1, true)`, [m.id]));
+    expect(await open()).toBe(0);
+    t = await token(m.id);
+    await chef(() => q(`SELECT reset_onboarding_v2($1, '1317', now() + interval '7 days', 'm.verfall')`, [m.id]));
+    expect(await open()).toBe(0);
+  });
+
+  it('Chef kann offene Links widerrufen; eingeloeste bleiben als Nachweis', async () => {
+    const m = await addMitarbeiter(db, 'Nico Widerruf', 'n.widerruf', '1014');
+    const t1 = await token(m.id);
+    await anon(() => q(`SELECT consume_onboarding_token($1, '1415')`, [t1]));
+    const t2 = await token(m.id);
+    expect((await chef(() => q(`SELECT revoke_onboarding_tokens($1) AS n`, [m.id])))[0].n).toBe(1);
+    await expect(anon(() => q(`SELECT consume_onboarding_token($1, '1416')`, [t2]))).rejects.toThrow(/ungueltig/);
+    expect((await q(`SELECT count(*)::int AS n FROM onboarding_tokens WHERE user_id = $1 AND consumed_at IS NOT NULL`, [m.id]))[0].n).toBe(1);
+    await expect(as(db, 'authenticated', m.authId, () => q(`SELECT revoke_onboarding_tokens($1)`, [m.id]))).rejects.toThrow(/Nur der Chef/);
+  });
+
+  it('Einloesen erzeugt eine Benachrichtigung fuer den Chef', async () => {
+    const m = await addMitarbeiter(db, 'Olga Meldung', 'o.meldung', '1015');
+    const t = await token(m.id);
+    await anon(() => q(`SELECT consume_onboarding_token($1, '1516')`, [t]));
+    const n = await q(`SELECT text FROM benachrichtigungen WHERE text LIKE 'Olga Meldung%'`);
+    expect(n).toHaveLength(1);
+    expect(n[0].text).toMatch(/Einladungs-Link/);
+  });
+
+  it('viele falsche Tokens von aussen blockieren echte Links nicht', async () => {
+    const m = await addMitarbeiter(db, 'Pia Frei', 'p.frei', '1016');
+    const t = await token(m.id);
+    for (let i = 0; i < 150; i++) {
+      await anon(() => q(`SELECT * FROM validate_onboarding_token($1)`, [String(i).padStart(48, '0')]));
+    }
+    expect(await anon(() => q(`SELECT username FROM validate_onboarding_token($1)`, [t]))).toEqual([{ username: 'p.frei' }]);
   });
 
   it('nur der Chef erzeugt Tokens; die Tabelle ist von aussen nicht lesbar', async () => {
@@ -116,6 +171,15 @@ describe('Einladungs-Link', () => {
     await anon(() => q(`SELECT consume_onboarding_token($1, '9191')`, [t]));
     expect(await q(`SELECT 1 FROM auth.sessions WHERE user_id = $1`, [m.authId])).toHaveLength(0);
   });
+});
+
+describe('Voraussetzung', () => {
+  it('ohne Migration 01 bricht Migration 04 mit klarer Meldung ab', async () => {
+    const leer = await makeDb([]);
+    await expect(
+      leer.exec(readFileSync(new URL(`../${FILE}`, import.meta.url), 'utf8')),
+    ).rejects.toThrow(/zuerst migration_2026_11_16_01/);
+  }, 120000);
 });
 
 describe('repair_orphan_user', () => {
@@ -149,6 +213,20 @@ describe('repair_orphan_user', () => {
     expect((await q(`SELECT auth_id FROM users WHERE id = $1`, [m.id]))[0].auth_id).toBe(m.authId);
     // altes Passwort des uebernommenen Kontos gilt nicht mehr
     expect(await authPwOk(m.authId, '2005')).toBe(false);
+  });
+
+  it('von GoTrue angelegte Identity (provider_id = User-ID, Zusatzfelder) gilt als gesund', async () => {
+    const m = await addMitarbeiter(db, 'Quinn Gotrue', 'q.gotrue', '2008');
+    await q(
+      `UPDATE auth.identities SET provider_id = $1::text,
+         identity_data = jsonb_build_object('sub', $1::text, 'email', 'q.gotrue@ma-construction.local', 'email_verified', true)
+       WHERE user_id = $1`,
+      [m.authId],
+    );
+    expect((await chef(() => q(`SELECT repair_orphan_user($1) AS r`, [m.id])))[0].r).toBe('ok');
+    const i = (await q(`SELECT provider_id, identity_data FROM auth.identities WHERE user_id = $1`, [m.authId]))[0];
+    expect(i.provider_id).toBe(m.authId);
+    expect(i.identity_data.email_verified).toBe(true);
   });
 
   it('E-Mail weicht vom Benutzernamen ab, NULL-Token-Spalten, falsche Sperre → korrigiert', async () => {

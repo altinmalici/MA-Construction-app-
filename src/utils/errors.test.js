@@ -45,3 +45,13 @@ describe("istNetzFehler", () => {
     expect(istNetzFehler(null)).toBe(false);
   });
 });
+
+describe("fehlerText – Meldungen der Onboarding-RPCs", () => {
+  it("ASCII-Texte vom Server werden zu ordentlichem Deutsch mit Handlungsanweisung", () => {
+    expect(fehlerText({ message: 'Einladung nicht moeglich: Konto ist nicht bereit – bitte zuerst "Zugang reparieren"' }))
+      .toMatch(/Konto ist nicht bereit.*Zugang reparieren/);
+    expect(fehlerText({ message: "Einladung ungueltig oder abgelaufen" })).toBe("Einladung ungültig oder abgelaufen.");
+    expect(fehlerText({ message: "Einladung nicht moeglich: Mitarbeiter ist deaktiviert" })).toMatch(/deaktiviert/);
+    expect(fehlerText({ message: "Die Anmelde-Adresse gehoert bereits einem anderen Mitarbeiter" })).toMatch(/Verwaiste Konten bereinigen/);
+  });
+});

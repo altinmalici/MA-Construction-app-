@@ -262,6 +262,9 @@ export function useAppData() {
       createOnboardingToken: async (id) => {
         return await api.users.createOnboardingToken(id);
       },
+      revokeOnboardingTokens: async (id) => {
+        return await api.users.revokeOnboardingTokens(id);
+      },
       repair: async (id) => {
         const result = await api.users.repairUser(id);
         await refresh('users');

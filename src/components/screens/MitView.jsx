@@ -64,7 +64,7 @@ const MitView = () => {
     setBusyId(m.id);
     try {
       const token = await actions.users.createOnboardingToken(m.id);
-      setResetInfo({ name: m.name, username: m.username, link: inviteLink(token) });
+      setResetInfo({ userId: m.id, name: m.name, username: m.username, link: inviteLink(token) });
       show("Einladungs-Link erstellt");
     } catch (e) {
       if (istRpcFehlt(e)) {
@@ -75,6 +75,19 @@ const MitView = () => {
       }
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const revoke = async () => {
+    const info = resetInfo;
+    if (!info?.userId) return;
+    try {
+      await actions.users.revokeOnboardingTokens(info.userId);
+      setResetInfo(null);
+      show("Link widerrufen – er funktioniert nicht mehr");
+    } catch (e) {
+      console.error("[MitView.revoke]", e);
+      show(`Nicht widerrufen: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
     }
   };
 
@@ -188,6 +201,22 @@ const MitView = () => {
           >
             <X size={18} />
           </button>
+          {resetInfo.link && (
+            <button
+              onClick={revoke}
+              style={{
+                width: "100%",
+                minHeight: 44,
+                marginTop: 4,
+                fontSize: 13,
+                color: RED,
+                background: "none",
+                border: "none",
+              }}
+            >
+              Link widerrufen (z.B. an den Falschen geschickt)
+            </button>
+          )}
         </div>
       )}
       <div className="space-y-2">
@@ -313,7 +342,9 @@ const MitView = () => {
                       {m.isOnboarded ? "Neuer Zugang" : "Einladung senden"}
                     </button>
                   )}
-                  {m.isActive && !m.isOnboarded && (
+                  {/* Für alle aktiven Mitarbeiter: auch ein bereits
+                      eingerichtetes Konto kann aus dem Tritt geraten. */}
+                  {m.isActive && (
                     <button
                       onClick={() => repair(m)}
                       disabled={busyId === m.id}

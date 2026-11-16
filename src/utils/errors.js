@@ -14,6 +14,20 @@ const EIGENE_MELDUNGEN = [
   /Nicht erlaubt/i,
 ];
 
+// Meldungen unserer RPCs, die serverseitig ohne Umlaute stehen oder für den
+// Nutzer umformuliert werden sollen: [Muster, Anzeige].
+const SERVER_TEXT = [
+  [/Einladung ungueltig oder abgelaufen/i, "Einladung ungültig oder abgelaufen."],
+  [/Einladung kann nicht eingeloest werden/i, "Die Einladung kann nicht eingelöst werden: Konto ist nicht bereit – bitte beim Bauleiter melden."],
+  [/Konto ist nicht bereit/i, 'Konto ist nicht bereit – bitte zuerst „Zugang reparieren“ antippen.'],
+  [/Mitarbeiter ist deaktiviert/i, "Nicht möglich: Der Mitarbeiter ist deaktiviert."],
+  [/Mitarbeiter nicht gefunden/i, "Mitarbeiter nicht gefunden – bitte Liste neu laden."],
+  [/Anmelde-Adresse gehoert bereits/i, 'Der Benutzername ist durch ein anderes Konto belegt – bitte „Verwaiste Konten bereinigen“ antippen.'],
+  [/Fuer Chef-Konten gibt es keinen Einladungs-Link/i, "Für Chef-Konten gibt es keinen Einladungs-Link."],
+  [/Benutzername ungueltig – bitte im SQL-Editor/i, "Der Benutzername dieses Mitarbeiters ist ungültig und muss in der Datenbank korrigiert werden (siehe docs/sql/onboarding_diagnose.sql)."],
+  [/Benutzername fehlt/i, "Der Benutzername fehlt."],
+];
+
 const CODE_TEXT = {
   42501: "Keine Berechtigung für diese Aktion.",
   23503: "Ein verknüpfter Datensatz existiert nicht mehr (z. B. Baustelle oder Mitarbeiter gelöscht).",
@@ -43,6 +57,8 @@ export const istNetzFehler = (e) => {
 export function fehlerText(e, fallback = "Etwas ist schiefgelaufen.") {
   if (!e) return fallback;
   const msg = String(e.message || "");
+  const mapped = SERVER_TEXT.find(([re]) => re.test(msg));
+  if (mapped) return mapped[1];
   if (EIGENE_MELDUNGEN.some((re) => re.test(msg))) return msg;
   if (/row-level security/i.test(msg)) return CODE_TEXT[42501];
   if (e.code && CODE_TEXT[e.code]) return CODE_TEXT[e.code];

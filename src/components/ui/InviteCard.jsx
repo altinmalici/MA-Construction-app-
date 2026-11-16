@@ -35,7 +35,9 @@ export default function InviteCard({ info, show, title }) {
   return (
     <div style={{ background: "white", borderRadius: 12, padding: 16, boxShadow: CS }}>
       {title && (
-        <p style={{ fontSize: 15, fontWeight: 600, color: "#000", marginBottom: 10 }}>{title}</p>
+        <p style={{ fontSize: 15, fontWeight: 600, color: "#000", marginBottom: 10, paddingRight: 44 }}>
+          {title}
+        </p>
       )}
       <div style={{ background: "#f2f2f7", borderRadius: 10, padding: 14, marginBottom: 12 }}>
         <p style={label}>Benutzername</p>
@@ -57,8 +59,9 @@ export default function InviteCard({ info, show, title }) {
               {info.link}
             </p>
             <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 8 }}>
-              7 Tage gültig, nur einmal verwendbar. Der Mitarbeiter legt darüber
-              seinen eigenen PIN fest.
+              Nur einmal verwendbar; gültig 7 Tage (neuer Mitarbeiter) bzw.
+              48 Stunden (neuer Zugang). Wer den Link hat, kann den PIN dieses
+              Mitarbeiters festlegen – nur an ihn selbst schicken.
             </p>
           </>
         ) : (

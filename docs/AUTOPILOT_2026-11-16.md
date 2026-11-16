@@ -48,7 +48,11 @@ Im Supabase SQL-Editor (Projekt `roeqphnopokfdktvvbpp`), in dieser Reihenfolge. 
 
 ### 4. `supabase/migration_2026_11_16_04_onboarding.sql` — vor oder nach dem Merge von Paket 5
 
-- **Was:** Einladungs-Link (Tabelle `onboarding_tokens`, drei Funktionen), `repair_orphan_user`, `cleanup_orphan_auth_users`; `reset_onboarding_v2` beendet zusätzlich laufende Sitzungen.
+- **Was:** Einladungs-Link (Tabelle `onboarding_tokens`, Funktionen zum Erzeugen, Prüfen, Einlösen und Widerrufen), `repair_orphan_user`, `cleanup_orphan_auth_users`; `reset_onboarding_v2` beendet zusätzlich laufende Sitzungen.
+- **Vorher prüfen** (nur lesen): `SELECT has_table_privilege(current_user, 'auth.sessions', 'DELETE');` muss `true` liefern, sonst scheitern Reset und Einlösen.
+- **Danach sofort testen:** "Neuer Zugang" für einen Test-Mitarbeiter, und einmal den alten Einladungs-PIN-Weg.
+- **Risiko, bewusst in Kauf genommen:** Wer den Link hat, kann den PIN dieses Mitarbeiters festlegen (wie ein Passwort-Reset-Link). Abgesichert durch: einmal verwendbar, 48 Stunden gültig bei bereits eingerichteten Mitarbeitern (7 Tage bei neuen), nicht für Chef-Konten, verfällt bei jeder PIN-Änderung oder Deaktivierung, vom Chef widerrufbar, Benachrichtigung beim Einlösen.
+- **Bekannte Grenze:** Bei neu angelegten Mitarbeitern bleibt parallel der 4-stellige Einladungs-PIN 7 Tage gültig (Rückfall-Weg der App).
 - **Voraussetzung:** Migration 1 ist ausgeführt.
 - **Wann:** Egal. Die App erkennt selbst, ob die Funktionen da sind. Ohne Migration läuft der bisherige Einladungs-PIN weiter; "Zugang reparieren" und "Verwaiste Konten bereinigen" melden dann, dass die Migration fehlt.
 - Ändert keine bestehenden Daten.
@@ -72,6 +76,7 @@ Im Supabase SQL-Editor (Projekt `roeqphnopokfdktvvbpp`), in dieser Reihenfolge. 
   5. `reset_onboarding_v2` aktualisierte bei fehlendem Anmelde-Konto nur das Profil — der neue Einladungs-PIN konnte dann nie funktionieren. Jetzt klarer Fehler + "Zugang reparieren".
   6. Fehlermeldungen waren pauschal ("Fehler", "Verbindungsfehler"). Jetzt konkrete deutsche Meldungen.
 - Paket 5: Der Einladungs-Link öffnet sich im Browser (Safari), nicht in der installierten App. Der Mitarbeiter legt dort seinen PIN fest und ist im Browser angemeldet; in der Home-Bildschirm-App meldet er sich danach mit Benutzername + PIN an.
+- Review Paket 5: gefunden und behoben — nach "PIN gesetzt, aber Anmeldung gescheitert" blieb der Mitarbeiter auf einem Screen, der danach "Einladung ungültig" meldete; "Zugang reparieren" fehlte bei bereits eingerichteten Mitarbeitern; Server-Meldungen kamen nur als "Bitte erneut versuchen" an; offene Links überlebten PIN-Änderungen. Nicht umgesetzt: Benutzernamen mit Buchstaben wie ł, đ, ø verlieren diese beim Vorschlag (der Chef kann den Vorschlag ändern).
 - Review der Korrekturen (Lauf 4): gefunden und behoben — offline erfasste Einträge wären ohne gültige Sitzung fälschlich als "abgelehnt" markiert worden; der Dialog mit abgelehnten Einträgen war ohne Anmeldung erreichbar; der App-Start hat bei jedem Kaltstart die Sitzungen desselben Nutzers auf anderen Geräten beendet (jetzt nur lokal).
 
 - Paket 4: Auf einem Gerät ohne gemerkten Nutzer fragt der Login jetzt Benutzername + PIN ab (vorher nur PIN mit globaler Suche). Die Sperre legt sich als PIN-Screen über den offenen Screen, Formular-Eingaben bleiben erhalten. Zusätzlich sperrt die App nach 15 Minuten ohne Eingabe (`INACTIVITY_LOCK_MS` in `src/config.js`, 0 = aus) — das weicht von der früheren Entscheidung "kein Idle-Timeout" ab und war im Auftrag als optional genannt.
