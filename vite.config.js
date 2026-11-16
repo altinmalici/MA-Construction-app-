@@ -1,4 +1,5 @@
 /// <reference types="vitest" />
+import process from 'node:process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -104,13 +105,20 @@ export default defineConfig({
         clientsClaim: true,
       },
     }),
-    visualizer({
-      filename: 'dist/stats.html',
-      open: false,
-      gzipSize: true,
-      brotliSize: true,
-      template: 'treemap',
-    }),
+    // Bundle-Analyse nur auf Wunsch (ANALYZE=1 npm run build) und ausserhalb
+    // von dist/ — sonst wird die ~1 MB grosse stats.html mit deployt und ist
+    // oeffentlich unter /stats.html abrufbar.
+    ...(process.env.ANALYZE
+      ? [
+          visualizer({
+            filename: 'stats.html',
+            open: false,
+            gzipSize: true,
+            brotliSize: true,
+            template: 'treemap',
+          }),
+        ]
+      : []),
   ],
   // Prod-Build: console.log/info/debug entfernen (halten den Code sauber und
   // vermeiden versehentliches Loggen im Feld). console.error/console.warn

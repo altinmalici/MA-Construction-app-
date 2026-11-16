@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, cleanup } from "@testing-library/react";
 import PendingSyncBadge from "./PendingSyncBadge.jsx";
 import { enqueueStunde, clearQueue } from "../../lib/offlineQueue.js";
 
@@ -9,6 +9,9 @@ describe("PendingSyncBadge", () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
   });
   afterEach(() => {
+    // Erst unmounten: clearQueue() feuert "ma-queue-change" und wuerde sonst
+    // einen State-Update ausserhalb von act() ausloesen.
+    cleanup();
     clearQueue();
     vi.restoreAllMocks();
   });

@@ -60,3 +60,63 @@ describe("completeOnboarding — nur RPC, kein Client-Auth-Call", () => {
     );
   });
 });
+
+// Audit U-17 / Review: Abmelden ohne Netz. supabase-js ≥ 2.119 lässt die
+// Sitzung im Gerät, wenn der Server-Aufruf scheitert.
+describe("signOut — funktioniert auch ohne Netz", () => {
+  const netErr = { name: "AuthRetryableFetchError", status: 0, message: "Failed to fetch" };
+  let signOut, supabase;
+  beforeEach(async () => {
+    ({ signOut } = await import("./auth.js"));
+    ({ supabase } = await import("../supabase.js"));
+    mockSignOut.mockReset();
+    supabase.auth.getSession.mockReset();
+  });
+
+  it("online: ein Aufruf, kein Fallback", async () => {
+    mockSignOut.mockResolvedValue({ error: null });
+    await signOut();
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("offline: lokales Abmelden; der Netzfehler des Widerrufs ist KEIN Fehler", async () => {
+    // So verhält sich die Bibliothek offline wirklich: auch der lokale
+    // Aufruf meldet den Netzfehler, hat die Sitzung aber schon entfernt.
+    mockSignOut.mockResolvedValue({ error: netErr });
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+    await expect(signOut()).resolves.toBeUndefined();
+    expect(mockSignOut).toHaveBeenNthCalledWith(2, { scope: "local" });
+  });
+
+  it("Sitzung lässt sich wirklich nicht entfernen → Fehler", async () => {
+    mockSignOut.mockResolvedValue({ error: netErr });
+    supabase.auth.getSession.mockResolvedValue({ data: { session: { user: {} } } });
+    await expect(signOut()).rejects.toBe(netErr);
+  });
+});
+
+describe("signOut — lokal statt global, wo es reicht", () => {
+  let signOut, supabase;
+  beforeEach(async () => {
+    ({ signOut } = await import("./auth.js"));
+    ({ supabase } = await import("../supabase.js"));
+    mockSignOut.mockReset();
+    mockSignOut.mockResolvedValue({ error: null });
+    supabase.auth.getSession.mockReset();
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
+  });
+
+  it("localOnly: beendet NICHT die Sitzungen auf anderen Geräten", async () => {
+    await signOut({ localOnly: true });
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: "local" });
+  });
+
+  it("offline: direkt lokal, kein Warten auf den Server", async () => {
+    const spy = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    await signOut();
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockSignOut).toHaveBeenCalledWith({ scope: "local" });
+    spy.mockRestore();
+  });
+});

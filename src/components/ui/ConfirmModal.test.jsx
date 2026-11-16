@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import ConfirmModal from "./ConfirmModal.jsx";
 
 const noop = () => {};
@@ -40,12 +40,15 @@ describe("ConfirmModal", () => {
     ).toBeInTheDocument();
   });
 
-  it("c) Click auf Confirm → onConfirm wird gerufen", () => {
+  it("c) Click auf Confirm → onConfirm wird gerufen", async () => {
     const onConfirm = vi.fn();
     render(
       <ConfirmModal open title="X" onConfirm={onConfirm} onCancel={noop} />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Bestätigen" }));
+    // async act: der Handler setzt nach dem await den busy-State zurück.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Bestätigen" }));
+    });
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
@@ -94,7 +97,9 @@ describe("ConfirmModal", () => {
     await Promise.resolve();
     expect(confirmBtn).toBeDisabled();
     expect(cancelBtn).toBeDisabled();
-    resolveConfirm();
+    await act(async () => {
+      resolveConfirm();
+    });
   });
 
   it("h) destructive=true → Confirm-Button hat rote Farbe", () => {

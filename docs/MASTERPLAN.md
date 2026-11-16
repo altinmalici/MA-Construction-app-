@@ -1,6 +1,6 @@
 # MA Construction App — Masterplan
 
-*Letzte Aktualisierung: 2026-04-19 · Dokument ist lebend, Status-Felder werden pro Task gepflegt*
+*Letzte Aktualisierung: 2026-11-16 · Dokument ist lebend, Status-Felder werden pro Task gepflegt*
 
 ---
 
@@ -264,6 +264,26 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 
 ---
 
+### 🎯 Autopilot-Nachtlauf 2026-11-16 · Status: 🟡 IN PROGRESS
+
+Grundlage: `docs/AUDIT_2026-11.md` (69 Befunde). Laufprotokoll, PR-Links und manuell auszuführende Migrationen: `docs/AUTOPILOT_2026-11-16.md`. Nichts davon ist in `main`, bis Altin die PRs merged.
+
+| ID | Paket | Status |
+|---|---|---|
+| AP-0 | Audit (`docs/AUDIT_2026-11.md`) | 🟢 DONE |
+| AP-1 | Build/Tests/Lint stabil, Abhängigkeiten patch/minor, `docs/SETUP.md` | 🟢 DONE |
+| AP-2 | Kritische Bugs & Sicherheit (U-01, S-01, S-02, D-01, RLS/RPC-Härtung) | 🔴 TODO |
+| AP-3 | Bautagebuch speichern | 🔴 TODO |
+| AP-4 | PIN / "Willkommen zurück" / Auto-Lock | 🔴 TODO |
+| AP-5 | Mitarbeiter-Onboarding robust + Einladungs-Link | 🔴 TODO |
+| AP-6 | Mängel-Branch prüfen | 🟢 DONE — bereits vollständig in `main`, nichts zu tun |
+| AP-7 | Hohe/mittlere Audit-Punkte | 🔴 TODO |
+| AP-8 | Performance & iPhone-UX | 🔴 TODO |
+| AP-9 | Testabdeckung | 🔴 TODO |
+| AP-10 | Doku & Abschluss | 🔴 TODO |
+
+---
+
 ### 🎯 Phase 7 — Lexoffice-Integration · Status: 🔴 TODO · geschätzt tbd
 
 **Ziel:** Stunden, Regieberichte, Materialien aus der App landen per Klick in Lexoffice als Rechnung/Angebot-Entwurf. App bleibt fokussiert, Lexoffice macht Buchhaltung, smarte Brücke dazwischen.
@@ -337,6 +357,9 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 ## 9. Changelog (Task-Abschlüsse)
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
+
+- 2026-11-16 · AP-1 · Branch `autopilot-2026-11-16-p1-stabil` · Abhängigkeiten patch/minor aktualisiert (`npm audit` 31 → 14 Meldungen, Rest braucht Major-Upgrades von vitest/vite-plugin-pwa/sharp); 14 neue Lint-Fehler aus eslint-plugin-react-hooks 7.1 behoben (Login, MitForm, AppContext); Tests ohne `act`-Warnungen und mit gesperrtem Netz (vorher schrieb der ErrorBoundary-Test in die echte `error_log`); `stats.html` nicht mehr im Deploy; `docs/SETUP.md` neu.
+- 2026-11-16 · AP-0 · Branch `autopilot-2026-11-16` · Audit `docs/AUDIT_2026-11.md` mit 69 Befunden (4 kritisch).
 
 - 2026-04-29 · 6-02 · 81e7538+5c0382f+9068ecb · `mergeIncomingRow` in useAppData (INSERT-Dedup, UPDATE-Merge, DELETE-Filter — alle by ID) + 3 useRealtime-Subscriptions im AppProvider (stundeneintraege/maengel/benachrichtigungen mit useCallback-stable-Handlern, enabled=!!cu) + Smoke-Test-Doku (`docs/realtime/manual-smoke-test.md`). +6 Vitest. Phase 6 Realtime live.
 - 2026-04-29 · 6-01 · aa3626e · `useRealtime`-Hook in `src/lib/useRealtime.js` (postgres_changes-Wrapper mit AbortController-cleanup via removeChannel, enabled-Gate, filter-Option). +6 Vitest-Szenarien (Mount/Unmount, enabled=false, INSERT/UPDATE/DELETE-Forwarding, filter).
