@@ -158,6 +158,18 @@ export function useAppData() {
     return () => { mountedRef.current = false; };
   }, [loadAll]);
 
+  // Nachladen NACH einem erfolgreichen Schreibvorgang darf den Erfolg nicht in
+  // einen Fehler verwandeln. Früher warf z.B. create() bei gescheitertem
+  // Nachladen — der Nutzer sah "Fehler", speicherte erneut und erzeugte ein
+  // Duplikat (oder der neue Einladungs-PIN wurde nie angezeigt).
+  const refresh = useCallback(async (...entities) => {
+    try {
+      await reload(...entities);
+    } catch (err) {
+      console.error('Nachladen fehlgeschlagen (Daten wurden gespeichert):', err);
+    }
+  }, [reload]);
+
   // ---- Action creators ----
 
   const actions = {
@@ -173,7 +185,7 @@ export function useAppData() {
       },
       completeOnboarding: async (userId, newPin) => {
         await api.auth.completeOnboarding(userId, newPin);
-        await reload('users');
+        await refresh('users');
       },
       signOut: async () => {
         await api.auth.signOut();
@@ -189,83 +201,83 @@ export function useAppData() {
     users: {
       create: async ({ name, role, pin, stundensatz, username }) => {
         await api.users.create({ name, role, pin, stundensatz, username });
-        await reload('users');
+        await refresh('users');
       },
       update: async (id, { name, pin, stundensatz }) => {
         await api.users.update(id, { name, pin, stundensatz });
-        await reload('users');
+        await refresh('users');
       },
       remove: async (id) => {
         await api.baustellen.removeMitarbeiterFromAll(id);
         await api.users.remove(id);
-        await reload('users', 'baustellen');
+        await refresh('users', 'baustellen');
       },
       checkPinExists: async (pin, excludeId) => {
         return await api.users.checkPinExists(pin, excludeId);
       },
       createForOnboarding: async ({ name, username, stundensatz, onboardingPin }) => {
         await api.users.createForOnboarding({ name, username, stundensatz, onboardingPin });
-        await reload('users');
+        await refresh('users');
       },
       resetOnboardingPin: async (id, pin, username = null) => {
         await api.users.resetOnboardingPin(id, pin, username);
-        await reload('users');
+        await refresh('users');
       },
       toggleActive: async (id, isActive) => {
         await api.users.toggleActive(id, isActive);
-        await reload('users');
+        await refresh('users');
       },
     },
 
     subunternehmer: {
       create: async ({ name, gewerk, telefon }) => {
         await api.subunternehmer.create({ name, gewerk, telefon });
-        await reload('subunternehmer');
+        await refresh('subunternehmer');
       },
       remove: async (id) => {
         await api.baustellen.removeSubFromAll(id);
         await api.subunternehmer.remove(id);
-        await reload('subunternehmer', 'baustellen');
+        await refresh('subunternehmer', 'baustellen');
       },
     },
 
     baustellen: {
       create: async (bs) => {
         const id = await api.baustellen.create(bs);
-        await reload('baustellen');
+        await refresh('baustellen');
         return id;
       },
       update: async (id, bs) => {
         await api.baustellen.update(id, bs);
-        await reload('baustellen');
+        await refresh('baustellen');
       },
       updateField: async (id, field, value) => {
         await api.baustellen.updateField(id, field, value);
-        await reload('baustellen');
+        await refresh('baustellen');
       },
       remove: async (id) => {
         await api.baustellen.remove(id);
-        await reload('baustellen', 'stundeneintraege', 'kalender', 'maengel', 'bautagebuch', 'dokumente');
+        await refresh('baustellen', 'stundeneintraege', 'kalender', 'maengel', 'bautagebuch', 'dokumente');
       },
     },
 
     stundeneintraege: {
       create: async (entry) => {
         const result = await api.stundeneintraege.create(entry);
-        await reload('stundeneintraege');
+        await refresh('stundeneintraege');
         return result;
       },
       update: async (id, entry) => {
         await api.stundeneintraege.update(id, entry);
-        await reload('stundeneintraege');
+        await refresh('stundeneintraege');
       },
       remove: async (id) => {
         await api.stundeneintraege.remove(id);
-        await reload('stundeneintraege');
+        await refresh('stundeneintraege');
       },
       setFreigabe: async (ids, freigegeben) => {
         await api.stundeneintraege.setFreigabe(ids, freigegeben);
-        await reload('stundeneintraege');
+        await refresh('stundeneintraege');
       },
       // Optimistisch lokal anzeigen (Offline-Erfassung), ohne DB-Write.
       // Dedup by id: spaeterer Realtime-/Reload-Insert derselben id ersetzt
@@ -296,7 +308,7 @@ export function useAppData() {
             // fehlerhafter Eintrag darf nicht alle folgenden blockieren.
           }
         }
-        if (synced > 0) await reload('stundeneintraege');
+        if (synced > 0) await refresh('stundeneintraege');
         return { synced, remaining: getQueue().length };
       },
     },
@@ -304,96 +316,96 @@ export function useAppData() {
     maengel: {
       create: async (m) => {
         const result = await api.maengel.create(m);
-        await reload('maengel');
+        await refresh('maengel');
         return result;
       },
       updateStatus: async (id, status) => {
         await api.maengel.updateStatus(id, status);
-        await reload('maengel');
+        await refresh('maengel');
       },
       remove: async (id) => {
         await api.maengel.remove(id);
-        await reload('maengel');
+        await refresh('maengel');
       },
     },
 
     bautagebuch: {
       create: async (entry) => {
         await api.bautagebuch.create(entry);
-        await reload('bautagebuch');
+        await refresh('bautagebuch');
       },
       update: async (id, entry) => {
         await api.bautagebuch.update(id, entry);
-        await reload('bautagebuch');
+        await refresh('bautagebuch');
       },
       remove: async (id) => {
         await api.bautagebuch.remove(id);
-        await reload('bautagebuch');
+        await refresh('bautagebuch');
       },
     },
 
     kalender: {
       create: async (entry) => {
         await api.kalender.create(entry);
-        await reload('kalender');
+        await refresh('kalender');
       },
       update: async (id, entry) => {
         await api.kalender.update(id, entry);
-        await reload('kalender');
+        await refresh('kalender');
       },
       remove: async (id) => {
         await api.kalender.remove(id);
-        await reload('kalender');
+        await refresh('kalender');
       },
     },
 
     dokumente: {
       create: async (doc) => {
         await api.dokumente.create(doc);
-        await reload('dokumente');
+        await refresh('dokumente');
       },
       createWithFile: async (payload) => {
         const result = await api.dokumente.createWithFile(payload);
-        await reload('dokumente');
+        await refresh('dokumente');
         return result;
       },
       remove: async (id) => {
         await api.dokumente.remove(id);
-        await reload('dokumente');
+        await refresh('dokumente');
       },
       removeWithFile: async (id, storagePath) => {
         await api.dokumente.removeWithFile(id, storagePath);
-        await reload('dokumente');
+        await refresh('dokumente');
       },
     },
 
     kosten: {
       create: async (k) => {
         await api.kosten.create(k);
-        await reload('kosten');
+        await refresh('kosten');
       },
       remove: async (id) => {
         await api.kosten.remove(id);
-        await reload('kosten');
+        await refresh('kosten');
       },
     },
 
     benachrichtigungen: {
       create: async (n) => {
         await api.benachrichtigungen.create(n);
-        await reload('benachrichtigungen');
+        await refresh('benachrichtigungen');
       },
       markAllRead: async () => {
         await api.benachrichtigungen.markAllRead();
-        await reload('benachrichtigungen');
+        await refresh('benachrichtigungen');
       },
       remove: async (id) => {
         await api.benachrichtigungen.remove(id);
-        await reload('benachrichtigungen');
+        await refresh('benachrichtigungen');
       },
       removeAll: async () => {
         await api.benachrichtigungen.removeAll();
-        await reload('benachrichtigungen');
+        await refresh('benachrichtigungen');
       },
     },
 

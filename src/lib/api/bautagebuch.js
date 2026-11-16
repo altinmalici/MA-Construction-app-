@@ -11,7 +11,11 @@ export async function getAll({ signal } = {}) {
   if (error) throw error;
 
   // Fetch anwesende junction
-  const { data: anw } = await supabase.from('bautagebuch_anwesende').select('bautagebuch_id, user_id');
+  // Fehler NICHT schlucken: sonst erscheinen alle Einträge ohne Anwesende.
+  const { data: anw, error: anwErr } = await supabase
+    .from('bautagebuch_anwesende')
+    .select('bautagebuch_id, user_id');
+  if (anwErr) throw anwErr;
   const anwMap = {};
   (anw || []).forEach(r => {
     if (!anwMap[r.bautagebuch_id]) anwMap[r.bautagebuch_id] = [];
@@ -22,8 +26,8 @@ export async function getAll({ signal } = {}) {
     id: r.id,
     baustelleId: r.baustelle_id,
     datum: r.datum,
-    wetter: r.wetter,
-    temperatur: r.temperatur,
+    wetter: r.wetter ?? null,
+    temperatur: r.temperatur ?? null,
     arbeiten: r.arbeiten || '',
     besonderheiten: r.besonderheiten || '',
     behinderungen: r.behinderungen || '',
@@ -36,8 +40,10 @@ export async function create(entry) {
   const row = {
     baustelle_id: fields.baustelleId,
     datum: fields.datum,
-    wetter: fields.wetter || 'sonnig',
-    temperatur: fields.temperatur || 12,
+    // Kein erfundenes Wetter: ohne Angabe NULL statt 'sonnig'/12 °C.
+    // ?? statt ||, damit 0 °C nicht zu 12 wird.
+    wetter: fields.wetter || null,
+    temperatur: fields.temperatur ?? null,
     arbeiten: fields.arbeiten || '',
     besonderheiten: fields.besonderheiten || '',
     behinderungen: fields.behinderungen || '',

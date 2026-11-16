@@ -54,12 +54,16 @@ export const getReportDates = (
 
 // Aktuelle Woche: Mo (ISO-Konvention) bis So. JS-Default ist
 // Sonntag=0 — wir korrigieren auf Montag=0 für die Wochenberechnung.
-const toIso = (d) => {
+export const toIso = (d) => {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 };
+
+// Heutiges Datum in ORTSZEIT als YYYY-MM-DD. new Date().toISOString() liefert
+// UTC — zwischen 0 und 1 Uhr (Sommer: 2 Uhr) wäre das noch der Vortag.
+export const todayIso = () => toIso(new Date());
 
 export const getCurrentWeekRange = () => {
   const now = new Date();

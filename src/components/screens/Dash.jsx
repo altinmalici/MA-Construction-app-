@@ -433,7 +433,11 @@ const Dash = () => {
         {widgetItems.map(({ k, i: I, c, l, s, n }) => (
           <button
             key={k}
-            onClick={() => nav(k)}
+            onClick={() => {
+              // Globale Ansicht: keine zuvor geöffnete Baustelle mitschleppen.
+              setSb(null);
+              nav(k);
+            }}
             style={{
               background: "white",
               borderRadius: 12,

@@ -114,7 +114,8 @@ const MehrView = () => {
               <button
                 key={k}
                 onClick={() => {
-                  if (k === "mng") setSb(null);
+                  // Globale Ansicht: keine zuvor geöffnete Baustelle mitschleppen.
+                  setSb(null);
                   nav(k);
                 }}
                 style={{

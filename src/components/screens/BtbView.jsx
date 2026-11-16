@@ -1,9 +1,18 @@
 import { useState } from "react";
 import { Plus, X, Save, ClipboardList, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fDat, IC, BTN, RED } from "../../utils/helpers";
-import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
+import { fDat, todayIso, IC, BTN, RED } from "../../utils/helpers";
+import { fehlerText } from "../../utils/errors";
+import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton, Card, WI } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
+
+const WETTER = [
+  { v: "sonnig", l: "Sonnig" },
+  { v: "bewölkt", l: "Bewölkt" },
+  { v: "regen", l: "Regen" },
+  { v: "schnee", l: "Schnee" },
+  { v: "wind", l: "Wind" },
+];
 
 const BtbView = () => {
   const { sb, chef, cu, data, actions, show, goBack } = useApp();
@@ -14,18 +23,34 @@ const BtbView = () => {
     ? data.bautagebuch.filter((b) => b.baustelleId === sb.id)
     : data.bautagebuch;
   const [bf, sBf] = useState({
-    baustelleId:
-      sb?.id ||
-      (chef
-        ? data.baustellen[0]?.id || ""
-        : data.baustellen.find((b) => b.mitarbeiter?.includes(cu?.id))?.id ||
-          ""),
-    datum: new Date().toISOString().split("T")[0],
+    baustelleId: "",
+    datum: todayIso(),
+    wetter: "",
+    temperatur: "",
     anwesende: [],
     arbeiten: "",
     besonderheiten: "",
     behinderungen: "",
   });
+  // Baustelle wird zur Renderzeit bestimmt, nicht einmalig beim Öffnen:
+  // Früher wurde sie im Start-State festgeschrieben. Waren die Daten da noch
+  // nicht geladen, blieb sie leer — und bei nur EINER Baustelle war die
+  // Auswahl ausgeblendet, sodass Speichern immer mit "Baustelle wählen"
+  // scheiterte.
+  const myBs = chef
+    ? data.baustellen
+    : data.baustellen.filter((b) => b.mitarbeiter?.includes(cu?.id));
+  // Eine früher gewählte Baustelle zählt nur, solange es sie noch gibt.
+  const gewaehlt = myBs.some((b) => b.id === bf.baustelleId)
+    ? bf.baustelleId
+    : "";
+  const baustelleId =
+    sb?.id || gewaehlt || (myBs.length === 1 ? myBs[0].id : "");
+  // Neueste zuerst — nach Datum, nicht nach Anlage-Reihenfolge.
+  // reverse() vorab: bei gleichem Datum steht der zuletzt angelegte oben.
+  const sorted = [...ls].reverse().sort((a, b) =>
+    a.datum === b.datum ? 0 : a.datum < b.datum ? 1 : -1,
+  );
   const tgA = (id) =>
     sBf((p) => ({
       ...p,
@@ -35,8 +60,22 @@ const BtbView = () => {
     }));
   const save = () =>
     withSaving(async () => {
-      if (!bf.baustelleId) {
-        show("Baustelle wählen", "error");
+      if (!baustelleId) {
+        show(
+          myBs.length === 0
+            ? "Keine Baustelle vorhanden – bitte zuerst eine Baustelle anlegen"
+            : "Baustelle wählen",
+          "error",
+        );
+        return;
+      }
+      if (!bf.datum) {
+        show("Datum wählen", "error");
+        return;
+      }
+      const temp = bf.temperatur === "" ? null : Number(bf.temperatur);
+      if (temp !== null && (!Number.isInteger(temp) || temp < -40 || temp > 50)) {
+        show("Temperatur als ganze Zahl in °C angeben", "error");
         return;
       }
       if (!bf.arbeiten.trim()) {
@@ -45,8 +84,10 @@ const BtbView = () => {
       }
       try {
         await actions.bautagebuch.create({
-          baustelleId: bf.baustelleId,
+          baustelleId,
           datum: bf.datum,
+          wetter: bf.wetter || null,
+          temperatur: temp,
           anwesende: bf.anwesende,
           arbeiten: bf.arbeiten,
           besonderheiten: bf.besonderheiten,
@@ -56,6 +97,8 @@ const BtbView = () => {
         setSf(false);
         sBf({
           ...bf,
+          wetter: "",
+          temperatur: "",
           arbeiten: "",
           besonderheiten: "",
           behinderungen: "",
@@ -63,7 +106,10 @@ const BtbView = () => {
         });
       } catch (e) {
         console.error("[BtbView.save]", e);
-        show(e?.message || "Fehler beim Speichern", "error");
+        show(
+          `Eintrag nicht gespeichert: ${fehlerText(e, "Unbekannter Fehler – bitte erneut versuchen.")}`,
+          "error",
+        );
       }
     });
   const delBtb = (id) => setConfirmDelete(id);
@@ -76,7 +122,7 @@ const BtbView = () => {
       show("Gelöscht");
     } catch (e) {
       console.error("[BtbView.delBtb]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(`Nicht gelöscht: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
     }
   };
   return (
@@ -105,38 +151,74 @@ const BtbView = () => {
             borderBottom: "0.5px solid rgba(0,0,0,0.08)",
           }}
         >
-          {!sb &&
-            (() => {
-              const myBs = chef
-                ? data.baustellen
-                : data.baustellen.filter((b) => b.mitarbeiter?.includes(cu?.id));
-              if (myBs.length <= 1) return null;
-              return (
-                <select
-                  value={bf.baustelleId}
-                  onChange={(e) => sBf({ ...bf, baustelleId: e.target.value })}
-                  className={IC}
-                  style={{
-                    background: "rgba(118,118,128,0.12)",
-                    border: "none",
-                  }}
-                >
-                  <option value="">Baustelle...</option>
-                  {myBs.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.kunde}
-                    </option>
-                  ))}
-                </select>
-              );
-            })()}
+          {!sb && myBs.length > 1 && (
+            <select
+              value={baustelleId}
+              onChange={(e) => sBf({ ...bf, baustelleId: e.target.value })}
+              className={IC}
+              aria-label="Baustelle"
+              style={{
+                background: "rgba(118,118,128,0.12)",
+                border: "none",
+              }}
+            >
+              <option value="">Baustelle...</option>
+              {myBs.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.kunde}
+                </option>
+              ))}
+            </select>
+          )}
+          {/* Bei genau einer Baustelle (oder aus der Baustelle heraus geöffnet)
+              gibt es nichts zu wählen — trotzdem zeigen, wohin gespeichert wird. */}
+          {(sb || myBs.length === 1) && baustelleId && (
+            <p style={{ fontSize: 13, color: "#8e8e93" }}>
+              Baustelle:{" "}
+              <span style={{ color: "#000", fontWeight: 600 }}>
+                {data.baustellen.find((b) => b.id === baustelleId)?.kunde ||
+                  sb?.kunde}
+              </span>
+            </p>
+          )}
           <input
             type="date"
             value={bf.datum}
             onChange={(e) => sBf({ ...bf, datum: e.target.value })}
             className={IC}
+            aria-label="Datum"
             style={{ background: "rgba(118,118,128,0.12)", border: "none" }}
           />
+          <div style={{ display: "flex", gap: 8 }}>
+            <select
+              value={bf.wetter}
+              onChange={(e) => sBf({ ...bf, wetter: e.target.value })}
+              className={IC}
+              aria-label="Wetter"
+              style={{ flex: 2 }}
+            >
+              <option value="">Wetter (optional)</option>
+              {WETTER.map((w) => (
+                <option key={w.v} value={w.v}>
+                  {w.l}
+                </option>
+              ))}
+            </select>
+            <input
+              value={bf.temperatur}
+              onChange={(e) =>
+                sBf({ ...bf, temperatur: e.target.value.replace(/[^0-9-]/g, "") })
+              }
+              placeholder="°C"
+              // Text-Tastatur: der iOS-Ziffernblock hat kein Minus (Frost!).
+              inputMode="text"
+              autoCapitalize="none"
+              autoCorrect="off"
+              aria-label="Temperatur in Grad Celsius"
+              className={IC}
+              style={{ flex: 1 }}
+            />
+          </div>
           <div>
             <p style={{ fontSize: 13, color: "#8e8e93", marginBottom: 4 }}>
               Anwesende
@@ -149,7 +231,8 @@ const BtbView = () => {
                     key={u.id}
                     onClick={() => tgA(u.id)}
                     style={{
-                      padding: "8px 12px",
+                      padding: "8px 14px",
+                      minHeight: 44,
                       borderRadius: 10,
                       fontSize: 13,
                       fontWeight: 600,
@@ -215,10 +298,14 @@ const BtbView = () => {
         {ls.length === 0 ? (
           <Empty
             icon={ClipboardList}
-            text="Tippe auf + um einen Eintrag zu erstellen"
+            text={
+              chef
+                ? "Tippe auf + um einen Eintrag zu erstellen"
+                : "Noch keine Einträge. Das Bautagebuch führt der Chef."
+            }
           />
         ) : (
-          [...ls].reverse().map((e) => {
+          sorted.map((e) => {
             const bs = data.baustellen.find((b) => b.id === e.baustelleId);
             return (
               <Card key={e.id}>
@@ -230,8 +317,22 @@ const BtbView = () => {
                     <p style={{ fontSize: 15, fontWeight: 600, color: "#000" }}>
                       {bs?.kunde}
                     </p>
-                    <p style={{ fontSize: 13, color: "#8e8e93" }}>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "#8e8e93",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
                       {fDat(e.datum)}
+                      {e.wetter && (
+                        <WI w={e.wetter} style={{ width: 14, height: 14 }} />
+                      )}
+                      {e.temperatur !== null && e.temperatur !== undefined && (
+                        <span>{e.temperatur} °C</span>
+                      )}
                     </p>
                   </div>
                   {chef && (
