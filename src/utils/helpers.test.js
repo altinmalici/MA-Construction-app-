@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  istZahlEingabe,
   round15,
   fStd,
   isoWeek,
@@ -558,5 +559,25 @@ describe("todayIso (Audit D-24)", () => {
     vi.setSystemTime(new Date(2026, 10, 17, 0, 30)); // 17.11. 00:30 Ortszeit
     expect(todayIso()).toBe("2026-11-17");
     vi.useRealTimers();
+  });
+});
+
+describe("Beträge: Tausenderpunkte und strenge Eingabeprüfung (Review P7)", () => {
+  it("'50.000' ist fünfzigtausend, nicht fünfzig", () => {
+    expect(parseDecimal("50.000")).toBe(50000);
+    expect(parseDecimal("1.234.567")).toBe(1234567);
+    expect(parseDecimal("1.234")).toBe(1234);
+  });
+  it("Dezimalpunkt mit 1–2 Stellen bleibt eine Dezimalzahl", () => {
+    expect(parseDecimal("45.5")).toBe(45.5);
+    expect(parseDecimal("12.75")).toBe(12.75);
+  });
+  it("istZahlEingabe: leer und echte Zahlen ja, Text mit Einheiten nein", () => {
+    for (const ok of ["", "0", "0,00", "45", "45,50", "50.000", "1.234,50", " 12 "]) {
+      expect(istZahlEingabe(ok)).toBe(true);
+    }
+    for (const bad of ["45 €/h", "ca. 5000", "abc", "1e3", "12,5,3"]) {
+      expect(istZahlEingabe(bad)).toBe(false);
+    }
   });
 });

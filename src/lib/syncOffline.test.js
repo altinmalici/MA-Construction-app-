@@ -125,26 +125,30 @@ describe("syncOffline", () => {
   });
 });
 
-describe("wartende Einträge bleiben nach dem Nachladen sichtbar (Audit D-06)", () => {
-  it("mitWartenden hängt Warteschlangen-Einträge an und markiert sie", async () => {
-    const { mitWartenden } = await import("./useAppData.js");
-    const { markFailed } = await import("./offlineQueue.js");
+describe("wartende Einträge: sichtbar, aber getrennt von den Datenbank-Zeilen (Audit D-06)", () => {
+  it("data.wartendeStunden folgt der Warteschlange; data.stundeneintraege bleibt rein", async () => {
+    const { markFailed, dequeue } = await import("./offlineQueue.js");
     enqueueStunde(e("w1"));
-    enqueueStunde(e("f1"));
-    enqueueStunde(e("s1"));
-    markFailed("f1", "x");
-    const r = mitWartenden([{ id: "s1", datum: "2026-11-16" }, { id: "s2" }]);
-    expect(r.map((x) => [x.id, x._pending])).toEqual([
-      ["s1", undefined], // schon auf dem Server → nicht doppelt
-      ["s2", undefined],
-      ["w1", "wartet"],
-      ["f1", "abgelehnt"],
+    const { result } = renderHook(() => useAppData());
+    await act(async () => {});
+    expect(result.current.data.wartendeStunden.map((x) => [x.id, x._pending])).toEqual([["w1", "wartet"]]);
+    expect(result.current.data.stundeneintraege).toEqual([]);
+    act(() => { enqueueStunde(e("f1")); markFailed("f1", "x"); });
+    expect(result.current.data.wartendeStunden.map((x) => [x.id, x._pending])).toEqual([
+      ["w1", "wartet"], ["f1", "abgelehnt"],
     ]);
+    act(() => { dequeue("w1"); dequeue("f1"); });
+    expect(result.current.data.wartendeStunden).toEqual([]);
   });
 
-  it("leere Warteschlange → Liste unverändert (gleiche Referenz)", async () => {
-    const { mitWartenden } = await import("./useAppData.js");
-    const list = [{ id: "s1" }];
-    expect(mitWartenden(list)).toBe(list);
+  it("nach einem Sync mit nur Ablehnungen ist der Eintrag als abgelehnt markiert", async () => {
+    enqueueStunde(e("a"));
+    create.mockRejectedValue({ code: "42501", message: "rls" });
+    const { result } = renderHook(() => useAppData());
+    await act(async () => {
+      await result.current.actions.stundeneintraege.syncOffline({ userId: "u1" });
+    });
+    expect(result.current.data.wartendeStunden.map((x) => x._pending)).toEqual(["abgelehnt"]);
+    expect(result.current.data.stundeneintraege).toEqual([]);
   });
 });

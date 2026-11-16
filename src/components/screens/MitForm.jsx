@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Save, UserPlus, CheckCircle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { genUsername, genPin, parseDecimal, USERNAME_RE, IC, BTN, GREEN, CS } from "../../utils/helpers";
+import { genUsername, genPin, parseDecimal, istZahlEingabe, USERNAME_RE, IC, BTN, GREEN, CS } from "../../utils/helpers";
 import { ScreenLayout, Spinner, InviteCard } from "../ui";
 import { fehlerText } from "../../utils/errors";
 import { inviteLink } from "../../utils/invite";
@@ -41,6 +41,10 @@ const MitForm = () => {
     withSaving(async () => {
       if (!n.trim()) {
         show("Name nötig", "error");
+        return;
+      }
+      if (!istZahlEingabe(ss)) {
+        show("Stundensatz als Zahl eingeben (z.B. 45 oder 45,50)", "error");
         return;
       }
       const username = un.trim().toLowerCase();

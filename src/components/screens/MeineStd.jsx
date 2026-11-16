@@ -30,7 +30,11 @@ const MeineStd = () => {
       return m + 1;
     });
   };
-  const all = data.stundeneintraege.filter(
+  // Eigene Einträge aus der Datenbank + eigene, die noch auf diesem Gerät
+  // warten (offline erfasst). Letztere sind markiert und stehen nur hier.
+  const serverIds = new Set(data.stundeneintraege.map((e) => e.id));
+  const wartende = (data.wartendeStunden || []).filter((e) => !serverIds.has(e.id));
+  const all = [...data.stundeneintraege, ...wartende].filter(
     (e) => e.mitarbeiterId === cu.id && isMitarbeiterEntry(e),
   );
   const me = all.filter((e) => isInMonth(e.datum, mo, jr));

@@ -22,6 +22,7 @@ const SERVER_TEXT = [
   [/Konto ist nicht bereit/i, 'Konto ist nicht bereit – bitte zuerst „Zugang reparieren“ antippen.'],
   [/Mitarbeiter ist deaktiviert/i, "Nicht möglich: Der Mitarbeiter ist deaktiviert."],
   [/Mitarbeiter nicht gefunden/i, "Mitarbeiter nicht gefunden – bitte Liste neu laden."],
+  [/Anmelde-Adresse gehoert bereits einem anderen Mitarbeiter/i, "Der Benutzername gehört bereits einem anderen Mitarbeiter."],
   [/Anmelde-Adresse gehoert bereits/i, 'Der Benutzername ist durch ein anderes Konto belegt – bitte „Verwaiste Konten bereinigen“ antippen.'],
   [/Fuer Chef-Konten gibt es keinen Einladungs-Link/i, "Für Chef-Konten gibt es keinen Einladungs-Link."],
   [/Benutzername ungueltig – bitte im SQL-Editor/i, "Der Benutzername dieses Mitarbeiters ist ungültig und muss in der Datenbank korrigiert werden (siehe docs/sql/onboarding_diagnose.sql)."],

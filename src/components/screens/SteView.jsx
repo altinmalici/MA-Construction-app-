@@ -156,10 +156,9 @@ const SteView = () => {
         const entry = baueEintrag(form, { id: entryId, fotos });
 
         if (editId) {
-          await actions.stundeneintraege.update(editId, entry);
-          if (editFreigegeben) {
-            await actions.stundeneintraege.setFreigabe([editId], false);
-          }
+          await actions.stundeneintraege.update(editId, entry, {
+            resetFreigabe: editFreigegeben,
+          });
           show(editFreigegeben ? "Aktualisiert – Freigabe zurückgenommen" : "Aktualisiert");
           setEditId(null);
           setEditFreigegeben(false);
