@@ -136,7 +136,9 @@ describe("SteView – Chef bearbeitet", () => {
     expect(screen.getByText("Freigegebenen Eintrag ändern?")).toBeInTheDocument();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Ändern" })); });
     expect(std.update).toHaveBeenCalledTimes(1);
-    expect(std.setFreigabe).toHaveBeenCalledWith(["e1"], false);
+    // Freigabe wird im SELBEN Schreibvorgang zurückgenommen
+    expect(std.update.mock.calls[0][2]).toEqual({ resetFreigabe: true });
+    expect(std.setFreigabe).not.toHaveBeenCalled();
   });
 
   it("nicht freigegebener Eintrag: keine Rückfrage, Freigabe unberührt", async () => {
@@ -145,6 +147,7 @@ describe("SteView – Chef bearbeitet", () => {
     openEdit();
     await save(/Aktualisieren/);
     expect(std.update).toHaveBeenCalledTimes(1);
+    expect(std.update.mock.calls[0][2]).toEqual({ resetFreigabe: false });
     expect(std.setFreigabe).not.toHaveBeenCalled();
   });
 

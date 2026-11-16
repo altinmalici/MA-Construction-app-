@@ -27,9 +27,15 @@ const RegView = () => {
   const [bisDatum, setBisDatum] = useState(today);
   // Vorauswahl zur Renderzeit ableiten: Waren die Daten beim Öffnen noch
   // nicht geladen, blieb die Baustelle früher dauerhaft leer.
+  // Die Unterschrift gilt nur für die Baustelle und den Zeitraum, für die
+  // sie gegeben wurde: Wechselt eines davon, ist sie weg. So kann sie nicht
+  // auf dem Bericht einer anderen Baustelle oder eines anderen Tages landen.
+  const [sigState, sSigState] = useState({ key: "", sig: null });
   const [biWahl, sBi] = useState("");
   const bi = biWahl || data.baustellen[0]?.id || "";
-  const [sig, sSig] = useState(null);
+  const sigKey = `${bi}|${vonDatum}|${bisDatum}`;
+  const sig = sigState.key === sigKey ? sigState.sig : null;
+  const sSig = (v) => sSigState({ key: sigKey, sig: v });
   const [showPdf, setShowPdf] = useState(false);
   const touchY = useRef(0);
 
@@ -108,7 +114,7 @@ const RegView = () => {
       eintraege: firstDateEintraege,
       berichtNr: berichtNrFor(firstDate),
       forPrint: false,
-      sig,
+      sig: reportDates.length === 1 ? sig : null,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportDates, bs, firstDate, allBaustelleTage, sig]);
@@ -138,6 +144,9 @@ const RegView = () => {
     if (reportDates.length === 0) return;
     printingRef.current = true;
 
+    // Eine Unterschrift bestätigt EINEN Bericht. Bei mehreren Tagen wird sie
+    // nicht auf alle gedruckt.
+    const druckSig = reportDates.length === 1 ? sig : null;
     const sections = reportDates.map((datum, idx) => {
       const eintraege = data.stundeneintraege.filter(
         (e) => e.baustelleId === bi && e.datum === datum,
@@ -148,7 +157,7 @@ const RegView = () => {
         eintraege,
         berichtNr: berichtNrFor(datum),
         forPrint: true,
-        sig,
+        sig: druckSig,
       });
       const pageBreak =
         idx < reportDates.length - 1
@@ -506,6 +515,12 @@ const RegView = () => {
               <p style={{ color: "#8e8e93", fontSize: 13, marginBottom: 6 }}>
                 Unterschrift Auftraggeber:
               </p>
+              {reportDates.length > 1 && (
+                <p style={{ color: "#b26a00", fontSize: 12, marginBottom: 6 }}>
+                  Mehrere Tage gewählt: Die Unterschrift wird nur gedruckt,
+                  wenn genau ein Tag ausgewählt ist.
+                </p>
+              )}
               <SigPad
                 sig={sig}
                 onSave={(s) => sSig(s)}

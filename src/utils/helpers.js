@@ -171,6 +171,9 @@ export const parseDecimal = (v) => {
   let s = String(v).trim().replace(/\s|€/g, "");
   // "1.234,50": Punkt = Tausender, Komma = Dezimal. Früher wurde daraus 1,234.
   if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  // "50.000" / "1.234.567": deutsche Tausenderpunkte ohne Komma. (Drei
+  // Nachkommastellen kommen bei Geld und Stundensätzen nicht vor.)
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, "");
   // Rest-Müll ("12abc") nicht still als 12 lesen.
   if (!/^\d*\.?\d+$|^\d+\.$/.test(s)) return 0;
   const n = parseFloat(s);
@@ -178,6 +181,15 @@ export const parseDecimal = (v) => {
 };
 
 // Euro formatieren: "1.234,56 €"
+// Ist die Eingabe leer oder eine lesbare Zahl? Formulare lehnen damit
+// Tippfehler ab ("45 €/h", "ca. 5000"), statt still 0 oder einen
+// Ersatzwert zu speichern.
+export const istZahlEingabe = (v) => {
+  const s = String(v ?? "").trim();
+  if (s === "") return true;
+  return parseDecimal(s) > 0 || /^0+([.,]0+)?$/.test(s.replace(/\s|€/g, ""));
+};
+
 export const fE = (v) =>
   new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(
     v,
