@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { Save, UserPlus, CheckCircle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { genUsername, genPin, parseDecimal, IC, BTN, GREEN, CS } from "../../utils/helpers";
-import { ScreenLayout, Spinner } from "../ui";
+import { genUsername, genPin, parseDecimal, USERNAME_RE, IC, BTN, GREEN, CS } from "../../utils/helpers";
+import { ScreenLayout, Spinner, InviteCard } from "../ui";
+import { fehlerText } from "../../utils/errors";
+import { inviteLink } from "../../utils/invite";
+import { ONBOARDING_LINK_MODE } from "../../config";
 import { useSaving } from "../../hooks/useSaving";
 
 const MitForm = () => {
@@ -40,8 +43,16 @@ const MitForm = () => {
         show("Name nötig", "error");
         return;
       }
-      if (!ex && !un.trim()) {
+      const username = un.trim().toLowerCase();
+      if (!ex && !username) {
         show("Benutzername nötig", "error");
+        return;
+      }
+      if (!ex && !USERNAME_RE.test(username)) {
+        show(
+          "Benutzername: 2–31 Zeichen, nur a–z, 0–9, Punkt und Bindestrich",
+          "error",
+        );
         return;
       }
       try {
@@ -55,24 +66,38 @@ const MitForm = () => {
           goBack();
         } else {
           const pin = genPin();
-          await actions.users.createForOnboarding({
+          const id = await actions.users.createForOnboarding({
             name: n.trim(),
-            username: un.trim().toLowerCase(),
+            username,
             stundensatz: parseDecimal(ss) || 45,
             onboardingPin: pin,
           });
-          setMitSummary({
-            name: n.trim(),
-            username: un.trim().toLowerCase(),
-            pin,
-          });
+          // Ab hier ist der Mitarbeiter angelegt. Der Einladungs-Link ist
+          // die bequemere Variante; gibt es die DB-Funktion noch nicht (oder
+          // schlägt sie fehl), bleibt der Einladungs-PIN — die Anlage gilt
+          // in jedem Fall als gelungen und der PIN wird angezeigt.
+          let link = null;
+          if (ONBOARDING_LINK_MODE !== "0" && id) {
+            try {
+              link = inviteLink(await actions.users.createOnboardingToken(id));
+            } catch (linkErr) {
+              console.warn("[MitForm] Einladungs-Link nicht verfügbar, nutze PIN:", linkErr?.message);
+            }
+          }
+          setMitSummary({ name: n.trim(), username, pin, link });
         }
       } catch (e) {
         console.error("[MitForm.save]", e);
+        const dup = e?.code === "23505" || /duplicate/i.test(e?.message || "");
+        // Kennt die App den Benutzernamen nicht, liegt ein altes Auth-Konto
+        // ohne Profil im Weg (z.B. nach einem abgebrochenen Löschen).
+        const bekannt = data.users.some((u) => u.username === username);
         show(
-          e.message?.includes("duplicate") || e.code === "23505"
-            ? "Benutzername bereits vergeben"
-            : e?.message || "Fehler beim Speichern",
+          dup
+            ? bekannt || ex
+              ? "Benutzername bereits vergeben"
+              : 'Benutzername ist durch ein altes Konto belegt – unter Handwerker "Verwaiste Konten bereinigen" antippen und erneut speichern'
+            : `Nicht gespeichert: ${fehlerText(e, "Bitte erneut versuchen.")}`,
           "error",
         );
       }
@@ -82,11 +107,6 @@ const MitForm = () => {
     setEditUser(null);
     goBack();
   };
-  const shareWA = () => {
-    const text = `Hallo ${mitSummary.name}!\n\nDein Zugang zur MA Construction App:\n\nBenutzername: ${mitSummary.username}\nEinmal-PIN: ${mitSummary.pin}\n\nGültig für 7 Tage.\n\nApp: ${window.location.origin}`;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
-  };
-
   if (mitSummary)
     return (
       <ScreenLayout title="Mitarbeiter angelegt" onBack={closeSummary}>
@@ -109,76 +129,18 @@ const MitForm = () => {
             {mitSummary.name}
           </p>
           <p style={{ fontSize: 15, color: "#8e8e93" }}>
-            wurde erfolgreich angelegt
+            wurde angelegt – jetzt die Einladung schicken
           </p>
         </div>
-        <div
-          style={{
-            background: "white",
-            borderRadius: 12,
-            padding: 16,
-            boxShadow: CS,
-            marginBottom: 16,
-          }}
-        >
-          <div style={{ background: "#f2f2f7", borderRadius: 10, padding: 16 }}>
-            <p style={{ fontSize: 13, color: "#8e8e93", marginBottom: 4 }}>
-              Benutzername
-            </p>
-            <p
-              style={{
-                fontSize: 17,
-                fontWeight: 600,
-                color: "#000",
-                marginBottom: 12,
-              }}
-            >
-              {mitSummary.username}
-            </p>
-            <p style={{ fontSize: 13, color: "#8e8e93", marginBottom: 4 }}>
-              Einmal-PIN
-            </p>
-            <p
-              style={{
-                fontSize: 28,
-                fontWeight: 700,
-                color: "#000",
-                letterSpacing: 4,
-              }}
-            >
-              {mitSummary.pin}
-            </p>
-            <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 8 }}>
-              Gültig für 7 Tage
-            </p>
-          </div>
+        <div style={{ marginBottom: 16 }}>
+          <InviteCard info={mitSummary} show={show} />
         </div>
-        <button
-          onClick={shareWA}
-          style={{
-            width: "100%",
-            padding: "16px 24px",
-            borderRadius: 14,
-            color: "white",
-            fontWeight: 600,
-            fontSize: 17,
-            background: "#25D366",
-            border: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            marginBottom: 12,
-            boxShadow: "0 2px 8px rgba(37,211,102,0.35)",
-          }}
-        >
-          Per WhatsApp senden
-        </button>
         <button
           onClick={closeSummary}
           style={{
             width: "100%",
             padding: 12,
+            minHeight: 44,
             fontSize: 15,
             color: "#8e8e93",
             background: "none",

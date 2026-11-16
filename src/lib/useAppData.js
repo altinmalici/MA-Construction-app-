@@ -194,6 +194,12 @@ export function useAppData() {
         await api.auth.completeOnboarding(userId, newPin);
         await refresh('users');
       },
+      validateOnboardingToken: async (token) => {
+        return await api.auth.validateOnboardingToken(token);
+      },
+      consumeOnboardingToken: async (token, pin) => {
+        return await api.auth.consumeOnboardingToken(token, pin);
+      },
       signOut: async () => {
         await api.auth.signOut();
       },
@@ -223,12 +229,26 @@ export function useAppData() {
         return await api.users.checkPinExists(pin, excludeId);
       },
       createForOnboarding: async ({ name, username, stundensatz, onboardingPin }) => {
-        await api.users.createForOnboarding({ name, username, stundensatz, onboardingPin });
+        const id = await api.users.createForOnboarding({ name, username, stundensatz, onboardingPin });
         await refresh('users');
+        return id;
       },
       resetOnboardingPin: async (id, pin, username = null) => {
         await api.users.resetOnboardingPin(id, pin, username);
         await refresh('users');
+      },
+      // Liefert das Token; wirft, wenn die DB-Funktion fehlt (siehe
+      // api.users.istRpcFehlt) — Aufrufer fällt dann auf den PIN zurück.
+      createOnboardingToken: async (id) => {
+        return await api.users.createOnboardingToken(id);
+      },
+      repair: async (id) => {
+        const result = await api.users.repairUser(id);
+        await refresh('users');
+        return result;
+      },
+      cleanupOrphans: async () => {
+        return await api.users.cleanupOrphanAuthUsers();
       },
       toggleActive: async (id, isActive) => {
         await api.users.toggleActive(id, isActive);

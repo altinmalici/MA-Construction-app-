@@ -4,6 +4,8 @@ import { useApp } from "../../context/AppContext";
 import { P, BTN, RED, GREEN, IC, G } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 import { fehlerText } from "../../utils/errors";
+import { readInviteToken } from "../../utils/invite";
+import Einladung from "./Einladung";
 
 // Meldung für Login-Fehler, die KEIN falscher PIN sind (siehe LoginError).
 const loginFehlerText = (e) => {
@@ -41,6 +43,8 @@ const Login = () => {
     };
   }, []);
   const [mode, setMode] = useState("C"); // A=first time, B=set PIN, C=returning
+  // Einladungs-Link (?einladung=<token>) → eigener Screen "PIN festlegen".
+  const [inviteToken, setInviteToken] = useState(() => readInviteToken());
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
   const [checking, setChecking] = useState(false);
@@ -348,6 +352,11 @@ const Login = () => {
       ) : null}
     </div>
   );
+
+  // Einladungs-Link hat Vorrang — außer auf einem gesperrten Gerät: dort
+  // muss erst der bisherige Nutzer entsperren oder abgemeldet werden.
+  if (inviteToken && !locked)
+    return <Einladung token={inviteToken} onClose={() => setInviteToken(null)} />;
 
   // ── STATE A: First time ──
   if (mode === "A")
