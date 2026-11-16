@@ -27,7 +27,8 @@ export function pruefeStunde(fd) {
   if (!/^\d{1,2}:\d{2}$/.test(fd.beginn || "") || !/^\d{1,2}:\d{2}$/.test(fd.ende || ""))
     return err("Beginn und Ende angeben");
   if (fd.beginn === fd.ende) return err("Beginn und Ende sind gleich");
-  const stunden = bStdNum(fd.beginn, fd.ende, fd.pause);
+  // Mit der Pause prüfen, die auch gespeichert wird (15-Minuten-Raster).
+  const stunden = bStdNum(fd.beginn, fd.ende, snapPause(fd.pause));
   if (!(stunden > 0)) return err("Arbeitszeit ist 0 – Beginn, Ende und Pause prüfen");
   return { fehler: null, stunden, lang: stunden > LANGE_SCHICHT_STD };
 }

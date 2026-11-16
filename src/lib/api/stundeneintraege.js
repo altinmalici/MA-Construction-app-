@@ -26,8 +26,12 @@ export async function create(entry) {
   return data.id;
 }
 
-export async function update(id, entry) {
+// resetFreigabe: nimmt die Freigabe im SELBEN Schreibvorgang zurück (Chef
+// ändert einen bereits freigegebenen Eintrag) — nie "geändert, aber noch
+// als freigegeben markiert".
+export async function update(id, entry, { resetFreigabe = false } = {}) {
   const row = stripUndefined(toRow(entry));
+  if (resetFreigabe) row.freigegeben = false;
   const { error } = await supabase.from('stundeneintraege').update(row).eq('id', id);
   if (error) throw error;
 }

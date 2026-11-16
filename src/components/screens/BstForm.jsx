@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Check, Save } from "lucide-react";
 import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
-import { BTN, IC, parseDecimal } from "../../utils/helpers";
+import { BTN, IC, parseDecimal, istZahlEingabe } from "../../utils/helpers";
 import { ScreenLayout, Spinner, ConfirmModal, Section } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
@@ -60,6 +60,10 @@ const BstForm = () => {
     withSaving(async () => {
       if (!f.kunde.trim()) {
         show("Name nötig", "error");
+        return;
+      }
+      if (!istZahlEingabe(f.budget)) {
+        show("Budget als Zahl eingeben (z.B. 50.000 oder 1.234,50)", "error");
         return;
       }
       const bd = {

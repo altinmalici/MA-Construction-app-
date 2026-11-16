@@ -19,6 +19,10 @@ describe("pruefeStunde (Audit D-15)", () => {
   it("Pause frisst die ganze Schicht", () => {
     expect(pruefeStunde({ ...ok, ende: "08:00", pause: 90 }).fehler).toMatch(/Arbeitszeit ist 0/);
   });
+  it("geprüft wird mit der Pause, die auch gespeichert wird (15-Minuten-Raster)", () => {
+    // 07:00–07:20 mit Pause 8: gespeichert wird Pause 15 → 5 Minuten → 0 h
+    expect(pruefeStunde({ ...ok, ende: "07:20", pause: 8 }).fehler).toMatch(/Arbeitszeit ist 0/);
+  });
   it("vertauschte Zeiten (16:00–07:00 = 15 h) → Rückfrage statt stillem Speichern", () => {
     const r = pruefeStunde({ ...ok, beginn: "16:00", ende: "07:00", pause: 0 });
     expect(r.fehler).toBeNull();
