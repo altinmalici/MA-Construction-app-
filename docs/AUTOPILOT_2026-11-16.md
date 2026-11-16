@@ -9,7 +9,9 @@
 | 0 – Audit | 🟢 fertig | `autopilot-2026-11-16` | [#2](https://github.com/altinmalici/MA-Construction-app-/pull/2) | nein |
 | 1 – Build/Tests/Lint | 🟢 fertig | `autopilot-2026-11-16-p1-stabil` | [#3](https://github.com/altinmalici/MA-Construction-app-/pull/3) | nein |
 | 2 – Kritische Bugs & Sicherheit | 🟢 fertig | `autopilot-2026-11-16-p2-kritisch` | [#4](https://github.com/altinmalici/MA-Construction-app-/pull/4) | **ja** (`migration_2026_11_16_01_security_hardening.sql`) |
-| 3 – Bautagebuch speichern | 🟢 fertig | `autopilot-2026-11-16-p3-bautagebuch` | PR-P3 | ja, nach dem Merge (`migration_2026_11_16_02_bautagebuch_wetter.sql`) |
+| 3 – Bautagebuch speichern | 🟢 fertig | `autopilot-2026-11-16-p3-bautagebuch` | [#5](https://github.com/altinmalici/MA-Construction-app-/pull/5) | ja, nach dem Merge (`migration_2026_11_16_02_bautagebuch_wetter.sql`) |
+| 4 – PIN / Willkommen zurück / Auto-Lock | 🟡 umgesetzt, ohne Review-Lauf | `autopilot-2026-11-16-p4-pin-lock` | PR-P4 | ja, erst NACH Merge (`migration_2026_11_16_03_pin_lookup_sperren.sql`) |
+| 5, 7, 8, 9, 10 | 🔴 nicht begonnen | — | — | — |
 | 6 – Mängel-Branch | 🟢 nichts zu tun | — | — | nein |
 
 Paket 6: `feat/ux-maengel-architektur` ist bereits vollständig in `main` (alle 6 Commits patch-gleich, `git cherry`). Kein Rebase, kein PR.
@@ -38,12 +40,24 @@ Im Supabase SQL-Editor (Projekt `roeqphnopokfdktvvbpp`), in dieser Reihenfolge. 
 - **Wann:** Erst wenn Paket 3 live ist (die alte App-Version schreibt die erfundenen Werte weiter). Dann zeitnah.
 - **Ändert Daten:** `wetter`/`temperatur` aller Einträge mit genau "sonnig"/12 werden geleert — nur beim ersten Ausführen.
 - **Ohne die Migration** funktioniert Paket 3 trotzdem; alte Einträge zeigen dann aber fälschlich "sonnig, 12 °C" an.
+### 3. `supabase/migration_2026_11_16_03_pin_lookup_sperren.sql` — erst wenn Paket 4 live ist
 
-## ÜBERSPRUNGEN
+- **Was:** Sperrt die globale PIN-Suche `lookup_user_by_pin` für alle Aufrufer von außen.
+- **Wann:** Erst nach Merge + Auslieferung von Paket 4 UND nachdem alle Geräte die neue Version geladen haben. Die alte App-Version braucht die Funktion für den Login auf Geräten ohne gemerkten Nutzer.
+- Ändert keine Daten.
 
-*Noch nichts.*
+## EMPFOHLENE MERGE-REIHENFOLGE
+
+#2 (Audit) → #3 (P1) → #4 (P2) → #5 (P3) → PR P4. Jeder PR baut auf dem vorherigen auf.
+
+## ÜBERSPRUNGEN / NICHT ERREICHT
+
+Der Lauf endete am Nutzungslimit nach Paket 4. Nicht begonnen: Paket 5 (Onboarding, Einladungs-Link, `repair_orphan_user`, Diagnose-SQL), 7 (restliche hohe/mittlere Audit-Punkte), 8 (Performance, iPhone-UX, PWA-Update-Hinweis), 9 (Testabdeckung), 10 (Abschluss-Doku). Paket 4 hat keinen Review-Lauf bekommen.
 
 ## Hinweise
+
+- Paket 4: Auf einem Gerät ohne gemerkten Nutzer fragt der Login jetzt Benutzername + PIN ab (vorher nur PIN mit globaler Suche). Die Sperre legt sich als PIN-Screen über den offenen Screen, Formular-Eingaben bleiben erhalten. Zusätzlich sperrt die App nach 15 Minuten ohne Eingabe (`INACTIVITY_LOCK_MS` in `src/config.js`, 0 = aus) — das weicht von der früheren Entscheidung "kein Idle-Timeout" ab und war im Auftrag als optional genannt.
+- Paket 4: Daten werden erst nach dem Login geladen; ohne Netz erscheint der Login statt des Fehlerbildschirms.
 
 - Paket 3: Ursache des Bautagebuch-Fehlers war keine RLS-Policy. Die Baustelle wurde beim Öffnen des Screens einmalig festgelegt; waren die Daten da noch nicht geladen, blieb sie leer, und bei genau einer Baustelle war die Auswahl ausgeblendet. Per Test nachgestellt. Ob das der einzige Auslöser im Alltag war, zeigt erst der Test am Gerät.
 - Paket 3: Alle Aktionen (`useAppData`) behandeln das Nachladen nach einem erfolgreichen Schreibvorgang jetzt als best-effort. Vorher wurde aus "gespeichert, aber Liste nicht aktualisiert" eine Fehlermeldung, die zum doppelten Speichern einlud (Audit A-02, D-03, U-04).

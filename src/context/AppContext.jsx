@@ -3,13 +3,14 @@ import { AlertCircle } from "lucide-react";
 import { useAppData } from "../lib/useAppData.js";
 import { useRealtime } from "../lib/useRealtime.js";
 import { useOfflineSync } from "../lib/useOfflineSync.js";
+import { useAutoLock } from "../hooks/useAutoLock.js";
+import { BACKGROUND_LOCK_MS, INACTIVITY_LOCK_MS } from "../config.js";
 import { G, P, BTN, RED } from "../utils/helpers";
 import { Toast, Spinner, Clock } from "../components/ui";
 import OfflineBanner from "../components/ui/OfflineBanner";
 import PendingSyncBadge from "../components/ui/PendingSyncBadge";
 import { compressImage, blobToDataURL } from "../utils/image";
 
-const BACKGROUND_LOCK_MS = 120 * 1000;
 
 // AppContext bewusst NICHT exportiert — Konsumenten gehen über useApp().
 // Das hält das Public-API klein und macht React-Refresh happy (Datei
@@ -89,6 +90,8 @@ export function AppProvider({ children }) {
 
   const [sessionUser, setSessionUser] = useState(null);
   const [authChecking, setAuthChecking] = useState(true);
+  // true = App ist gesperrt, PIN-Screen liegt über dem aktuellen Screen.
+  const [locked, setLocked] = useState(false);
   const [v, setVRaw] = useState("login");
   const [history, setHistory] = useState([]);
   const prevV = history.length > 0 ? history[history.length - 1] : null;
@@ -155,6 +158,8 @@ export function AppProvider({ children }) {
     const { data: { subscription } } = actions.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         setCu(null);
+        setLocked(false);
+        actions.resetData();
         setSessionUser(null);
         setHistory([]);
         setVRaw("login");
@@ -176,20 +181,6 @@ export function AppProvider({ children }) {
       /* localStorage nicht verfügbar */
     }
   }, [cu]);
-
-  // Daten nach Login mit der jetzt gueltigen Session (neu) laden. `data` wird
-  // sonst nur einmal beim Mount geladen — zu dem Zeitpunkt gibt es aber noch
-  // keine gueltige Session (Boot-Effekt loggt sogar hart aus), also liefert RLS
-  // leere Listen. Ohne diesen Refetch blieb das Dashboard nach dem Login auf 0
-  // stehen, obwohl die Daten in der DB liegen ("gefuehlter Datenverlust").
-  // Loest zugleich die Boot-Race (Mount-loadAll vs. signOut) auf: selbst wenn
-  // der Mount-Load leer/verworfen war, holt dieser Effekt den korrekten Stand.
-  useEffect(() => {
-    if (!cu?.id) return;
-    actions.loadAll();
-    // actions wird pro Render neu erzeugt, loadAll ist aber stabil (useCallback []).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cu?.id]);
 
   // Offline-Warteschlange abarbeiten: nach dem Login, bei "online", bei
   // Rückkehr in den Vordergrund und per Intervall, solange etwas wartet.
@@ -230,38 +221,42 @@ export function AppProvider({ children }) {
     }
   }, [cu, v, authChecking]);
 
-  // Background-Lock: nur wenn die App >= BACKGROUND_LOCK_MS im Hintergrund
-  // war (Homescreen, andere App, Screen gesperrt). Aktivität in der App
-  // selbst löst keinen Lock aus. Supabase-Session bleibt aktiv (kein
-  // signOut) — sessionUser bleibt gesetzt, damit der "Willkommen zurück"-
-  // Screen direkt erscheint und PIN-Re-Entry den User auf das Dashboard
-  // zurückbringt.
-  const backgroundSinceRef = useRef(null);
-  useEffect(() => {
-    if (!cu) return;
-    // Login während Tab schon hidden ist (z.B. PWA-Launch in den Hintergrund):
-    // Hintergrundzeit ab jetzt zählen, sonst lockt der erste "visible"
-    // nach langer Hidden-Phase nicht.
-    if (document.hidden) backgroundSinceRef.current = Date.now();
-    const onVisibilityChange = () => {
-      if (document.hidden) {
-        backgroundSinceRef.current = Date.now();
-      } else {
-        const since = backgroundSinceRef.current;
-        backgroundSinceRef.current = null;
-        if (since && Date.now() - since >= BACKGROUND_LOCK_MS) {
-          setCu(null);
-          setHistory([]);
-          setVRaw("login");
-        }
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      backgroundSinceRef.current = null;
-    };
-  }, [cu]);
+  // Auto-Lock: Hintergrund >= BACKGROUND_LOCK_MS oder Inaktivität. Die Sperre
+  // setzt nur `locked` — der aktuelle Screen bleibt gemountet (Formular-
+  // Eingaben überleben), darüber liegt der PIN-Screen (siehe App.jsx).
+  // Die Supabase-Sitzung bleibt bestehen; entsperrt wird mit dem PIN genau
+  // dieses Nutzers.
+  useAutoLock({
+    enabled: !!cu && !locked,
+    onLock: () => setLocked(true),
+    backgroundMs: BACKGROUND_LOCK_MS,
+    inactivityMs: INACTIVITY_LOCK_MS,
+  });
+
+  // Einziger Weg in die App nach erfolgreicher PIN-Prüfung.
+  //  - Entsperren durch DENSELBEN Nutzer: Screen und Eingaben bleiben, die
+  //    Daten werden still im Hintergrund aufgefrischt.
+  //  - Neuer Login / anderer Nutzer: alter Stand wird verworfen, Start auf
+  //    dem Dashboard, Daten werden frisch geladen.
+  const completeLogin = (u) => {
+    const unlockSameUser = locked && cu?.id === u.id;
+    setLocked(false);
+    setCu(u);
+    if (unlockSameUser) {
+      actions.loadAll({ silent: true });
+      return;
+    }
+    actions.resetData();
+    setHistory([]);
+    setSb(null);
+    setSq("");
+    setEm(false);
+    setEditUser(null);
+    setMitSummary(null);
+    setVRaw("dash");
+    actions.loadAll();
+  };
+
   // Seed: Testbaustelle (NUR Dev-Env, um leere Prod-DB nicht zu überraschen)
   // Smoke-Test 2026-04-30: Mitarbeiter triggerten den Seed-INSERT, RLS lehnte
   // ab (42501) und der Console-Error verwirrte den nachfolgenden Lade-Pfad
@@ -481,6 +476,8 @@ export function AppProvider({ children }) {
     actions,
     cu,
     setCu,
+    locked,
+    completeLogin,
     sessionUser: effectiveSessionUser,
     v,
     nav,

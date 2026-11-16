@@ -34,7 +34,9 @@ export default function OfflineBanner() {
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 60,
+        // über dem Sperr-Screen (5000): wer gesperrt ist, soll sehen, warum
+        // der PIN gerade nicht geprüft werden kann.
+        zIndex: 5100,
         background: "#ff9500",
         color: "white",
         fontSize: 13,

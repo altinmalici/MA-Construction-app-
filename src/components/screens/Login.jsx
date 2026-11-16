@@ -3,18 +3,50 @@ import { Check } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { P, BTN, RED, GREEN, IC, G } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
+import { fehlerText } from "../../utils/errors";
+
+// Meldung für Login-Fehler, die KEIN falscher PIN sind (siehe LoginError).
+const loginFehlerText = (e) => {
+  switch (e?.kind) {
+    case "netz":
+      return "Keine Verbindung – bitte Empfang prüfen";
+    case "limit":
+      return "Zu viele Versuche – bitte kurz warten";
+    case "gesperrt":
+      return "Konto deaktiviert – bitte beim Bauleiter melden";
+    case "konto":
+      return "Konto nicht bereit – Bauleiter soll einen neuen Einladungs-PIN erzeugen";
+    default:
+      return fehlerText(e, "Anmeldung nicht möglich – bitte erneut versuchen");
+  }
+};
 
 // Ende der 30-s-Sperre nach 3 Fehlversuchen (ausserhalb der Komponente,
 // damit kein unreiner Aufruf im Render-Pfad steht).
 const lockUntilIso = () => new Date(Date.now() + 30000).toISOString();
 
 const Login = () => {
-  const { actions, setCu, nav, sessionUser } = useApp();
+  const { actions, completeLogin, sessionUser, locked } = useApp();
+  const [online, setOnline] = useState(
+    () => typeof navigator === "undefined" || navigator.onLine !== false,
+  );
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
   const [mode, setMode] = useState("C"); // A=first time, B=set PIN, C=returning
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
   const [checking, setChecking] = useState(false);
   const [un, setUn] = useState("");
+  // Benutzername für den Login auf einem Gerät ohne gemerkten Nutzer.
+  const [loginUn, setLoginUn] = useState("");
   const [obPin, setObPin] = useState("");
   const [obUser, setObUser] = useState(null);
   const [newPin, setNewPin] = useState("");
@@ -69,14 +101,18 @@ const Login = () => {
   const goPin = async (p) => {
     const code = p || pin;
     if (code.length !== 4 || checking || isLocked) return;
+    // Der PIN wird IMMER gegen genau einen Benutzer geprüft: den gemerkten
+    // ("Willkommen zurück") oder den eingetippten Benutzernamen. Eine
+    // globale Suche "wem gehört dieser PIN?" gibt es nicht mehr.
+    const username = displayedUser?.username || loginUn.trim().toLowerCase();
+    if (!username) {
+      setErr("Bitte zuerst den Benutzernamen eingeben");
+      setPin("");
+      return;
+    }
     setChecking(true);
     try {
-      // Wenn wir wissen, wer einloggen soll, prüfe PIN gezielt gegen
-      // diesen User — verhindert dass eine globale PIN-Suche einen
-      // fremden Account auf dem "Willkommen zurück"-Screen einloggt.
-      const u = displayedUser?.username
-        ? await actions.auth.loginAsUser(displayedUser.username, code)
-        : await actions.auth.login(code);
+      const u = await actions.auth.loginAsUser(username, code);
       if (u) {
         if (u.isOnboarded === false) {
           setObUser(u);
@@ -84,15 +120,19 @@ const Login = () => {
           setErr("");
           setAttempts(0);
         } else {
-          setCu(u);
-          nav("dash");
+          completeLogin(u);
         }
       } else {
         wrongAttempt();
+        // Ohne gemerkten Nutzer kann auch der Benutzername falsch sein.
+        if (!displayedUser && attempts + 1 < 3) {
+          setErr("Benutzername oder PIN falsch");
+        }
         setPin("");
       }
-    } catch {
-      setErr("Verbindungsfehler");
+    } catch (e) {
+      // Kein Fehlversuch: Netz, Rate-Limit, deaktiviertes Konto.
+      setErr(loginFehlerText(e));
       setPin("");
     } finally {
       setChecking(false);
@@ -125,8 +165,8 @@ const Login = () => {
         }
         setObPin("");
       }
-    } catch {
-      setErr("Verbindungsfehler");
+    } catch (e) {
+      setErr(loginFehlerText(e));
     } finally {
       setChecking(false);
     }
@@ -154,11 +194,17 @@ const Login = () => {
       await actions.auth.completeOnboarding(obUser.id, newPin);
       const u = await actions.auth.getCurrentUser();
       if (u) {
-        setCu(u);
-        nav("dash");
+        completeLogin(u);
+      } else {
+        // PIN ist gesetzt, aber das Profil ließ sich nicht laden (Netz weg).
+        setMode("C");
+        setPinStep(1);
+        setNewPin("");
+        setConfirmPin("");
+        setErr("PIN gespeichert – bitte jetzt mit dem neuen PIN anmelden");
       }
-    } catch {
-      setErr("Fehler");
+    } catch (e) {
+      setErr(fehlerText(e, "PIN konnte nicht gespeichert werden – bitte erneut versuchen"));
       setConfirmPin("");
       setNewPin("");
       setPinStep(1);
@@ -167,8 +213,34 @@ const Login = () => {
     }
   };
 
+  // Onboarding abbrechen: die mit dem Einladungs-PIN geöffnete Sitzung
+  // beenden, damit niemand im "PIN erstellen"-Screen festhängt.
+  const cancelSetPin = async () => {
+    setMode("C");
+    setObUser(null);
+    setNewPin("");
+    setConfirmPin("");
+    setPinStep(1);
+    setErr("");
+    try {
+      // Nur lokal: entfernt die Sitzung sofort. Ein globales Abmelden
+      // wartet erst auf den Server und könnte danach eine inzwischen neu
+      // begonnene Sitzung wieder löschen.
+      await actions.auth.signOut({ localOnly: true });
+    } catch {
+      /* best effort */
+    }
+  };
+
   const tap = (n) => {
     if (isLocked || n === "") return;
+    // iOS lässt die Tastatur offen, wenn man vom Benutzernamen direkt auf
+    // den Ziffernblock tippt (Buttons nehmen keinen Fokus) — sie würde den
+    // Block verdecken.
+    if (typeof document !== "undefined" && document.activeElement?.blur) {
+      const el = document.activeElement;
+      if (el.tagName === "INPUT") el.blur();
+    }
     if (mode === "C") {
       if (n === "del") {
         setPin((p) => p.slice(0, -1));
@@ -265,7 +337,7 @@ const Login = () => {
     </div>
   );
   const renderErrLine = () => (
-    <div role="alert" aria-live="assertive" style={{ height: 24, textAlign: "center" }}>
+    <div role="alert" aria-live="assertive" style={{ minHeight: 24, textAlign: "center", padding: "0 12px" }}>
       {isLocked && !permLocked ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>
           Gesperrt ({lockSec}s)
@@ -372,6 +444,16 @@ const Login = () => {
               />
             </div>
             {renderErrLine()}
+            <p
+              style={{
+                fontSize: 12,
+                color: "#8e8e93",
+                textAlign: "center",
+                marginBottom: 10,
+              }}
+            >
+              Nach mehreren Fehlversuchen 15 Minuten warten.
+            </p>
             <button
               onClick={goOnboard}
               disabled={
@@ -470,6 +552,20 @@ const Login = () => {
           <div style={{ width: "100%" }}>
             {renderNumpad()}
           </div>
+          <button
+            onClick={cancelSetPin}
+            disabled={checking}
+            style={{
+              marginTop: 20,
+              fontSize: 15,
+              color: "#8e8e93",
+              background: "none",
+              border: "none",
+              minHeight: 44,
+            }}
+          >
+            Abbrechen
+          </button>
         </div>
       </ScreenLayout>
     );
@@ -541,6 +637,42 @@ const Login = () => {
             </>
           )}
         </div>
+        {!displayedUser && (
+          <div style={{ width: "100%", maxWidth: 300, marginBottom: 20 }}>
+            <label
+              htmlFor="login-username"
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#8e8e93",
+                textTransform: "uppercase",
+                letterSpacing: 0.4,
+                display: "block",
+                marginBottom: 6,
+              }}
+            >
+              Benutzername
+            </label>
+            <input
+              id="login-username"
+              value={loginUn}
+              onChange={(e) => {
+                setLoginUn(e.target.value);
+                setErr("");
+              }}
+              placeholder="z.B. m.mueller"
+              className={IC}
+              autoCapitalize="none"
+              autoCorrect="off"
+              autoComplete="username"
+              spellCheck={false}
+              enterKeyHint="done"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+            />
+          </div>
+        )}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           {renderDots(pin)}
           {renderErrLine()}
@@ -557,36 +689,61 @@ const Login = () => {
             gap: 12,
           }}
         >
-          <button
-            onClick={() => {
-              setMode("A");
-              setErr("");
-              setAttempts(0);
-              setPermLocked(false);
-              setLockedUntil(null);
-            }}
-            style={{
-              fontSize: 15,
-              color: P,
-              background: "none",
-              border: "none",
-            }}
-          >
-            Erster Zugang?
-          </button>
+          {locked && !online && (
+            <p
+              style={{
+                fontSize: 13,
+                color: "#8e8e93",
+                textAlign: "center",
+                maxWidth: 280,
+              }}
+            >
+              Kein Empfang: Entsperren geht erst wieder mit Verbindung. Deine
+              Eingaben bleiben erhalten.
+            </p>
+          )}
+          {/* Nicht auf einem gesperrten Gerät: dort müsste erst "Nicht X?"
+              den bisherigen Nutzer abmelden. */}
+          {!locked && (
+            <button
+              onClick={() => {
+                setMode("A");
+                setErr("");
+                setAttempts(0);
+                setPermLocked(false);
+                setLockedUntil(null);
+              }}
+              style={{
+                fontSize: 15,
+                color: P,
+                background: "none",
+                border: "none",
+                minHeight: 44,
+              }}
+            >
+              Erster Zugang?
+            </button>
+          )}
           {displayedUser && (
             <button
               onClick={async () => {
-                localStorage.removeItem("ma_construction_last_user");
+                try {
+                  localStorage.removeItem("ma_construction_last_user");
+                } catch {
+                  /* localStorage nicht verfügbar */
+                }
                 setLastUser(null);
                 setPin("");
                 setErr("");
-                if (sessionUser) {
-                  try {
-                    await actions.auth.signOut();
-                  } catch {
-                    /* signOut beim User-Switch best-effort */
-                  }
+                setAttempts(0);
+                // IMMER abmelden — auch nach der Sperre, wenn die Sitzung
+                // des bisherigen Nutzers noch im Gerät liegt. Löst
+                // SIGNED_OUT aus → Daten werden verworfen.
+                try {
+                  // lokal reicht und ist sofort wirksam (siehe cancelSetPin)
+                  await actions.auth.signOut({ localOnly: true });
+                } catch {
+                  /* signOut beim User-Switch best-effort */
                 }
               }}
               style={{

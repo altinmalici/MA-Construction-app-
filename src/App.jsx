@@ -47,13 +47,14 @@ const ScreenLoader = () => (
 );
 
 function AppRouter() {
-  const { v, cu } = useApp();
+  const { v, cu, locked } = useApp();
   return (
     <>
-      <div style={{ flex: 1, minHeight: 0 }}>
-        {/* kein key={v}: Tab-Wechsel ohne Remount → lokaler Screen-State
-            (Monats-Nav, Form-State, useSaving-Mount-Ref) bleibt erhalten.
-            view-fade triggert nur beim ersten Mount. */}
+      {/* inert: gesperrter Screen ist weder tipp- noch fokussierbar. */}
+      <div style={{ flex: 1, minHeight: 0 }} inert={locked} aria-hidden={locked || undefined}>
+        {/* Ein View-Wechsel entfernt den alten Screen samt lokalem State.
+            Die Sperre wechselt deshalb NICHT den View, sondern legt den
+            PIN-Screen darüber (unten) — Formular-Eingaben bleiben erhalten. */}
         <div className="view-fade">
           <Suspense fallback={<ScreenLoader />}>
             {v === "login" && <Login />}
@@ -81,7 +82,25 @@ function AppRouter() {
           </Suspense>
         </div>
       </div>
-      {cu && <TabBar />}
+      {cu && !locked && <TabBar />}
+      {locked && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="App gesperrt"
+          style={{
+            // .device-screen ist position:relative → deckt genau den
+            // App-Bereich ab (auch in der Desktop-Simulation).
+            position: "absolute",
+            inset: 0,
+            // über allen Modals (ConfirmModal 1000, Lightbox 300)
+            zIndex: 5000,
+            background: "#f2f2f7",
+          }}
+        >
+          <Login />
+        </div>
+      )}
     </>
   );
 }

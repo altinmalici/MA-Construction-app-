@@ -61,6 +61,75 @@ describe("completeOnboarding — nur RPC, kein Client-Auth-Call", () => {
   });
 });
 
+// ── Paket 4: Login ist immer an einen Benutzernamen gebunden ──────────────
+describe("loginAsUser — Fehler werden unterschieden (Audit A-01)", () => {
+  let loginAsUser, LoginError;
+  beforeEach(async () => {
+    ({ loginAsUser, LoginError } = await import("./auth.js"));
+    mockSignOut.mockReset();
+    mockSignOut.mockResolvedValue({ error: null });
+    mockSignInWithPassword.mockReset();
+    mockRpc.mockReset();
+  });
+  const profile = { id: "u1", name: "Max", role: "mitarbeiter", stundensatz: 40, username: "m.muster", is_onboarded: true };
+
+  it("richtiger PIN → Profil; Anmeldung läuft gegen GENAU diesen Benutzer", async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: null });
+    mockRpc.mockResolvedValue({ data: [profile], error: null });
+    const u = await loginAsUser("m.muster", "1234");
+    expect(mockSignInWithPassword).toHaveBeenCalledWith({
+      email: "m.muster@ma-construction.local",
+      password: "1234",
+    });
+    expect(u).toMatchObject({ id: "u1", username: "m.muster", isOnboarded: true });
+    // keine globale PIN-Suche
+    expect(mockRpc).not.toHaveBeenCalledWith("lookup_user_by_pin", expect.anything());
+  });
+
+  it("falscher PIN → null (zählt als Fehlversuch)", async () => {
+    mockSignInWithPassword.mockResolvedValue({
+      error: { status: 400, code: "invalid_credentials", message: "Invalid login credentials" },
+    });
+    expect(await loginAsUser("m.muster", "0000")).toBeNull();
+  });
+
+  it("kein Netz → LoginError 'netz', NICHT null", async () => {
+    mockSignInWithPassword.mockResolvedValue({
+      error: { name: "AuthRetryableFetchError", status: 0, message: "Failed to fetch" },
+    });
+    await expect(loginAsUser("m.muster", "1234")).rejects.toMatchObject({ kind: "netz" });
+    await expect(loginAsUser("m.muster", "1234")).rejects.toBeInstanceOf(LoginError);
+  });
+
+  it("Rate-Limit → 'limit'; gesperrtes Konto → 'gesperrt'", async () => {
+    mockSignInWithPassword.mockResolvedValueOnce({ error: { status: 429, message: "Request rate limit reached" } });
+    await expect(loginAsUser("m.muster", "1234")).rejects.toMatchObject({ kind: "limit" });
+    mockSignInWithPassword.mockResolvedValueOnce({ error: { status: 400, code: "user_banned", message: "User is banned" } });
+    await expect(loginAsUser("m.muster", "1234")).rejects.toMatchObject({ kind: "gesperrt" });
+  });
+
+  it("Anmeldung ok, aber kein aktives Profil → 'gesperrt' und Sitzung wird beendet", async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: null });
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    await expect(loginAsUser("m.muster", "1234")).rejects.toMatchObject({ kind: "gesperrt" });
+    expect(mockSignOut).toHaveBeenCalled();
+  });
+
+  it("Benutzername wird getrimmt und kleingeschrieben", async () => {
+    mockSignInWithPassword.mockResolvedValue({ error: null });
+    mockRpc.mockResolvedValue({ data: [profile], error: null });
+    await loginAsUser("  M.Muster ", "1234");
+    expect(mockSignInWithPassword.mock.calls[0][0].email).toBe("m.muster@ma-construction.local");
+  });
+});
+
+describe("globaler PIN-Login ist entfernt (Audit A-06/S-04)", () => {
+  it("auth.js exportiert kein login(pin) mehr", async () => {
+    const mod = await import("./auth.js");
+    expect(mod.login).toBeUndefined();
+  });
+});
+
 // Audit U-17 / Review: Abmelden ohne Netz. supabase-js ≥ 2.119 lässt die
 // Sitzung im Gerät, wenn der Server-Aufruf scheitert.
 describe("signOut — funktioniert auch ohne Netz", () => {
