@@ -175,8 +175,8 @@ export function useAppData() {
         await api.auth.completeOnboarding(userId, newPin);
         await reload('users');
       },
-      signOut: async () => {
-        await api.auth.signOut();
+      signOut: async (opts) => {
+        await api.auth.signOut(opts);
       },
       getCurrentUser: async () => {
         return await api.auth.getCurrentUser();
