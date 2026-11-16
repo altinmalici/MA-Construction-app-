@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 const create = vi.fn();
+const hasSession = vi.fn();
 vi.mock("./api/index.js", () => {
   const empty = async () => [];
   const t = { getAll: empty };
@@ -9,7 +10,7 @@ vi.mock("./api/index.js", () => {
     users: t, subunternehmer: t, baustellen: t, kalender: t, maengel: t,
     bautagebuch: t, dokumente: t, benachrichtigungen: t, kosten: t,
     stundeneintraege: { getAll: empty, create: (...a) => create(...a) },
-    auth: {},
+    auth: { hasSession: (...a) => hasSession(...a) },
   };
 });
 
@@ -29,6 +30,8 @@ const e = (id, mitarbeiterId = "u1") => ({ id, mitarbeiterId, baustelleId: "b1",
 beforeEach(() => {
   clearQueue();
   create.mockReset();
+  hasSession.mockReset();
+  hasSession.mockResolvedValue(true);
   vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
 });
 
@@ -65,6 +68,33 @@ describe("syncOffline", () => {
     create.mockClear();
     await sync({ userId: "u1" });
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it("ohne Sitzung wird NICHT gesendet und nichts als abgelehnt markiert", async () => {
+    enqueueStunde(e("a"));
+    hasSession.mockResolvedValue(false);
+    expect(await sync({ userId: "u1" })).toMatchObject({ synced: 0, failed: 0, remaining: 1 });
+    expect(create).not.toHaveBeenCalled();
+    expect(getFailed()).toHaveLength(0);
+  });
+
+  it("Sitzung geht mitten im Lauf verloren → 42501 zählt nicht als Ablehnung", async () => {
+    enqueueStunde(e("a"));
+    enqueueStunde(e("b"));
+    hasSession.mockResolvedValueOnce(true).mockResolvedValue(false);
+    create.mockRejectedValue({ code: "42501", message: "new row violates row-level security policy" });
+    expect(await sync({ userId: "u1" })).toMatchObject({ synced: 0, failed: 0, remaining: 2 });
+    expect(create).toHaveBeenCalledTimes(1); // nach dem ersten Fehler abgebrochen
+    expect(getFailed()).toHaveLength(0);
+  });
+
+  it("Einträge ohne Mitarbeiter (Sub/Sonstige) sendet nur der Chef", async () => {
+    enqueueStunde({ id: "s", mitarbeiterId: null, baustelleId: "b1" });
+    create.mockResolvedValue("s");
+    await sync({ userId: "u1", isChef: false });
+    expect(create).not.toHaveBeenCalled();
+    await sync({ userId: "c1", isChef: true });
+    expect(create).toHaveBeenCalledTimes(1);
   });
 
   it("Mitarbeiter sendet nur EIGENE Einträge; fremde bleiben wartend", async () => {

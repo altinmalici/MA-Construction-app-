@@ -135,7 +135,9 @@ export function AppProvider({ children }) {
         const user = await actions.auth.getCurrentUser();
         if (cancelled) return;
         if (user) {
-          await actions.auth.signOut();
+          // Nur lokal: ein globales signOut würde bei jedem App-Start auch
+          // die Sitzungen desselben Nutzers auf anderen Geräten beenden.
+          await actions.auth.signOut({ localOnly: true });
         }
       } catch {
         /* getCurrentUser/signOut-Fehler → wir zeigen eh Login */
