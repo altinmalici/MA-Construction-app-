@@ -186,11 +186,23 @@ export function AppProvider({ children }) {
   // "online" — nach einem Neustart blieben Stunden hängen (Audit D-01).
   useOfflineSync({
     userId: cu?.id,
+    isChef: cu?.role === "chef",
     sync: actions.stundeneintraege.syncOffline,
-    onSynced: (res) =>
-      show(
-        `${res.synced} offline erfasste${res.synced === 1 ? "r" : ""} Eintrag${res.synced === 1 ? "" : "e"} synchronisiert`,
-      ),
+    onSynced: (res) => {
+      if (res.synced > 0) {
+        show(
+          `${res.synced} offline erfasste${res.synced === 1 ? "r" : ""} Eintrag${res.synced === 1 ? "" : "e"} synchronisiert`,
+        );
+      }
+      if (res.failed > 0) {
+        show(
+          res.failed === 1
+            ? "1 offline erfasster Eintrag wurde abgelehnt – oben antippen"
+            : `${res.failed} offline erfasste Einträge wurden abgelehnt – oben antippen`,
+          "error",
+        );
+      }
+    },
   });
 
   const effectiveSessionUser = cu
@@ -560,7 +572,11 @@ export function AppProvider({ children }) {
 
             <div className="device-screen">
               <OfflineBanner />
-              <PendingSyncBadge />
+              <PendingSyncBadge
+                userId={cu?.id}
+                isChef={cu?.role === "chef"}
+                baustellen={data.baustellen}
+              />
               <input
                 type="file"
                 ref={fileRef}

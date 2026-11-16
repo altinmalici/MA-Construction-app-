@@ -125,6 +125,77 @@ describe("Gesperrte App (Sitzung aktiv) – entsperrt nur der eingeloggte Nutzer
   });
 });
 
+describe("Gesperrtes Gerät", () => {
+  const lockedCtx = (over = {}) =>
+    ctx({ locked: true, sessionUser: { name: "Max Muster", username: "m.muster" }, ...over });
+
+  it('"Erster Zugang?" ist nicht erreichbar (erst "Nicht X?")', () => {
+    useApp.mockReturnValue(lockedCtx());
+    render(<Login />);
+    expect(screen.queryByRole("button", { name: "Erster Zugang?" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Nicht Max?" })).toBeInTheDocument();
+  });
+
+  it("offline: Hinweis, dass Entsperren Empfang braucht und Eingaben bleiben", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    useApp.mockReturnValue(lockedCtx());
+    render(<Login />);
+    expect(screen.getByText(/Entsperren geht erst wieder mit Verbindung/)).toBeInTheDocument();
+    expect(screen.getByText(/Eingaben bleiben erhalten/)).toBeInTheDocument();
+    vi.restoreAllMocks();
+  });
+
+  it("online: kein Offline-Hinweis", () => {
+    useApp.mockReturnValue(lockedCtx());
+    render(<Login />);
+    expect(screen.queryByText(/Entsperren geht erst wieder/)).toBeNull();
+  });
+});
+
+describe("Erster Zugang (Einladung)", () => {
+  const openOnboarding = () => fireEvent.click(screen.getByRole("button", { name: "Erster Zugang?" }));
+
+  it("zeigt immer den Hinweis zur Wartezeit nach Fehlversuchen", () => {
+    useApp.mockReturnValue(ctx());
+    render(<Login />);
+    openOnboarding();
+    expect(screen.getByText("Nach mehreren Fehlversuchen 15 Minuten warten.")).toBeInTheDocument();
+  });
+
+  it("Fehlermeldung bleibt neutral (verrät keine Drossel)", async () => {
+    auth.loginWithUsername.mockResolvedValue(null);
+    useApp.mockReturnValue(ctx());
+    render(<Login />);
+    openOnboarding();
+    fireEvent.change(screen.getByPlaceholderText("z.B. m.mueller"), { target: { value: "m.muster" } });
+    fireEvent.change(screen.getByPlaceholderText("4-stelliger PIN"), { target: { value: "0000" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Weiter" }));
+    });
+    expect(screen.getByRole("alert").textContent).toMatch(/PIN falsch oder abgelaufen/);
+    expect(screen.getByRole("alert").textContent).not.toMatch(/15 Minuten|Versuche/);
+  });
+
+  it('"PIN erstellen" lässt sich abbrechen und meldet dabei ab', async () => {
+    auth.loginWithUsername.mockResolvedValue({ id: "u9", name: "Neu Hier", username: "n.hier", isOnboarded: false });
+    useApp.mockReturnValue(ctx());
+    render(<Login />);
+    openOnboarding();
+    fireEvent.change(screen.getByPlaceholderText("z.B. m.mueller"), { target: { value: "n.hier" } });
+    fireEvent.change(screen.getByPlaceholderText("4-stelliger PIN"), { target: { value: "4711" } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Weiter" }));
+    });
+    expect(screen.getByText("PIN erstellen")).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Abbrechen" }));
+    });
+    expect(auth.signOut).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("PIN erstellen")).toBeNull();
+    expect(completeLogin).not.toHaveBeenCalled();
+  });
+});
+
 describe("Neues Gerät – Benutzername + PIN", () => {
   it("ohne Benutzernamen wird nichts geprüft", async () => {
     useApp.mockReturnValue(ctx());
@@ -132,6 +203,17 @@ describe("Neues Gerät – Benutzername + PIN", () => {
     await typePin("1234");
     expect(auth.loginAsUser).not.toHaveBeenCalled();
     expect(screen.getByRole("alert").textContent).toMatch(/Benutzernamen eingeben/);
+  });
+
+  it("Tipp auf den Ziffernblock schließt die Tastatur (Fokus weg vom Benutzernamen)", async () => {
+    auth.loginAsUser.mockResolvedValue(MAX);
+    useApp.mockReturnValue(ctx());
+    render(<Login />);
+    const input = screen.getByLabelText("Benutzername");
+    input.focus();
+    expect(document.activeElement).toBe(input);
+    fireEvent.click(screen.getByRole("button", { name: "1" }));
+    expect(document.activeElement).not.toBe(input);
   });
 
   it("meldet mit eingegebenem Benutzernamen an (getrimmt, klein)", async () => {

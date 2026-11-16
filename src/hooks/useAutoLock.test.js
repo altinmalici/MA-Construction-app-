@@ -89,6 +89,41 @@ describe("useAutoLock", () => {
     expect(onLock).not.toHaveBeenCalled();
   });
 
+  it("offline: KEINE Inaktivitäts-Sperre (Entsperren bräuchte Netz)", () => {
+    const online = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    mount();
+    act(() => vi.advanceTimersByTime(IDLE * 2));
+    expect(onLock).not.toHaveBeenCalled();
+    // Empfang zurück: die 15 Minuten beginnen neu
+    online.mockReturnValue(true);
+    act(() => vi.advanceTimersByTime(IDLE - HEARTBEAT_MS * 2));
+    expect(onLock).not.toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(HEARTBEAT_MS * 4));
+    expect(onLock).toHaveBeenCalledTimes(1);
+  });
+
+  it("offline: die Hintergrund-Sperre gilt weiterhin", () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    mount();
+    setHidden(true);
+    freeze(BG);
+    setHidden(false);
+    expect(onLock).toHaveBeenCalledTimes(1);
+  });
+
+  it("Mausrad, Scrollen und Texteingabe zählen als Aktivität", () => {
+    mount();
+    for (const ev of ["wheel", "scroll", "input"]) {
+      for (let t = 0; t < IDLE * 1.2; t += HEARTBEAT_MS) {
+        act(() => {
+          window.dispatchEvent(new Event(ev));
+          vi.advanceTimersByTime(HEARTBEAT_MS);
+        });
+      }
+    }
+    expect(onLock).not.toHaveBeenCalled();
+  });
+
   it("enabled=false (ausgeloggt/bereits gesperrt): nichts passiert", () => {
     mount({ enabled: false });
     setHidden(true);

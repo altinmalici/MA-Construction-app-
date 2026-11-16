@@ -26,7 +26,20 @@ const loginFehlerText = (e) => {
 const lockUntilIso = () => new Date(Date.now() + 30000).toISOString();
 
 const Login = () => {
-  const { actions, completeLogin, sessionUser } = useApp();
+  const { actions, completeLogin, sessionUser, locked } = useApp();
+  const [online, setOnline] = useState(
+    () => typeof navigator === "undefined" || navigator.onLine !== false,
+  );
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
   const [mode, setMode] = useState("C"); // A=first time, B=set PIN, C=returning
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
@@ -200,8 +213,31 @@ const Login = () => {
     }
   };
 
+  // Onboarding abbrechen: die mit dem Einladungs-PIN geöffnete Sitzung
+  // beenden, damit niemand im "PIN erstellen"-Screen festhängt.
+  const cancelSetPin = async () => {
+    setMode("C");
+    setObUser(null);
+    setNewPin("");
+    setConfirmPin("");
+    setPinStep(1);
+    setErr("");
+    try {
+      await actions.auth.signOut();
+    } catch {
+      /* best effort */
+    }
+  };
+
   const tap = (n) => {
     if (isLocked || n === "") return;
+    // iOS lässt die Tastatur offen, wenn man vom Benutzernamen direkt auf
+    // den Ziffernblock tippt (Buttons nehmen keinen Fokus) — sie würde den
+    // Block verdecken.
+    if (typeof document !== "undefined" && document.activeElement?.blur) {
+      const el = document.activeElement;
+      if (el.tagName === "INPUT") el.blur();
+    }
     if (mode === "C") {
       if (n === "del") {
         setPin((p) => p.slice(0, -1));
@@ -405,6 +441,16 @@ const Login = () => {
               />
             </div>
             {renderErrLine()}
+            <p
+              style={{
+                fontSize: 12,
+                color: "#8e8e93",
+                textAlign: "center",
+                marginBottom: 10,
+              }}
+            >
+              Nach mehreren Fehlversuchen 15 Minuten warten.
+            </p>
             <button
               onClick={goOnboard}
               disabled={
@@ -503,6 +549,20 @@ const Login = () => {
           <div style={{ width: "100%" }}>
             {renderNumpad()}
           </div>
+          <button
+            onClick={cancelSetPin}
+            disabled={checking}
+            style={{
+              marginTop: 20,
+              fontSize: 15,
+              color: "#8e8e93",
+              background: "none",
+              border: "none",
+              minHeight: 44,
+            }}
+          >
+            Abbrechen
+          </button>
         </div>
       </ScreenLayout>
     );
@@ -603,6 +663,10 @@ const Login = () => {
               autoCorrect="off"
               autoComplete="username"
               spellCheck={false}
+              enterKeyHint="done"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
             />
           </div>
         )}
@@ -622,23 +686,41 @@ const Login = () => {
             gap: 12,
           }}
         >
-          <button
-            onClick={() => {
-              setMode("A");
-              setErr("");
-              setAttempts(0);
-              setPermLocked(false);
-              setLockedUntil(null);
-            }}
-            style={{
-              fontSize: 15,
-              color: P,
-              background: "none",
-              border: "none",
-            }}
-          >
-            Erster Zugang?
-          </button>
+          {locked && !online && (
+            <p
+              style={{
+                fontSize: 13,
+                color: "#8e8e93",
+                textAlign: "center",
+                maxWidth: 280,
+              }}
+            >
+              Kein Empfang: Entsperren geht erst wieder mit Verbindung. Deine
+              Eingaben bleiben erhalten.
+            </p>
+          )}
+          {/* Nicht auf einem gesperrten Gerät: dort müsste erst "Nicht X?"
+              den bisherigen Nutzer abmelden. */}
+          {!locked && (
+            <button
+              onClick={() => {
+                setMode("A");
+                setErr("");
+                setAttempts(0);
+                setPermLocked(false);
+                setLockedUntil(null);
+              }}
+              style={{
+                fontSize: 15,
+                color: P,
+                background: "none",
+                border: "none",
+                minHeight: 44,
+              }}
+            >
+              Erster Zugang?
+            </button>
+          )}
           {displayedUser && (
             <button
               onClick={async () => {

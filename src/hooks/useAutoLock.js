@@ -55,12 +55,26 @@ export function useAutoLock({ enabled, onLock, backgroundMs, inactivityMs = 0 })
       const now = Date.now();
       const gap = now - lastBeat;
       lastBeat = now;
-      if (gap >= backgroundMs) return lock();
+      if (gap >= backgroundMs) {
+        lock();
+        return undefined;
+      }
+      // Inaktivität zählt nicht, solange das Gerät offline ist: Entsperren
+      // braucht Netz, und wer im Keller ohne Empfang Stunden erfasst, soll
+      // nicht vor einem PIN-Screen stehen, den er nicht lösen kann. Die
+      // Uhr läuft erst ab der Rückkehr des Empfangs wieder.
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        lastInput = now;
+        return undefined;
+      }
       if (inactivityMs > 0 && !document.hidden && now - lastInput >= inactivityMs) lock();
+      return undefined;
     };
 
     document.addEventListener("visibilitychange", onVisibility);
-    const inputEvents = ["pointerdown", "keydown", "touchstart"];
+    // wheel/scroll/input: Lesen mit Mausrad, Scrollen und Diktat sind auch
+    // Aktivität (scroll blubbert nicht → capture).
+    const inputEvents = ["pointerdown", "keydown", "touchstart", "wheel", "scroll", "input"];
     inputEvents.forEach((ev) =>
       window.addEventListener(ev, onInput, { capture: true, passive: true }),
     );

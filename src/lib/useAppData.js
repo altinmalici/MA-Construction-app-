@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from './api/index.js';
-import { getQueue, dequeue } from './offlineQueue.js';
+import { getPending, dequeue, markFailed, dauerfehlerText, gehoertZu } from './offlineQueue.js';
 
 // 6-02b: Postgres-Realtime-Payloads kommen mit snake_case-Keys; der App-State
 // nutzt camelCase. Generisch top-level Keys mappen — Postgres-Rows sind flach,
@@ -294,10 +294,11 @@ export function useAppData() {
       // Eintraege (Duplicate-Key 23505) werden als erledigt entfernt; echte
       // Netzfehler lassen den Eintrag drin (spaeterer Retry). Gibt zurueck,
       // wie viele synchronisiert wurden und wie viele noch warten.
-      syncOffline: async () => {
-        const q = getQueue();
-        if (q.length === 0) return { synced: 0, remaining: 0 };
+      syncOffline: async ({ userId = null, isChef = false } = {}) => {
+        const q = getPending().filter((item) => gehoertZu(item, userId, isChef));
+        if (q.length === 0) return { synced: 0, failed: 0, remaining: getPending().length };
         let synced = 0;
+        let failed = 0;
         for (const item of q) {
           // Wieder offline → abbrechen, Rest bleibt fuer spaeter.
           if (typeof navigator !== 'undefined' && navigator.onLine === false) break;
@@ -309,14 +310,22 @@ export function useAppData() {
             if (e?.code === '23505' || /duplicate key/i.test(e?.message || '')) {
               dequeue(item.id); // schon in der DB → erledigt
               synced++;
+              continue;
             }
-            // Andere Fehler: Eintrag bewusst IN der Queue lassen (kein
-            // Datenverlust) und mit dem naechsten weitermachen — ein einzelner
-            // fehlerhafter Eintrag darf nicht alle folgenden blockieren.
+            // Endgueltige Ablehnung durch die DB: nicht endlos wiederholen,
+            // sondern markieren und dem Nutzer zeigen (bleibt in der Queue).
+            const grund = dauerfehlerText(e);
+            if (grund) {
+              markFailed(item.id, grund);
+              failed++;
+            }
+            // Alles andere (Netz, Timeout): Eintrag bleibt wartend und wird
+            // beim naechsten Ausloeser erneut versucht — ein einzelner
+            // Eintrag darf die folgenden nicht blockieren.
           }
         }
         if (synced > 0) await refresh('stundeneintraege');
-        return { synced, remaining: getQueue().length };
+        return { synced, failed, remaining: getPending().length };
       },
     },
 
