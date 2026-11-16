@@ -106,7 +106,18 @@ export async function completeOnboarding(userId, newPin) {
 /**
  * Logout
  */
-export async function signOut() {
+export async function signOut({ localOnly = false } = {}) {
+  // localOnly: nur DIESES Gerät abmelden (App-Start, Benutzerwechsel) — die
+  // Sitzungen desselben Nutzers auf anderen Geräten bleiben bestehen.
+  // Ohne Netz ebenfalls direkt lokal: der Server-Aufruf würde erst nach
+  // langen Wiederholversuchen scheitern.
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  if (localOnly || offline) {
+    await supabase.auth.signOut({ scope: 'local' });
+    const { data } = await supabase.auth.getSession();
+    if (data?.session) throw new Error('Abmelden fehlgeschlagen');
+    return;
+  }
   const { error } = await supabase.auth.signOut();
   if (!error) return;
   // Ohne Netz scheitert das serverseitige Abmelden, und supabase-js (ab
