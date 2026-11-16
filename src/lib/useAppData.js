@@ -504,7 +504,7 @@ export function useAppData() {
     reload,
     loadAll,
     resetData,
-  }), [reload, refresh, loadAll, resetData, mergeIncomingRow]);
+  }), [reload, refresh, loadAll, resetData]);
 
   return { data, loading, error, actions, mergeIncomingRow };
 }
