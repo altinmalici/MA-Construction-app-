@@ -11,7 +11,8 @@
 | 2 – Kritische Bugs & Sicherheit | 🟢 fertig | `autopilot-2026-11-16-p2-kritisch` | [#4](https://github.com/altinmalici/MA-Construction-app-/pull/4) | **ja** (`migration_2026_11_16_01_security_hardening.sql`) |
 | 3 – Bautagebuch speichern | 🟢 fertig | `autopilot-2026-11-16-p3-bautagebuch` | [#5](https://github.com/altinmalici/MA-Construction-app-/pull/5) | ja, nach dem Merge (`migration_2026_11_16_02_bautagebuch_wetter.sql`) |
 | 4 – PIN / Willkommen zurück / Auto-Lock | 🟢 fertig, mit Review | `autopilot-2026-11-16-p4-pin-lock` | [#6](https://github.com/altinmalici/MA-Construction-app-/pull/6) | ja, erst NACH Merge (`migration_2026_11_16_03_pin_lookup_sperren.sql`) |
-| 5 – Onboarding robust + Einladungs-Link | 🟢 fertig | `autopilot-2026-11-16-p5-onboarding` | PR-P5 | ja (`migration_2026_11_16_04_onboarding.sql`), Reihenfolge egal |
+| 5 – Onboarding robust + Einladungs-Link | 🟢 fertig | `autopilot-2026-11-16-p5-onboarding` | [#7](https://github.com/altinmalici/MA-Construction-app-/pull/7) | ja (`migration_2026_11_16_04_onboarding.sql`), Reihenfolge egal |
+| 7 – Hohe/mittlere Audit-Punkte | 🟢 fertig (Teilmenge, siehe Hinweise) | `autopilot-2026-11-16-p7-audit` | PR-P7 | nein |
 | 6 – Mängel-Branch | 🟢 nichts zu tun | — | — | nein |
 
 Paket 6: `feat/ux-maengel-architektur` ist bereits vollständig in `main` (alle 6 Commits patch-gleich, `git cherry`). Kein Rebase, kein PR.
@@ -67,6 +68,11 @@ Im Supabase SQL-Editor (Projekt `roeqphnopokfdktvvbpp`), in dieser Reihenfolge. 
 *Wird am Ende des Laufs ausgefüllt.*
 
 ## Hinweise
+
+- Paket 7, erledigt: D-02, D-03, D-04, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15, D-16, D-18, D-19, D-23, D-24, U-05, U-06, U-07, U-09, U-12, U-17 aus `docs/AUDIT_2026-11.md`.
+- Paket 7, sichtbare Änderung: Alle Stunden werden jetzt überall auf Viertelstunden gerundet (vorher nur im Lohnexport) und mit bis zu zwei Nachkommastellen angezeigt ("7,75 h"). Summen in Übersicht, Kosten und Regiebericht können sich dadurch gegenüber früher um Minuten ändern und stimmen jetzt mit dem Lohnexport überein.
+- Paket 7, NICHT erledigt (offen): S-09/U-13 (Stundensatz, Budget und Rechnungsdaten sind für Mitarbeiter technisch lesbar), S-10 (Benachrichtigungen: ein gemeinsames "gelesen"-Flag für alle), D-05 (kein Offline-Entsperren, so entschieden), D-21 (Bericht-Nr. nummeriert sich um; "An-/Abfahrt 1×" fest), D-22 (Wisch-Geste im Vorschau-Modal), D-26 (Fahrtzeit fließt in keine Berechnung ein), U-10 (verwaiste Fotos im Speicher), S-12, S-14. Die ersten beiden brauchen Schema-Änderungen und eine Entscheidung.
+- Paket 7: D-14 (CSV-Download auf dem iPhone) ist nur nach bekanntem Muster entschärft, nicht am Gerät bestätigt.
 
 - Paket 5, Ursachen für "Mitarbeiter-Anlage scheitert oft" (aus Code und SQL abgeleitet, nicht an der Live-DB bestätigt):
   1. Schlug nach erfolgreicher Anlage oder PIN-Reset nur das Nachladen fehl, zeigte die App "Fehler" und der neue PIN wurde nie angezeigt (behoben in Paket 3).
