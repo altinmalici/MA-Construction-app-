@@ -46,16 +46,25 @@ export default function PendingSyncBadge({ userId, isChef = false, baustellen = 
     };
   }, []);
 
-  const failed = state.failed;
-  const mine = state.pending.filter((i) => gehoertZu(i, userId, isChef));
-  const fremd = state.pending.length - mine.length;
+  // Ohne angemeldeten Nutzer (Login-Screen) wird nichts gezeigt: Inhalte
+  // und "Verwerfen" gehören nur dem Besitzer des Eintrags bzw. dem Chef.
+  if (!userId) return null;
 
+  const failed = state.failed.filter((i) => gehoertZu(i, userId, isChef));
+  const mine = state.pending.filter((i) => gehoertZu(i, userId, isChef));
+  const fremd =
+    state.pending.length - mine.length + (state.failed.length - failed.length);
+  // Dialog nur, solange es etwas zu zeigen gibt (sonst ginge er beim
+  // nächsten abgelehnten Eintrag von selbst wieder auf).
+  const dialogOpen = open && failed.length > 0;
+
+  // Im normalen Fluss (kein absolute): schiebt den Screen nach unten, statt
+  // Header und Zurück-Knopf zu überdecken. Offline liegt der OfflineBanner
+  // (absolute, ~27 px) ganz oben → Platz lassen.
   const bar = {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 55,
+    position: "relative",
+    flexShrink: 0,
+    marginTop: online ? 0 : 27,
     fontSize: 12.5,
     fontWeight: 600,
     padding: "5px 12px",
@@ -81,7 +90,7 @@ export default function PendingSyncBadge({ userId, isChef = false, baustellen = 
             ? "1 Eintrag nicht synchronisiert – antippen"
             : `${failed.length} Einträge nicht synchronisiert – antippen`}
         </button>
-        {open && (
+        {dialogOpen && (
           <div
             role="dialog"
             aria-modal="true"
@@ -133,6 +142,8 @@ export default function PendingSyncBadge({ userId, isChef = false, baustellen = 
                         onClick={() => {
                           dequeue(item.id);
                           setConfirmId(null);
+                          // letzter Eintrag weg → Dialog wirklich schließen
+                          if (failed.length <= 1) setOpen(false);
                         }}
                         style={{ flex: 1, minHeight: 44, borderRadius: 10, border: "none", background: "#FF3B30", color: "white", fontWeight: 600, fontSize: 14 }}
                       >

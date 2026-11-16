@@ -94,13 +94,15 @@ describe("offlineQueue – fehlgeschlagene Einträge", () => {
     expect(q.queueSize()).toBe(0);
   });
 
-  it("gehoertZu: Mitarbeiter nur eigene, Chef alle, Einträge ohne Besitzer jeder", () => {
+  it("gehoertZu: Mitarbeiter nur eigene, Chef alle, Einträge ohne Besitzer nur der Chef", () => {
     const own = { entry: { mitarbeiterId: "u1" } };
     const other = { entry: { mitarbeiterId: "u2" } };
     const sub = { entry: { mitarbeiterId: null } };
     expect(q.gehoertZu(own, "u1", false)).toBe(true);
     expect(q.gehoertZu(other, "u1", false)).toBe(false);
     expect(q.gehoertZu(other, "u1", true)).toBe(true);
-    expect(q.gehoertZu(sub, "u1", false)).toBe(true);
+    expect(q.gehoertZu(sub, "u1", false)).toBe(false);
+    expect(q.gehoertZu(sub, "c1", true)).toBe(true);
+    expect(q.gehoertZu(own, null, false)).toBe(false);
   });
 });

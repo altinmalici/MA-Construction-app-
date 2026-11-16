@@ -21,7 +21,7 @@ describe("useOfflineSync", () => {
   const flush = () => act(async () => { await Promise.resolve(); });
 
   it("ohne eingeloggten Nutzer wird nie synchronisiert", async () => {
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     renderHook(() => useOfflineSync({ userId: null, sync }));
     await flush();
     act(() => window.dispatchEvent(new Event("online")));
@@ -30,7 +30,7 @@ describe("useOfflineSync", () => {
   });
 
   it("synchronisiert direkt nach dem Login", async () => {
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     const { rerender } = renderHook(({ userId }) => useOfflineSync({ userId, sync }), {
       initialProps: { userId: null },
     });
@@ -49,7 +49,7 @@ describe("useOfflineSync", () => {
   });
 
   it("versucht es erneut: bei 'online', bei Rückkehr in den Vordergrund und per Intervall", async () => {
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     renderHook(() => useOfflineSync({ userId: "u1", sync }));
     await flush();
     expect(sync).toHaveBeenCalledTimes(1);
@@ -68,7 +68,7 @@ describe("useOfflineSync", () => {
   });
 
   it("kein paralleler zweiter Lauf, solange einer läuft", async () => {
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     let resolve;
     sync.mockImplementation(() => new Promise((r) => { resolve = r; }));
     renderHook(() => useOfflineSync({ userId: "u1", sync }));
@@ -79,7 +79,7 @@ describe("useOfflineSync", () => {
     expect(sync).toHaveBeenCalledTimes(1);
     await act(async () => { resolve({ synced: 1, remaining: 0 }); });
     clearQueue();
-    enqueueStunde({ id: "b" });
+    enqueueStunde({ id: "b", mitarbeiterId: "u1" });
     act(() => window.dispatchEvent(new Event("online")));
     await flush();
     expect(sync).toHaveBeenCalledTimes(2);
@@ -88,7 +88,7 @@ describe("useOfflineSync", () => {
   });
 
   it("im Hintergrund (document.hidden) löst visibilitychange keinen Lauf aus", async () => {
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     renderHook(() => useOfflineSync({ userId: "u1", sync }));
     await flush();
     vi.spyOn(document, "hidden", "get").mockReturnValue(true);
@@ -98,7 +98,7 @@ describe("useOfflineSync", () => {
   });
 
   it("nach dem Logout: keine weiteren Läufe", async () => {
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     const { rerender } = renderHook(({ userId }) => useOfflineSync({ userId, sync }), {
       initialProps: { userId: "u1" },
     });
@@ -110,7 +110,7 @@ describe("useOfflineSync", () => {
   });
 
   it("meldet synchronisierte Einträge über onSynced", async () => {
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     sync.mockResolvedValue({ synced: 2, remaining: 0 });
     const onSynced = vi.fn();
     renderHook(() => useOfflineSync({ userId: "u1", sync, onSynced }));
@@ -121,7 +121,7 @@ describe("useOfflineSync", () => {
   });
 
   it("ein Fehler im Sync blockiert spätere Versuche nicht", async () => {
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     sync.mockRejectedValueOnce(new Error("offline"));
     renderHook(() => useOfflineSync({ userId: "u1", sync }));
     await flush();
@@ -133,7 +133,7 @@ describe("useOfflineSync", () => {
 
   it("offline (navigator.onLine=false) wird gar nicht erst versucht", async () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
-    enqueueStunde({ id: "a" });
+    enqueueStunde({ id: "a", mitarbeiterId: "u1" });
     renderHook(() => useOfflineSync({ userId: "u1", sync }));
     await flush();
     expect(sync).not.toHaveBeenCalled();

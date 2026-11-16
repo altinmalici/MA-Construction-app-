@@ -124,14 +124,15 @@ export function retryFailed() {
 }
 
 /**
- * Gehoert der Eintrag zu diesem Nutzer? Mitarbeiter senden nur EIGENE
+ * Gehoert der Eintrag zu diesem Nutzer? Mitarbeiter senden und sehen nur EIGENE
  * Eintraege; liegen auf einem geteilten Handy Eintraege eines Kollegen in
  * der Queue, warten sie auf dessen Anmeldung (oder die des Chefs).
  */
 export function gehoertZu(item, userId, isChef) {
   if (isChef) return true;
-  const owner = item?.entry?.mitarbeiterId;
-  return !owner || owner === userId;
+  // Einträge ohne Mitarbeiter (Sub/Sonstige) kann nur der Chef anlegen und
+  // laut RLS auch nur der Chef senden.
+  return !!userId && item?.entry?.mitarbeiterId === userId;
 }
 
 /** Entfernt einen erledigten Eintrag aus der Queue. */

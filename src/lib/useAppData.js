@@ -200,8 +200,8 @@ export function useAppData() {
       consumeOnboardingToken: async (token, pin) => {
         return await api.auth.consumeOnboardingToken(token, pin);
       },
-      signOut: async () => {
-        await api.auth.signOut();
+      signOut: async (opts) => {
+        await api.auth.signOut(opts);
       },
       getCurrentUser: async () => {
         return await api.auth.getCurrentUser();
@@ -317,6 +317,13 @@ export function useAppData() {
       syncOffline: async ({ userId = null, isChef = false } = {}) => {
         const q = getPending().filter((item) => gehoertZu(item, userId, isChef));
         if (q.length === 0) return { synced: 0, failed: 0, remaining: getPending().length };
+        // Ohne Sitzung gar nicht erst senden: die Anfrage ginge als "anon"
+        // raus und käme als 42501 zurück — das sähe aus wie eine endgültige
+        // Ablehnung, ist aber nur ein (noch) nicht erneuertes Token, z.B.
+        // direkt nach der Rückkehr des Empfangs.
+        if (!(await api.auth.hasSession())) {
+          return { synced: 0, failed: 0, remaining: getPending().length };
+        }
         let synced = 0;
         let failed = 0;
         for (const item of q) {
@@ -335,6 +342,10 @@ export function useAppData() {
             // Endgueltige Ablehnung durch die DB: nicht endlos wiederholen,
             // sondern markieren und dem Nutzer zeigen (bleibt in der Queue).
             const grund = dauerfehlerText(e);
+            // Sitzung mitten im Lauf verloren (Logout, Token widerrufen)?
+            // Dann ist die Ablehnung kein Urteil über den Eintrag → Rest
+            // bleibt wartend.
+            if (grund && !(await api.auth.hasSession())) break;
             if (grund) {
               markFailed(item.id, grund);
               failed++;

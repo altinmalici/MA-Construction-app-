@@ -17,29 +17,29 @@ describe("PendingSyncBadge", () => {
   });
 
   it("rendert nichts bei leerer Queue", () => {
-    render(<PendingSyncBadge />);
+    render(<PendingSyncBadge userId="u1" />);
     expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("zeigt Anzahl wartender Einträge und reagiert auf Queue-Änderung", () => {
-    render(<PendingSyncBadge />);
+    render(<PendingSyncBadge userId="u1" />);
     act(() => {
-      enqueueStunde({ id: "t-1", datum: "2026-08-15" });
+      enqueueStunde({ id: "t-1", datum: "2026-08-15", mitarbeiterId: "u1" });
     });
     expect(screen.getByRole("status").textContent).toContain(
       "1 Eintrag wird",
     );
     act(() => {
-      enqueueStunde({ id: "t-2", datum: "2026-08-15" });
+      enqueueStunde({ id: "t-2", datum: "2026-08-15", mitarbeiterId: "u1" });
     });
     expect(screen.getByRole("status").textContent).toContain("2 Einträge");
   });
 
   it("rendert nichts wenn offline (OfflineBanner übernimmt)", () => {
     vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
-    render(<PendingSyncBadge />);
+    render(<PendingSyncBadge userId="u1" />);
     act(() => {
-      enqueueStunde({ id: "t-3", datum: "2026-08-15" });
+      enqueueStunde({ id: "t-3", datum: "2026-08-15", mitarbeiterId: "u1" });
     });
     expect(screen.queryByRole("status")).toBeNull();
   });
@@ -106,5 +106,48 @@ describe("PendingSyncBadge – abgelehnte und fremde Einträge", () => {
     enqueueStunde({ id: "o1", mitarbeiterId: "u2" });
     render(<PendingSyncBadge userId="u1" isChef={false} />);
     expect(screen.getByRole("status").textContent).toMatch(/Kollegen wartet auf dessen Anmeldung/);
+  });
+
+  it("ohne angemeldeten Nutzer (Login-Screen): nichts sichtbar, auch keine abgelehnten", async () => {
+    const { markFailed } = await import("../../lib/offlineQueue.js");
+    enqueueStunde({ id: "f1", mitarbeiterId: "u1", arbeit: "geheim" });
+    markFailed("f1", "x");
+    const { container } = render(<PendingSyncBadge />);
+    expect(container.textContent).toBe("");
+  });
+
+  it("abgelehnter Eintrag eines Kollegen: kein Zugriff auf Inhalt oder Verwerfen", async () => {
+    const { markFailed } = await import("../../lib/offlineQueue.js");
+    enqueueStunde({ id: "f1", mitarbeiterId: "u2", arbeit: "geheim" });
+    markFailed("f1", "x");
+    render(<PendingSyncBadge userId="u1" isChef={false} />);
+    expect(screen.queryByRole("button", { name: /nicht synchronisiert/ })).toBeNull();
+    expect(screen.getByRole("status").textContent).toMatch(/Kollegen/);
+  });
+
+  it("Chef sieht und verwaltet abgelehnte Einträge aller", async () => {
+    const { markFailed } = await import("../../lib/offlineQueue.js");
+    enqueueStunde({ id: "f1", mitarbeiterId: "u2" });
+    markFailed("f1", "x");
+    render(<PendingSyncBadge userId="c1" isChef />);
+    expect(screen.getByRole("button", { name: /1 Eintrag nicht synchronisiert/ })).toBeInTheDocument();
+  });
+
+  it("Dialog geht nach dem letzten Verwerfen nicht von selbst wieder auf", async () => {
+    const { markFailed } = await import("../../lib/offlineQueue.js");
+    const { fireEvent } = await import("@testing-library/react");
+    enqueueStunde({ id: "f1", mitarbeiterId: "u1" });
+    markFailed("f1", "x");
+    render(<PendingSyncBadge userId="u1" />);
+    fireEvent.click(screen.getByRole("button", { name: /nicht synchronisiert/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Verwerfen" }));
+    act(() => { fireEvent.click(screen.getByRole("button", { name: "Endgültig verwerfen" })); });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    act(() => {
+      enqueueStunde({ id: "f2", mitarbeiterId: "u1" });
+      markFailed("f2", "y");
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("button", { name: /nicht synchronisiert/ })).toBeInTheDocument();
   });
 });
