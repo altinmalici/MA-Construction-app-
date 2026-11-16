@@ -114,3 +114,44 @@ export async function toggleActive(id, isActive) {
   });
   if (error) throw error;
 }
+
+// ── Einladungs-Link + Reparatur (migration_2026_11_16_04_onboarding.sql) ──
+
+// true, wenn die aufgerufene DB-Funktion (noch) nicht existiert — also die
+// Migration nicht angewandt ist. Dann nutzt die App den alten Ablauf.
+export function istRpcFehlt(error) {
+  if (!error) return false;
+  return (
+    error.code === 'PGRST202' ||
+    error.code === '42883' ||
+    /could not find the function|function .* does not exist/i.test(String(error.message || ''))
+  );
+}
+
+/** Chef: neuen Einladungs-Link-Token für einen Mitarbeiter erzeugen. */
+export async function createOnboardingToken(userId) {
+  const { data, error } = await supabase.rpc('create_onboarding_token', { p_user_id: userId });
+  if (error) throw error;
+  return data;
+}
+
+/** Chef: offene Einladungs-Links eines Mitarbeiters ungültig machen. */
+export async function revokeOnboardingTokens(userId) {
+  const { data, error } = await supabase.rpc('revoke_onboarding_tokens', { p_user_id: userId });
+  if (error) throw error;
+  return data;
+}
+
+/** Chef: Profil und Auth-Konto eines Mitarbeiters in Einklang bringen. */
+export async function repairUser(userId) {
+  const { data, error } = await supabase.rpc('repair_orphan_user', { p_user_id: userId });
+  if (error) throw error;
+  return data; // 'ok' oder kommagetrennte Liste der Korrekturen
+}
+
+/** Chef: Auth-Konten ohne Profil entfernen. Liefert die Anzahl. */
+export async function cleanupOrphanAuthUsers() {
+  const { data, error } = await supabase.rpc('cleanup_orphan_auth_users');
+  if (error) throw error;
+  return data;
+}

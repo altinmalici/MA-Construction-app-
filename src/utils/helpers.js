@@ -172,20 +172,34 @@ export const CS = "0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.06)";
 export const IC = "ios-input";
 
 // Username generieren
+const clean = (s) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9-]/g, "");
+
+// Gültiger Benutzername (identisch zur Prüfung in der Datenbank).
+export const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{1,30}$/;
+
 export const genUsername = (fullName, existing) => {
+  // Erst deutsche Umlaute ausschreiben, dann alle übrigen Akzente entfernen
+  // (ç, ë, š, é …) und alles streichen, was im Benutzernamen nicht erlaubt
+  // ist — er wird Teil der Anmelde-Adresse (nur a-z, 0-9, Punkt, Bindestrich).
   const cv = (s) =>
-    s
+    clean(s
       .replace(/ä/g, "ae")
       .replace(/ö/g, "oe")
       .replace(/ü/g, "ue")
       .replace(/ß/g, "ss")
       .replace(/Ä/g, "Ae")
       .replace(/Ö/g, "Oe")
-      .replace(/Ü/g, "Ue");
+      .replace(/Ü/g, "Ue"));
   const parts = fullName.trim().split(/\s+/);
-  if (parts.length < 2) return cv(fullName.trim()).toLowerCase();
-  const fn = cv(parts[0]).toLowerCase();
-  const ln = cv(parts[parts.length - 1]).toLowerCase();
+  if (parts.length < 2) return cv(fullName.trim()).toLowerCase() || "mitarbeiter";
+  // Fallbacks, falls nach dem Bereinigen nichts übrig bleibt (z.B. Namen in
+  // nicht-lateinischer Schrift) — der Chef kann den Vorschlag ändern.
+  const fn = cv(parts[0]).toLowerCase() || "m";
+  const ln = cv(parts[parts.length - 1]).toLowerCase() || "mitarbeiter";
   let u = fn[0] + "." + ln;
   if (!existing.includes(u)) return u;
   for (let i = 2; i <= fn.length; i++) {

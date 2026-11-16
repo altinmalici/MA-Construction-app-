@@ -146,6 +146,35 @@ export async function completeOnboarding(userId, newPin) {
 }
 
 /**
+ * Einladungs-Link prüfen. Liefert {name, username, expiresAt} oder null,
+ * wenn der Link ungültig, abgelaufen oder schon eingelöst ist.
+ */
+export async function validateOnboardingToken(token) {
+  const { data, error } = await supabase.rpc('validate_onboarding_token', { p_token: token });
+  if (error) throw error;
+  if (!data || data.length === 0) return null;
+  return { name: data[0].name, username: data[0].username, expiresAt: data[0].expires_at };
+}
+
+/**
+ * Einladungs-Link einlösen: setzt den eigenen PIN und meldet direkt an.
+ * Wirft bei ungültigem Link / vergebenem PIN (deutsche Meldung vom Server).
+ * @returns Profil des angemeldeten Nutzers
+ */
+export async function consumeOnboardingToken(token, newPin) {
+  const { data: username, error } = await supabase.rpc('consume_onboarding_token', {
+    p_token: token,
+    p_new_pin: newPin,
+  });
+  if (error) throw error;
+  const profile = await _signInAndLoadProfile(_email(username), newPin);
+  // PIN wurde eben gesetzt — scheitert die Anmeldung trotzdem, ist das Konto
+  // nicht synchron.
+  if (!profile) throw new LoginError('konto');
+  return profile;
+}
+
+/**
  * Logout
  */
 export async function signOut({ localOnly = false } = {}) {

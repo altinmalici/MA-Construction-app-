@@ -34,7 +34,7 @@ GRANT USAGE ON SCHEMA public, extensions, auth, storage TO anon, authenticated;
 CREATE TABLE auth.users (
   id uuid PRIMARY KEY, instance_id uuid, email text UNIQUE, encrypted_password text,
   email_confirmed_at timestamptz, aud text, role text, raw_app_meta_data jsonb, raw_user_meta_data jsonb,
-  created_at timestamptz, updated_at timestamptz, banned_until timestamptz,
+  created_at timestamptz, updated_at timestamptz, banned_until timestamptz, last_sign_in_at timestamptz,
   confirmation_token text, recovery_token text, email_change text, email_change_token_new text,
   email_change_token_current text, phone_change text, phone_change_token text, reauthentication_token text);
 CREATE TABLE auth.identities (
@@ -63,7 +63,11 @@ export async function makeDb(extra = [], dir = DIR) {
     catch (e) { throw new Error(`[${f}] ${e.message}`); }
     // Entspricht scripts/migrate-to-auth.mjs: Seed-Chef bekommt ein Auth-Konto.
     if (f === 'migration_auth.sql') await db.exec(`
-      INSERT INTO auth.users(id,email,encrypted_password) VALUES ('${CHEF_AUTH}','a.malici@ma-construction.local', crypt('1998', gen_salt('bf')));
+      INSERT INTO auth.users(id,email,encrypted_password,email_confirmed_at,
+        confirmation_token,recovery_token,email_change,email_change_token_new,
+        email_change_token_current,phone_change,phone_change_token,reauthentication_token)
+      VALUES ('${CHEF_AUTH}','a.malici@ma-construction.local', crypt('1998', gen_salt('bf')), now(),
+        '','','','','','','','');
       UPDATE users SET auth_id='${CHEF_AUTH}' WHERE username='a.malici';`);
   }
   return db;

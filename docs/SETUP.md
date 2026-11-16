@@ -26,6 +26,7 @@ Bundle-Analyse nur bei Bedarf: `ANALYZE=1 npm run build` schreibt `stats.html` i
 |---|---|---|
 | `VITE_SUPABASE_URL` | `.env` lokal, Vercel-Projekt, GitHub-Secret | Projekt-URL, muss mit `https://` beginnen |
 | `VITE_SUPABASE_ANON_KEY` | `.env` lokal, Vercel-Projekt, GitHub-Secret | öffentlicher anon-Key |
+| `VITE_ONBOARDING_LINK` | optional, Vercel-Projekt | `0` schaltet den Einladungs-Link ab (dann nur Einladungs-PIN). Ohne Angabe nutzt die App den Link, sobald Migration 04 ausgeführt ist. |
 
 Fehlt eine Variable, bricht die App beim Start mit einer klaren Meldung ab (`src/lib/supabase.js`). `.env` und `.env.local` sind in `.gitignore` und gehören nie ins Repo.
 
