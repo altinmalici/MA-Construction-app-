@@ -215,7 +215,7 @@ const MitForm = () => {
               <input
                 value={un}
                 onChange={(e) =>
-                  setUn(e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, ""))
+                  setUn(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))
                 }
                 placeholder="wird automatisch erstellt"
                 className={IC}
@@ -268,8 +268,8 @@ const MitForm = () => {
             }}
           >
             <p style={{ fontSize: 13, color: "#3c3c43", fontWeight: 500 }}>
-              Nach dem Anlegen erhältst du einen Einladungs-PIN zum Versenden
-              per WhatsApp.
+              Nach dem Anlegen erhältst du eine Einladung (Link oder
+              Einladungs-PIN) zum Versenden per WhatsApp oder SMS.
             </p>
           </div>
         )}

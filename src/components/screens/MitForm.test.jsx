@@ -39,6 +39,13 @@ describe("MitForm – neuer Mitarbeiter", () => {
     expect(screen.getByDisplayValue("j.mueller-weiss")).toBeInTheDocument();
   });
 
+  it("von Hand eingegebene Bindestriche und Unterstriche bleiben erhalten", () => {
+    mount();
+    fill("Max Muster");
+    fireEvent.change(screen.getByDisplayValue("m.muster"), { target: { value: "Max_Muster-2 !" } });
+    expect(screen.getByDisplayValue("max_muster-2")).toBeInTheDocument();
+  });
+
   it("legt an und zeigt Link UND Einladungs-PIN-Daten in der Zusammenfassung", async () => {
     mount();
     fill("Max Muster");

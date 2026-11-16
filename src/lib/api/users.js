@@ -135,6 +135,13 @@ export async function createOnboardingToken(userId) {
   return data;
 }
 
+/** Chef: offene Einladungs-Links eines Mitarbeiters ungültig machen. */
+export async function revokeOnboardingTokens(userId) {
+  const { data, error } = await supabase.rpc('revoke_onboarding_tokens', { p_user_id: userId });
+  if (error) throw error;
+  return data;
+}
+
 /** Chef: Profil und Auth-Konto eines Mitarbeiters in Einklang bringen. */
 export async function repairUser(userId) {
   const { data, error } = await supabase.rpc('repair_orphan_user', { p_user_id: userId });

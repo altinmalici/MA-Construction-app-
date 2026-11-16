@@ -7,13 +7,17 @@ afterEach(() => vi.restoreAllMocks());
 describe("Einladungs-Link", () => {
   it("baut und liest den Link", () => {
     const link = inviteLink(T, "https://app.example");
-    expect(link).toBe(`https://app.example/?einladung=${T}`);
-    expect(readInviteToken(new URL(link).search)).toBe(T);
+    // Token steht im Fragment → wird nicht an den Server gesendet
+    expect(link).toBe(`https://app.example/#einladung=${T}`);
+    expect(new URL(link).search).toBe("");
+    expect(readInviteToken(new URL(link).hash, "")).toBe(T);
+    // ältere Schreibweise als Query-Parameter wird weiter verstanden
+    expect(readInviteToken("", `?einladung=${T}`)).toBe(T);
   });
   it("ignoriert kaputte Tokens", () => {
-    expect(readInviteToken("?einladung=kurz")).toBeNull();
-    expect(readInviteToken("?einladung=" + "Z".repeat(48))).toBeNull();
-    expect(readInviteToken("")).toBeNull();
+    expect(readInviteToken("#einladung=kurz", "")).toBeNull();
+    expect(readInviteToken("#einladung=" + "Z".repeat(48), "")).toBeNull();
+    expect(readInviteToken("", "")).toBeNull();
   });
 });
 

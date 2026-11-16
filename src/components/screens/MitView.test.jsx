@@ -26,6 +26,7 @@ beforeEach(() => {
   users = {
     createOnboardingToken: vi.fn().mockResolvedValue("c".repeat(48)),
     resetOnboardingPin: vi.fn().mockResolvedValue(),
+    revokeOnboardingTokens: vi.fn().mockResolvedValue(1),
     repair: vi.fn(), cleanupOrphans: vi.fn(), toggleActive: vi.fn(), remove: vi.fn(),
   };
 });
@@ -40,6 +41,15 @@ describe("MitView – Einladung", () => {
     expect(screen.getByText(new RegExp(`einladung=${"c".repeat(48)}`))).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Teilen/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Kopieren/ })).toBeInTheDocument();
+  });
+
+  it("Link widerrufen: ruft den Server und blendet die Einladung aus", async () => {
+    mount();
+    await click("Neuer Zugang");
+    await click(/Link widerrufen/);
+    expect(users.revokeOnboardingTokens).toHaveBeenCalledWith("u1");
+    expect(screen.queryByText(/einladung=/)).toBeNull();
+    expect(show).toHaveBeenLastCalledWith("Link widerrufen – er funktioniert nicht mehr");
   });
 
   it("Migration fehlt → Rückfrage, dann alter PIN-Reset; Abbrechen ändert nichts", async () => {
@@ -65,17 +75,22 @@ describe("MitView – Einladung", () => {
     await click("Neuer Zugang");
     expect(users.resetOnboardingPin).not.toHaveBeenCalled();
     expect(screen.queryByText("PIN zurücksetzen?")).toBeNull();
-    expect(show.mock.calls[0][0]).toMatch(/Kein Link erstellt/);
+    expect(show.mock.calls[0][0]).toBe(
+      "Kein Link erstellt: Konto ist nicht bereit – bitte zuerst „Zugang reparieren“ antippen.",
+    );
     expect(show.mock.calls[0][1]).toBe("error");
+    // …und der genannte Knopf ist auch bei einem eingerichteten Mitarbeiter da
+    expect(screen.getByRole("button", { name: "Zugang reparieren" })).toBeInTheDocument();
   });
 });
 
 describe("MitView – Reparatur", () => {
-  it('"Zugang reparieren" nur bei noch nicht eingerichteten Mitarbeitern; meldet, was getan wurde', async () => {
+  it('"Zugang reparieren" meldet, was getan wurde', async () => {
     users.repair.mockResolvedValue("auth_angelegt,identity_angelegt");
     mount([MAX, NEU]);
-    expect(screen.getAllByRole("button", { name: "Zugang reparieren" })).toHaveLength(1);
-    await click("Zugang reparieren");
+    const btns = screen.getAllByRole("button", { name: "Zugang reparieren" });
+    expect(btns).toHaveLength(2);
+    await act(async () => { fireEvent.click(btns[1]); });
     expect(users.repair).toHaveBeenCalledWith("u2");
     expect(show.mock.calls[0][0]).toMatch(/Anmelde-Konto neu angelegt, Identität ergänzt/);
   });

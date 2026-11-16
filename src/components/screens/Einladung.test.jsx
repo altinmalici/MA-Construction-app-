@@ -26,7 +26,7 @@ beforeEach(() => {
     validateOnboardingToken: vi.fn().mockResolvedValue({ name: "Max Muster", username: "m.muster" }),
     consumeOnboardingToken: vi.fn(),
   };
-  window.history.replaceState({}, "", `/?einladung=${T}`);
+  window.history.replaceState({}, "", `/#einladung=${T}`);
 });
 afterEach(() => {
   cleanup();
@@ -52,7 +52,7 @@ describe("Einladung (Link)", () => {
     await typePin("2468");
     expect(auth.consumeOnboardingToken).toHaveBeenCalledWith(T, "2468");
     expect(completeLogin).toHaveBeenCalledWith(u);
-    expect(window.location.search).toBe("");
+    expect(window.location.hash).toBe("");
   });
 
   it("unterschiedliche PINs → nichts gesendet, von vorn", async () => {
@@ -74,13 +74,37 @@ describe("Einladung (Link)", () => {
     expect(screen.getByText("PIN festlegen")).toBeInTheDocument();
   });
 
+  it("PIN gesetzt, aber Anmeldung scheitert (Netz) → klarer Endzustand statt 'Einladung ungültig'", async () => {
+    auth.consumeOnboardingToken.mockRejectedValue({ kind: "netz" });
+    await mount();
+    await typePin("2468");
+    await typePin("2468");
+    expect(screen.getByText("PIN gespeichert")).toBeInTheDocument();
+    expect(screen.getByText("m.muster")).toBeInTheDocument();
+    expect(screen.queryByText("PIN festlegen")).toBeNull();
+    expect(window.location.hash).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "Zur Anmeldung" }));
+    expect(onClose).toHaveBeenCalled();
+    expect(completeLogin).not.toHaveBeenCalled();
+  });
+
+  it("Server-Meldung 'Konto nicht bereit' kommt beim Mitarbeiter verständlich an", async () => {
+    auth.consumeOnboardingToken.mockRejectedValue({
+      message: "Einladung kann nicht eingeloest werden: Konto ist nicht bereit – bitte beim Bauleiter melden",
+    });
+    await mount();
+    await typePin("2468");
+    await typePin("2468");
+    expect(screen.getByRole("alert").textContent).toMatch(/kann nicht eingelöst werden.*Bauleiter/);
+  });
+
   it("ungültiger/abgelaufener Link → klare Meldung und Weg zur Anmeldung", async () => {
     auth.validateOnboardingToken.mockResolvedValue(null);
     await mount();
     expect(screen.getByText("Einladung nicht gültig")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Zur Anmeldung" }));
     expect(onClose).toHaveBeenCalled();
-    expect(window.location.search).toBe("");
+    expect(window.location.hash).toBe("");
   });
 
   it("kein Netz beim Prüfen → 'Erneut versuchen' prüft noch einmal", async () => {

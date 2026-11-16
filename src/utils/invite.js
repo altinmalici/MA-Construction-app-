@@ -1,14 +1,22 @@
 import { INVITE_PARAM } from "../config.js";
 
 // Einladungs-Link für ein Token. Zeigt auf die App selbst; Login.jsx erkennt
-// den Parameter und öffnet "PIN festlegen".
+// ihn und öffnet "PIN festlegen". Das Token steht im FRAGMENT (#…): Der
+// Browser schickt es nicht an den Server, es landet also weder in
+// Server-Logs noch im Fehler-Log der App.
 export const inviteLink = (token, origin = window.location.origin) =>
-  `${origin}/?${INVITE_PARAM}=${encodeURIComponent(token)}`;
+  `${origin}/#${INVITE_PARAM}=${encodeURIComponent(token)}`;
 
-// Token aus der aktuellen Adresse lesen (oder null).
-export const readInviteToken = (search = window.location.search) => {
+// Token aus der aktuellen Adresse lesen (oder null). Akzeptiert Fragment
+// und – für ältere/abgetippte Links – den Query-Parameter.
+export const readInviteToken = (
+  hash = window.location.hash,
+  search = window.location.search,
+) => {
   try {
-    const t = new URLSearchParams(search).get(INVITE_PARAM);
+    const t =
+      new URLSearchParams(String(hash || "").replace(/^#/, "")).get(INVITE_PARAM) ||
+      new URLSearchParams(search || "").get(INVITE_PARAM);
     return t && /^[0-9a-f]{48}$/.test(t) ? t : null;
   } catch {
     return null;
@@ -21,7 +29,10 @@ export const clearInviteParam = () => {
   try {
     const url = new URL(window.location.href);
     url.searchParams.delete(INVITE_PARAM);
-    window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    const frag = new URLSearchParams(url.hash.replace(/^#/, ""));
+    frag.delete(INVITE_PARAM);
+    const rest = frag.toString();
+    window.history.replaceState({}, "", url.pathname + url.search + (rest ? `#${rest}` : ""));
   } catch {
     /* egal */
   }
@@ -42,7 +53,7 @@ export function buildInviteText({ name, username, pin, link, origin = window.loc
       link,
       "",
       `Dein Benutzername: ${username}`,
-      "Der Link ist 7 Tage gültig und funktioniert nur einmal.",
+      "Der Link funktioniert nur einmal und nur für kurze Zeit. Bitte nicht weiterleiten.",
     ].join("\n");
   }
   return [

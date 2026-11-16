@@ -13,7 +13,8 @@ import { clearInviteParam } from "../../utils/invite";
  */
 const Einladung = ({ token, onClose }) => {
   const { actions, completeLogin } = useApp();
-  // status: "laedt" | "ok" | "ungueltig" | "netz"
+  // status: "laedt" | "ok" | "ungueltig" | "netz" | "gespeichert"
+  // "gespeichert": PIN ist gesetzt, nur die direkte Anmeldung scheiterte.
   const [status, setStatus] = useState("laedt");
   const [info, setInfo] = useState(null);
   const [step, setStep] = useState(1);
@@ -68,14 +69,16 @@ const Einladung = ({ token, onClose }) => {
       completeLogin(u);
     } catch (e) {
       console.error("[Einladung.consume]", e);
-      // LoginError "konto": PIN ist gesetzt, die Anmeldung scheiterte aber.
-      setErr(
-        e?.kind === "netz"
-          ? "PIN gespeichert, aber keine Verbindung – bitte gleich normal anmelden"
-          : e?.kind
-            ? "PIN gespeichert – bitte jetzt mit Benutzername und PIN anmelden"
-            : fehlerText(e, "PIN konnte nicht gespeichert werden – bitte erneut versuchen"),
-      );
+      // LoginError (hat .kind): Der PIN IST gesetzt und der Link verbraucht,
+      // nur die direkte Anmeldung scheiterte (Netz, Rate-Limit). Nicht auf
+      // dem PIN-Feld bleiben — ein zweiter Versuch würde "Einladung
+      // ungültig" melden, obwohl alles geklappt hat.
+      if (e?.kind) {
+        clearInviteParam();
+        setStatus("gespeichert");
+        return;
+      }
+      setErr(fehlerText(e, "PIN konnte nicht gespeichert werden – bitte erneut versuchen"));
       if (/ung(ü|ue)ltig oder abgelaufen/i.test(String(e?.message || ""))) setStatus("ungueltig");
       setPin("");
       setConfirm("");
@@ -131,6 +134,53 @@ const Einladung = ({ token, onClose }) => {
       </ScreenLayout>
     );
 
+  if (status === "gespeichert")
+    return (
+      <ScreenLayout>
+        <div style={center}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 20,
+              width: 64,
+              height: 64,
+              background: `${GREEN}15`,
+              marginBottom: 14,
+            }}
+          >
+            <Check size={28} style={{ color: GREEN }} />
+          </div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#000", marginBottom: 8 }}>
+            PIN gespeichert
+          </h1>
+          <p style={{ fontSize: 15, color: "#8e8e93", maxWidth: 300 }}>
+            Dein PIN ist festgelegt. Die Anmeldung hat gerade nicht geklappt –
+            bitte jetzt mit Benutzername{" "}
+            <strong style={{ color: "#000" }}>{info?.username}</strong> und
+            deinem PIN anmelden.
+          </p>
+          <button
+            onClick={close}
+            style={{
+              marginTop: 20,
+              minHeight: 50,
+              padding: "0 28px",
+              borderRadius: 14,
+              border: "none",
+              background: BTN,
+              color: "white",
+              fontWeight: 600,
+              fontSize: 16,
+            }}
+          >
+            Zur Anmeldung
+          </button>
+        </div>
+      </ScreenLayout>
+    );
+
   if (status !== "ok")
     return (
       <ScreenLayout>
@@ -142,7 +192,7 @@ const Einladung = ({ token, onClose }) => {
           <p style={{ fontSize: 15, color: "#8e8e93", maxWidth: 300 }}>
             {status === "netz"
               ? "Die Einladung konnte nicht geprüft werden. Bitte Empfang prüfen und erneut versuchen."
-              : "Der Link ist abgelaufen oder wurde schon verwendet. Bitte beim Bauleiter einen neuen Link anfordern."}
+              : "Der Link ist abgelaufen oder wurde schon verwendet. Hast du gerade schon einen PIN festgelegt? Dann einfach normal anmelden. Sonst beim Bauleiter einen neuen Link anfordern."}
           </p>
           {status === "netz" && (
             <button
