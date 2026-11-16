@@ -8,12 +8,13 @@ import {
   Paperclip,
   ClipboardList,
 } from "lucide-react";
+import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
 import { P, BTN, RED, fK, bStd } from "../../utils/helpers";
 import { ScreenLayout, PBar, Bdg, ConfirmModal, Card } from "../ui";
 
 const BstDet = () => {
-  const { sb, data, chef, goBack, actions, show, nav, setEm, eName } =
+  const { sb, data, chef, goBack, actions, show, nav, setEm, eName, setSb, setVRaw, prevV } =
     useApp();
   const b = sb;
   const fr = b ? data.baustellen.find((x) => x.id === b.id) || b : null;
@@ -41,10 +42,14 @@ const BstDet = () => {
     try {
       await actions.baustellen.remove(b.id);
       show("Gelöscht");
-      nav("bst");
+      // Gelöschte Baustelle nicht im Verlauf/als Auswahl stehen lassen:
+      // "Zurück" zeigte sie sonst noch einmal an.
+      setSb(null);
+      if (prevV) goBack();
+      else setVRaw("bst");
     } catch (e) {
       console.error("[BstDet.del]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(fehlerText(e, "Fehler beim Löschen"), "error");
     }
   };
   return (

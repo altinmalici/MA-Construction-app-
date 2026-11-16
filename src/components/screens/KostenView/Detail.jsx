@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { fehlerText } from "../../../utils/errors";
 import { useApp } from "../../../context/AppContext";
 import {
   bStdNum,
+  fStd,
   fE,
   fK,
   P,
@@ -19,7 +21,7 @@ import {
 } from "../../ui";
 import { KAT_LABELS, KAT_COLORS } from "./aggregations.js";
 
-const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
+const fH = (h) => fStd(h) + "h";
 
 /**
  * KostenView Detail-Sub-Component (6-03a Phase 2).
@@ -38,11 +40,13 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
   const [confirmDeleteKost, setConfirmDeleteKost] = useState(null);
 
   const b = data.baustellen.find((x) => x.id === bsId);
-  if (!b) {
-    // Baustelle weg (z.B. parallel gelöscht) → zurück zur Liste
-    onBack();
-    return null;
-  }
+  // Baustelle weg (z.B. parallel gelöscht) → zurück zur Liste. Im Effekt,
+  // nicht im Render (ein State-Update des Elternteils während des Renderns
+  // ist in React ein Fehler).
+  useEffect(() => {
+    if (!b) onBack();
+  }, [b, onBack]);
+  if (!b) return null;
 
   const { calcLohn, calcTotal, calcKat } = aggregat;
   const total = calcTotal(b.id);
@@ -73,7 +77,7 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
       show("Gelöscht");
     } catch (e) {
       console.error("[KostenView.Detail.delKost]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(fehlerText(e, "Fehler beim Löschen"), "error");
     }
   };
 
@@ -149,7 +153,7 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
                     (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
                     0,
                   );
-                  return Number.isInteger(h) ? h : h.toFixed(1);
+                  return fStd(h);
                 })()}
               </p>
               <p style={{ fontSize: 12, color: "#8e8e93" }}>Stunden</p>

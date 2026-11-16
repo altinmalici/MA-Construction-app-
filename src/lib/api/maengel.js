@@ -1,11 +1,12 @@
+import { todayIso } from '../../utils/helpers.js';
 import { supabase } from '../supabase.js';
 import { deletePhotos } from '../storage.js';
-import { requestWithRetry } from './_request.js';
+import { selectAll } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper.
-  const { data, error } = await requestWithRetry(
-    () => supabase.from('maengel').select('*').order('created_at'),
+  const { data, error } = await selectAll(
+    () => supabase.from('maengel').select('*').order('created_at').order('id'),
     { signal },
   );
   if (error) throw error;
@@ -22,7 +23,7 @@ export async function create(m) {
     prioritaet: m.prioritaet || 'mittel',
     status: m.status || 'offen',
     zustaendig: m.zustaendig || null,
-    erstellt_am: m.erstelltAm || new Date().toISOString().split('T')[0],
+    erstellt_am: m.erstelltAm || todayIso(),
     frist: m.frist || null,
     fotos: m.fotos || [],
   };

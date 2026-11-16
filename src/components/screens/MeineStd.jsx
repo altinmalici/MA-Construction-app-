@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, bStdNum, fDat, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { bStd, bStdNum, fStd, isoWeek, fDat, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
 const MeineStd = () => {
@@ -30,7 +30,11 @@ const MeineStd = () => {
       return m + 1;
     });
   };
-  const all = data.stundeneintraege.filter(
+  // Eigene Einträge aus der Datenbank + eigene, die noch auf diesem Gerät
+  // warten (offline erfasst). Letztere sind markiert und stehen nur hier.
+  const serverIds = new Set(data.stundeneintraege.map((e) => e.id));
+  const wartende = (data.wartendeStunden || []).filter((e) => !serverIds.has(e.id));
+  const all = [...data.stundeneintraege, ...wartende].filter(
     (e) => e.mitarbeiterId === cu.id && isMitarbeiterEntry(e),
   );
   const me = all.filter((e) => isInMonth(e.datum, mo, jr));
@@ -45,13 +49,7 @@ const MeineStd = () => {
   // Gruppiert nach Woche
   const byWeek = {};
   me.forEach((e) => {
-    const d = new Date(e.datum);
-    const day = d.getDay() || 7;
-    const thu = new Date(d);
-    thu.setDate(d.getDate() + 4 - day);
-    const kw = Math.ceil(
-      ((thu - new Date(thu.getFullYear(), 0, 1)) / 86400000 + 1) / 7,
-    );
+    const { kw } = isoWeek(e.datum);
     const w = `KW ${String(kw).padStart(2, "0")}`;
     if (!byWeek[w]) byWeek[w] = [];
     byWeek[w].push(e);
@@ -92,7 +90,7 @@ const MeineStd = () => {
       >
         <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
-            {moH.toFixed(1)}h
+            {fStd(moH)}h
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Monat</p>
         </Card>
@@ -104,7 +102,7 @@ const MeineStd = () => {
         </Card>
         <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
-            {totalH.toFixed(1)}h
+            {fStd(totalH)}h
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Gesamt</p>
         </Card>
@@ -145,7 +143,7 @@ const MeineStd = () => {
                         color: "#3c3c43",
                       }}
                     >
-                      {wH.toFixed(1)}h
+                      {fStd(wH)}h
                     </span>
                   </div>
                   <div style={{ padding: 10 }} className="space-y-1">
@@ -176,6 +174,18 @@ const MeineStd = () => {
                               <p style={{ color: "#8e8e93" }}>
                                 {fDat(e.datum)} · {e.beginn}–{e.ende}
                               </p>
+                              {e._pending && (
+                                <p
+                                  style={{
+                                    color: e._pending === "abgelehnt" ? "#c62828" : "#b26a00",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {e._pending === "abgelehnt"
+                                    ? "Nicht synchronisiert – oben antippen"
+                                    : "Wartet auf Synchronisierung"}
+                                </p>
+                              )}
                             </div>
                             <span style={{ fontWeight: 600, color: "#000" }}>
                               {bStd(e.beginn, e.ende, e.pause)}h

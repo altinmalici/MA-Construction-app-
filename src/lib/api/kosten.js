@@ -1,10 +1,11 @@
+import { todayIso } from '../../utils/helpers.js';
 import { supabase } from '../supabase.js';
-import { requestWithRetry } from './_request.js';
+import { selectAll } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper.
-  const { data, error } = await requestWithRetry(
-    () => supabase.from('kosten').select('*').order('created_at'),
+  const { data, error } = await selectAll(
+    () => supabase.from('kosten').select('*').order('created_at').order('id'),
     { signal },
   );
   if (error) throw error;
@@ -25,7 +26,7 @@ export async function create(k) {
     kategorie: k.kategorie || 'material',
     beschreibung: k.beschreibung,
     betrag: k.betrag,
-    datum: k.datum || new Date().toISOString().split('T')[0],
+    datum: k.datum || todayIso(),
     ersteller: k.ersteller || null,
   };
   const { data, error } = await supabase

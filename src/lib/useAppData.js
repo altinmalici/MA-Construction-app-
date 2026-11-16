@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from './api/index.js';
-import { getPending, dequeue, markFailed, dauerfehlerText, gehoertZu } from './offlineQueue.js';
+import { getPending, getQueue, dequeue, markFailed, dauerfehlerText, gehoertZu } from './offlineQueue.js';
 
 // 6-02b: Postgres-Realtime-Payloads kommen mit snake_case-Keys; der App-State
 // nutzt camelCase. Generisch top-level Keys mappen — Postgres-Rows sind flach,
@@ -20,6 +20,24 @@ const isNewer = (incoming, existing) => {
   return incoming.updatedAt > existing.updatedAt;
 };
 
+// Offline erfasste Stunden, die noch auf diesem Gerät warten (oder vom
+// Server abgelehnt wurden). Sie stehen NICHT in data.stundeneintraege — das
+// sind ausschließlich Zeilen aus der Datenbank, mit denen Kosten,
+// Regiebericht, Übersicht und Export rechnen. Wartende Einträge bekommt die
+// UI getrennt als data.wartendeStunden und zeigt sie nur dort, wo der
+// Mitarbeiter seine eigenen Stunden sieht ("Meine Stunden"). So bleiben sie
+// sichtbar (keine Doppelerfassung), ohne Summen zu verfälschen.
+export function wartendeAusQueue() {
+  return getQueue()
+    .filter((item) => item?.entry?.id)
+    .map((item) => ({
+      freigegeben: false,
+      fotos: [],
+      ...item.entry,
+      _pending: item.failed ? "abgelehnt" : "wartet",
+    }));
+}
+
 const emptyData = {
   users: [],
   subunternehmer: [],
@@ -31,6 +49,8 @@ const emptyData = {
   dokumente: [],
   benachrichtigungen: [],
   kosten: [],
+  // nur lokal (Offline-Warteschlange), siehe wartendeAusQueue()
+  wartendeStunden: [],
 };
 
 export function useAppData() {
@@ -73,7 +93,7 @@ export function useAppData() {
         api.kosten.getAll(),
       ]);
       if (mountedRef.current) {
-        setData({ users, subunternehmer, baustellen, stundeneintraege, kalender, maengel, bautagebuch, dokumente, benachrichtigungen, kosten });
+        setData({ users, subunternehmer, baustellen, stundeneintraege, kalender, maengel, bautagebuch, dokumente, benachrichtigungen, kosten, wartendeStunden: wartendeAusQueue() });
         setError(null);
       }
     } catch (err) {
@@ -88,7 +108,7 @@ export function useAppData() {
   // selben Gerät nie die Daten des vorherigen sieht.
   const resetData = useCallback(() => {
     if (!mountedRef.current) return;
-    setData(emptyData);
+    setData({ ...emptyData, wartendeStunden: wartendeAusQueue() });
     setError(null);
   }, []);
 
@@ -157,7 +177,9 @@ export function useAppData() {
     if (mountedRef.current) {
       setData(prev => {
         const next = { ...prev };
-        entities.forEach((e, i) => { next[e] = results[i]; });
+        entities.forEach((e, i) => {
+          next[e] = results[i];
+        });
         return next;
       });
     }
@@ -166,6 +188,23 @@ export function useAppData() {
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
+  }, []);
+
+  // data.wartendeStunden folgt der Offline-Warteschlange (jede Änderung
+  // feuert "ma-queue-change").
+  useEffect(() => {
+    const sync = () => {
+      if (!mountedRef.current) return;
+      const wartende = wartendeAusQueue();
+      setData((prev) =>
+        prev.wartendeStunden.length === 0 && wartende.length === 0
+          ? prev
+          : { ...prev, wartendeStunden: wartende },
+      );
+    };
+    sync();
+    window.addEventListener('ma-queue-change', sync);
+    return () => window.removeEventListener('ma-queue-change', sync);
   }, []);
 
   // Nachladen NACH einem erfolgreichen Schreibvorgang darf den Erfolg nicht in
@@ -297,8 +336,8 @@ export function useAppData() {
         await refresh('stundeneintraege');
         return result;
       },
-      update: async (id, entry) => {
-        await api.stundeneintraege.update(id, entry);
+      update: async (id, entry, opts) => {
+        await api.stundeneintraege.update(id, entry, opts);
         await refresh('stundeneintraege');
       },
       remove: async (id) => {
@@ -309,10 +348,9 @@ export function useAppData() {
         await api.stundeneintraege.setFreigabe(ids, freigegeben);
         await refresh('stundeneintraege');
       },
-      // Optimistisch lokal anzeigen (Offline-Erfassung), ohne DB-Write.
-      // Dedup by id: spaeterer Realtime-/Reload-Insert derselben id ersetzt
-      // ihn, es entsteht kein Duplikat.
-      addLocal: (entry) => mergeIncomingRow('stundeneintraege', entry, 'INSERT'),
+      // Früher wurde der Eintrag hier in die Liste gemischt. Wartende
+      // Einträge kommen jetzt über data.wartendeStunden (folgt der Queue).
+      addLocal: () => {},
       // Offline-Warteschlange abarbeiten. Idempotent: bereits synchronisierte
       // Eintraege (Duplicate-Key 23505) werden als erledigt entfernt; echte
       // Netzfehler lassen den Eintrag drin (spaeterer Retry). Gibt zurueck,

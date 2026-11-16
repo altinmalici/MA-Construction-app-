@@ -1,12 +1,13 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
-import { requestWithRetry } from './_request.js';
+import { selectAll } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper für GET. Bei Network-Fail max
   // 2 Retries mit exponential backoff, dann Throw an Aufrufer.
-  const { data, error } = await requestWithRetry(
-    () => supabase.from('stundeneintraege').select('*').order('created_at'),
+  // Seitenweise: sonst fehlen ab 1000 Einträgen still die neuesten.
+  const { data, error } = await selectAll(
+    () => supabase.from('stundeneintraege').select('*').order('created_at').order('id'),
     { signal },
   );
   if (error) throw error;
@@ -25,8 +26,12 @@ export async function create(entry) {
   return data.id;
 }
 
-export async function update(id, entry) {
+// resetFreigabe: nimmt die Freigabe im SELBEN Schreibvorgang zurück (Chef
+// ändert einen bereits freigegebenen Eintrag) — nie "geändert, aber noch
+// als freigegeben markiert".
+export async function update(id, entry, { resetFreigabe = false } = {}) {
   const row = stripUndefined(toRow(entry));
+  if (resetFreigabe) row.freigegeben = false;
   const { error } = await supabase.from('stundeneintraege').update(row).eq('id', id);
   if (error) throw error;
 }

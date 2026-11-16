@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AlertCircle, Clock, Bell, X } from "lucide-react";
+import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
 import { RED, CS } from "../../utils/helpers";
 import { Empty, ScreenLayout, ConfirmModal, Card } from "../ui";
@@ -12,7 +13,7 @@ const NotifView = () => {
       await actions.benachrichtigungen.markAllRead();
     } catch (e) {
       console.error("[NotifView.markAll]", e);
-      show(e?.message || "Fehler", "error");
+      show(fehlerText(e, "Fehler"), "error");
     }
   };
   const clearAll = () => {
@@ -29,7 +30,7 @@ const NotifView = () => {
       show("Alle gelöscht");
     } catch (e) {
       console.error("[NotifView.clearAll]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(fehlerText(e, "Fehler beim Löschen"), "error");
     }
   };
   const delN = async (id) => {

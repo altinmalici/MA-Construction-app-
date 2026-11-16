@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, X, Briefcase, Phone, Trash2 } from "lucide-react";
+import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
 import { IC, BTN } from "../../utils/helpers";
 import { Empty, Bdg, ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
@@ -32,7 +33,7 @@ const SubView = () => {
         setFt("");
       } catch (e) {
         console.error("[SubView.add]", e);
-        show(e?.message || "Fehler beim Anlegen", "error");
+        show(fehlerText(e, "Fehler beim Anlegen"), "error");
       }
     });
   const del = (id) => setConfirmDelete(id);
@@ -45,7 +46,7 @@ const SubView = () => {
       show("Gelöscht");
     } catch (e) {
       console.error("[SubView.del]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(fehlerText(e, "Fehler beim Löschen"), "error");
     }
   };
   return (

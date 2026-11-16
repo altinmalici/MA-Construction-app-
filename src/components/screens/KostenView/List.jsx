@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
+import { csvRow, deNum, deDate, downloadCsv } from "../../../utils/lohnexport";
+import { fehlerText } from "../../../utils/errors";
 import { useApp } from "../../../context/AppContext";
-import { bStdNum, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../../utils/helpers";
+import { bStdNum, fStd, todayIso, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../../utils/helpers";
 import { ScreenLayout, PBar, Empty, IconButton } from "../../ui";
 import { useSaving } from "../../../hooks/useSaving";
 import { useKostenAggregat, KAT_LABELS, KAT_COLORS } from "./aggregations.js";
@@ -12,21 +14,21 @@ import KostenForm from "./Form.jsx";
  * onSelectBs-Prop wird vom Parent (index.jsx) gehalten — Routing zur Detail-
  * View liegt im Container.
  */
-const List = ({ onSelectBs }) => {
+const List = ({ onSelectBs, prefillBs }) => {
   const { data, actions, show, goBack, cu, addN } = useApp();
   const { saving, withSaving } = useSaving();
-  const [sf, setSf] = useState(false);
+  const [sf, setSf] = useState(!!prefillBs);
   const [fl, setFl] = useState("alle");
   const [kf, sKf] = useState({
-    baustelleId: "",
+    baustelleId: prefillBs || "",
     kategorie: "material",
     beschreibung: "",
     betrag: "",
-    datum: new Date().toISOString().split("T")[0],
+    datum: todayIso(),
   });
   const katLabels = KAT_LABELS;
   const katColors = KAT_COLORS;
-  const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
+  const fH = (h) => fStd(h) + "h";
 
   const bsList =
     fl === "alle"
@@ -49,6 +51,11 @@ const List = ({ onSelectBs }) => {
         show("Alle Felder ausfüllen", "error");
         return;
       }
+      // "0" oder "abc" würden sonst als 0-€-Eintrag gespeichert.
+      if (!(parseDecimal(kf.betrag) > 0)) {
+        show("Betrag als Zahl größer 0 eingeben (z.B. 1.234,50)", "error");
+        return;
+      }
       try {
         await actions.kosten.create({
           baustelleId: kf.baustelleId,
@@ -68,7 +75,7 @@ const List = ({ onSelectBs }) => {
         sKf({ ...kf, beschreibung: "", betrag: "" });
       } catch (e) {
         console.error("[KostenView.saveKost]", e);
-        show(e?.message || "Fehler beim Speichern", "error");
+        show(fehlerText(e, "Fehler beim Speichern"), "error");
       }
     });
 
@@ -91,8 +98,8 @@ const List = ({ onSelectBs }) => {
         rows.push([
           b.kunde,
           "Lohn",
-          `${u?.name || "?"} (${std.toFixed(1)}h × ${fE(u?.stundensatz || 45)})`,
-          ((u?.stundensatz || 45) * std).toFixed(2),
+          `${u?.name || "?"} (${fStd(std)} h × ${fE(u?.stundensatz || 45)})`,
+          deNum((u?.stundensatz || 45) * std),
           "",
         ]);
       });
@@ -104,24 +111,21 @@ const List = ({ onSelectBs }) => {
             b.kunde,
             katLabels[k.kategorie],
             k.beschreibung,
-            k.betrag.toFixed(2),
-            k.datum,
+            deNum(k.betrag),
+            deDate(k.datum),
           ]),
         );
       // Budget Zeile
-      rows.push([b.kunde, "BUDGET", "Gesamt", b.budget || 0, ""]);
-      rows.push([b.kunde, "GESAMT", "", calcTotal(b.id).toFixed(2), ""]);
+      rows.push([b.kunde, "BUDGET", "Gesamt", deNum(b.budget || 0), ""]);
+      rows.push([b.kunde, "GESAMT", "", deNum(calcTotal(b.id)), ""]);
       rows.push(["", "", "", "", ""]);
     });
-    const csv = "\uFEFF" + rows.map((r) => r.join(";")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
+    // Gleiche Regeln wie der Lohnexport: Semikolon/Anführungszeichen werden
+    // maskiert (vorher verschob ein ";" in der Beschreibung alle Spalten),
+    // Beträge mit Komma, Schutz vor Formeln.
+    const csv = "\uFEFF" + rows.map(csvRow).join("\r\n");
     const flSuffix = fl === "alle" ? "" : `_${fl}`;
-    a.download = `Kostenübersicht${flSuffix}_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadCsv(`Kostenübersicht${flSuffix}_${todayIso()}.csv`, csv);
     show("CSV exportiert");
   };
 

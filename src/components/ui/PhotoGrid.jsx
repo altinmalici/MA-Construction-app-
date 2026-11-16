@@ -100,7 +100,13 @@ const PhotoGrid = ({ fotos, onAdd, onRemove, maxFotos = 5 }) => {
                     src={src}
                     alt={`Foto ${i + 1}`}
                     loading="lazy"
-                    onClick={() => setLightboxUrl(src)}
+                    onClick={(ev) => {
+                      // Nicht zur umgebenden Karte durchreichen: In der
+                      // Mängel-Übersicht navigierte ein Tipp aufs Foto sonst
+                      // zur Baustelle, statt das Foto zu öffnen.
+                      ev.stopPropagation();
+                      setLightboxUrl(src);
+                    }}
                     style={{
                       width: "100%",
                       height: "100%",
@@ -176,11 +182,15 @@ const PhotoGrid = ({ fotos, onAdd, onRemove, maxFotos = 5 }) => {
           </div>
         )}
       </div>
-      <Lightbox
-        open={!!lightboxUrl}
-        url={lightboxUrl}
-        onClose={() => setLightboxUrl(null)}
-      />
+      {/* React reicht Klicks aus der Lightbox an die Eltern im Komponenten-
+          Baum weiter (auch wenn sie optisch darüber liegt) → hier stoppen. */}
+      <div onClick={(ev) => ev.stopPropagation()}>
+        <Lightbox
+          open={!!lightboxUrl}
+          url={lightboxUrl}
+          onClose={() => setLightboxUrl(null)}
+        />
+      </div>
     </>
   );
 };

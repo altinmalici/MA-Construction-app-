@@ -52,6 +52,8 @@ describe("fehlerText – Meldungen der Onboarding-RPCs", () => {
       .toMatch(/Konto ist nicht bereit.*Zugang reparieren/);
     expect(fehlerText({ message: "Einladung ungueltig oder abgelaufen" })).toBe("Einladung ungültig oder abgelaufen.");
     expect(fehlerText({ message: "Einladung nicht moeglich: Mitarbeiter ist deaktiviert" })).toMatch(/deaktiviert/);
-    expect(fehlerText({ message: "Die Anmelde-Adresse gehoert bereits einem anderen Mitarbeiter" })).toMatch(/Verwaiste Konten bereinigen/);
+    // verwaistes Konto → Bereinigen hilft; echter anderer Mitarbeiter → nicht
+    expect(fehlerText({ message: "Die Anmelde-Adresse gehoert bereits einem anderen Konto – bitte zuerst verwaiste Konten bereinigen" })).toMatch(/Verwaiste Konten bereinigen/);
+    expect(fehlerText({ message: "Die Anmelde-Adresse gehoert bereits einem anderen Mitarbeiter" })).toBe("Der Benutzername gehört bereits einem anderen Mitarbeiter.");
   });
 });

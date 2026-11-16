@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Save, LogOut } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStdNum, P, G, RED, GREEN, IC } from "../../utils/helpers";
+import { bStdNum, fStd, P, G, RED, GREEN, IC } from "../../utils/helpers";
 import { ScreenLayout, Bdg, ConfirmModal, Card } from "../ui";
+import { useSaving } from "../../hooks/useSaving";
+import { fehlerText } from "../../utils/errors";
 
 const ProfilView = () => {
   const {
@@ -21,16 +23,14 @@ const ProfilView = () => {
   const [name, setName] = useState(cu?.name || "");
   const [pin, setPin] = useState("");
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
+  const { saving, withSaving } = useSaving();
 
   const doLogout = async () => {
     try {
       await actions.auth.signOut();
     } catch (err) {
       setConfirmLogoutOpen(false);
-      show(
-        "Abmelden fehlgeschlagen: " + (err?.message || "Netzwerk-Fehler"),
-        "error",
-      );
+      show(`Abmelden fehlgeschlagen: ${fehlerText(err, "Bitte erneut versuchen.")}`, "error");
       return;
     }
     setCu(null);
@@ -49,7 +49,8 @@ const ProfilView = () => {
     ? data.baustellen
     : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
 
-  const save = async () => {
+  const save = () => withSaving(doSave);
+  const doSave = async () => {
     if (!name.trim()) {
       show("Name nötig", "error");
       return;
@@ -78,8 +79,10 @@ const ProfilView = () => {
       setEditMode(false);
       setPin("");
       show("Gespeichert");
-    } catch {
-      show("Fehler beim Speichern", "error");
+    } catch (e) {
+      console.error("[ProfilView.save]", e);
+      // z.B. "PIN bereits vergeben" oder "Zu viele Versuche" vom Server
+      show(`Nicht gespeichert: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
     }
   };
 
@@ -163,7 +166,7 @@ const ProfilView = () => {
         >
           <Card padding={14} style={{ textAlign: "center" }}>
             <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
-              {totalH.toFixed(0)}h
+              {fStd(Math.round(totalH))}h
             </p>
             <p style={{ fontSize: 12, color: "#8e8e93" }}>Stunden</p>
           </Card>
@@ -322,6 +325,7 @@ const ProfilView = () => {
           <div className="space-y-2">
             <button
               onClick={save}
+              disabled={saving}
               style={{
                 width: "100%",
                 padding: "16px 24px",

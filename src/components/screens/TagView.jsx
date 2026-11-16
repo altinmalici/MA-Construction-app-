@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, bStdNum, IC } from "../../utils/helpers";
+import { bStd, bStdNum, fStd, todayIso, IC } from "../../utils/helpers";
 import { Empty, ScreenLayout, Card } from "../ui";
 
 const TagView = () => {
   const { data, goBack, eName } = useApp();
-  const [dt, setDt] = useState(new Date().toISOString().split("T")[0]);
+  const [dt, setDt] = useState(todayIso());
   const te = data.stundeneintraege.filter((e) => e.datum === dt);
   return (
     <ScreenLayout title="Tagesübersicht" onBack={goBack}>
@@ -42,7 +42,7 @@ const TagView = () => {
                 (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
                 0,
               );
-              return t === 0 ? "0" : t.toFixed(1);
+              return fStd(t);
             })()}
             h
           </p>

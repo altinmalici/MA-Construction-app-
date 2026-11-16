@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Plus, X, AlertCircle, CheckCircle, Trash2, Building2 } from "lucide-react";
+import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
-import { fK, IC, BTN, CS, P, RED, GREEN } from "../../utils/helpers";
+import { fK, IC, BTN, CS, P, RED, GREEN, todayIso } from "../../utils/helpers";
 import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 import { uploadPhoto } from "../../lib/storage";
@@ -66,7 +67,7 @@ const MngView = () => {
           prioritaet: mf.prioritaet,
           status: "offen",
           zustaendig: mf.zustaendig || null,
-          erstelltAm: new Date().toISOString().split("T")[0],
+          erstelltAm: todayIso(),
           frist: mf.frist,
           fotos,
         });
@@ -76,7 +77,7 @@ const MngView = () => {
         sMf({ ...mf, titel: "", beschreibung: "", fotos: [] });
       } catch (e) {
         console.error("[MngView.save]", e);
-        show(e?.message || "Fehler beim Speichern", "error");
+        show(fehlerText(e, "Fehler beim Speichern"), "error");
       }
     });
   const upSt = async (id, st) => {
@@ -97,7 +98,7 @@ const MngView = () => {
       show("Gelöscht");
     } catch (e) {
       console.error("[MngView.delMng]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(fehlerText(e, "Fehler beim Löschen"), "error");
     }
   };
   const pc = { hoch: RED, mittel: P, niedrig: "#8e8e93" };

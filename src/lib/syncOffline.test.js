@@ -124,3 +124,31 @@ describe("syncOffline", () => {
     expect(getPending()).toHaveLength(1);
   });
 });
+
+describe("wartende Einträge: sichtbar, aber getrennt von den Datenbank-Zeilen (Audit D-06)", () => {
+  it("data.wartendeStunden folgt der Warteschlange; data.stundeneintraege bleibt rein", async () => {
+    const { markFailed, dequeue } = await import("./offlineQueue.js");
+    enqueueStunde(e("w1"));
+    const { result } = renderHook(() => useAppData());
+    await act(async () => {});
+    expect(result.current.data.wartendeStunden.map((x) => [x.id, x._pending])).toEqual([["w1", "wartet"]]);
+    expect(result.current.data.stundeneintraege).toEqual([]);
+    act(() => { enqueueStunde(e("f1")); markFailed("f1", "x"); });
+    expect(result.current.data.wartendeStunden.map((x) => [x.id, x._pending])).toEqual([
+      ["w1", "wartet"], ["f1", "abgelehnt"],
+    ]);
+    act(() => { dequeue("w1"); dequeue("f1"); });
+    expect(result.current.data.wartendeStunden).toEqual([]);
+  });
+
+  it("nach einem Sync mit nur Ablehnungen ist der Eintrag als abgelehnt markiert", async () => {
+    enqueueStunde(e("a"));
+    create.mockRejectedValue({ code: "42501", message: "rls" });
+    const { result } = renderHook(() => useAppData());
+    await act(async () => {
+      await result.current.actions.stundeneintraege.syncOffline({ userId: "u1" });
+    });
+    expect(result.current.data.wartendeStunden.map((x) => x._pending)).toEqual(["abgelehnt"]);
+    expect(result.current.data.stundeneintraege).toEqual([]);
+  });
+});
