@@ -1,3 +1,5 @@
+import { round15 } from "./helpers.js";
+
 // Detaillierter Lohn-/Stundenexport als CSV.
 //
 // Deutsch-freundlich: Semikolon als Spaltentrenner, Komma als Dezimal-
@@ -8,26 +10,30 @@
 // Auf Viertelstunde runden (CLAUDE.md-Regel: Arbeitszeit auf 15 Min).
 // Bei den ueblichen 30-Min-Eingaben aendert das nichts, macht die Werte aber
 // robust und lohnabrechnungs-tauglich.
-const round15 = (h) => Math.round(h * 4) / 4;
-
-const deNum = (n, dec = 2) =>
+export const deNum = (n, dec = 2) =>
   Number(n || 0).toLocaleString("de-DE", {
     minimumFractionDigits: dec,
     maximumFractionDigits: dec,
   });
 
 // 'YYYY-MM-DD' -> 'DD.MM.YYYY'
-const deDate = (iso) => {
+export const deDate = (iso) => {
   const [y, m, d] = String(iso).split("-");
   return d && m && y ? `${d}.${m}.${y}` : String(iso);
 };
 
-const cell = (v) => {
-  const s = v == null ? "" : String(v);
+// Eine CSV-Zelle. Schützt zusätzlich vor "Formel-Injektion": Beginnt ein
+// von Nutzern getippter Text mit = + - @ (oder Tab/CR), führt Excel ihn als
+// Formel aus. Ein vorangestelltes Hochkomma macht daraus Text. Zahlen, die
+// der Export selbst formatiert (z.B. "-12,50"), bleiben unangetastet.
+export const csvCell = (v) => {
+  let s = v == null ? "" : String(v);
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d[\d.,]*$/.test(s)) s = "'" + s;
   return /[";\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-const row = (arr) => arr.map(cell).join(";");
+export const csvRow = (arr) => arr.map(csvCell).join(";");
+const row = csvRow;
 
 /**
  * Baut den detaillierten Lohn-CSV-String.
@@ -130,5 +136,7 @@ export function downloadCsv(filename, csv) {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Nicht sofort freigeben: Safari/iOS beginnt den Download erst nach dem
+  // Klick-Handler — ein sofortiges revoke lässt ihn ins Leere laufen.
+  setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
 }

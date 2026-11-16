@@ -2,18 +2,50 @@
 // damit Aggregationen ohne parseFloat()-Wrapping summieren können.
 // Nachtschicht-tauglich: Ende <= Beginn → +24h. Math.max(0, …) verhindert
 // negative Stunden, falls Pause > Schichtlänge ist.
+//
+// Ergebnis ist IMMER auf die Viertelstunde gerundet (Projektregel
+// "Arbeitszeiten auf 15 Minuten runden"). Das ist die einzige Stelle, an der
+// Arbeitszeit berechnet wird — Übersicht, Kosten, Regiebericht und Lohnexport
+// rechnen dadurch mit denselben Stunden. Vorher rundete nur der Lohnexport,
+// sodass drei Screens drei verschiedene Summen zeigten.
+export const round15 = (h) => Math.round(h * 4) / 4;
+
 export const bStdNum = (b, e, p) => {
   if (!b || !e) return 0;
   const [bH, bM] = b.split(":").map(Number);
   const [eH, eM] = e.split(":").map(Number);
+  if (![bH, bM, eH, eM].every(Number.isFinite)) return 0;
   const rawDiff = eH * 60 + eM - (bH * 60 + bM);
   const diff = rawDiff < 0 ? rawDiff + 1440 : rawDiff;
-  return Math.max(0, (diff - (p || 0)) / 60);
+  return round15(Math.max(0, (diff - (Number(p) || 0)) / 60));
 };
 
-// Stunden berechnen — String-Variante (formatiert mit 1 Dezimal-Stelle).
-// Für Display-Zwecke. Numerische Aggregationen sollten bStdNum nutzen.
-export const bStd = (b, e, p) => bStdNum(b, e, p).toFixed(1);
+// Stunden als deutscher Text: 8 → "8", 7.5 → "7,5", 7.75 → "7,75".
+// Zwei Nachkommastellen, weil Viertelstunden sonst falsch aussehen
+// (7,75 h wurde mit einer Stelle zu "7.8").
+export const fStd = (h) =>
+  Number(h || 0).toLocaleString("de-DE", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+
+// Stunden eines Eintrags als Anzeige-Text (ohne "h").
+export const bStd = (b, e, p) => fStd(bStdNum(b, e, p));
+
+// ISO-Kalenderwoche (Mo–So, KW 1 enthält den ersten Donnerstag) für ein
+// Datum "YYYY-MM-DD". Rein rechnerisch in UTC — unabhängig von Zeitzone und
+// Sommerzeit. Die frühere Formel lag in Jahren, die an einem Freitag
+// beginnen (2027, 2032), das ganze Jahr um eine Woche daneben.
+export const isoWeek = (datum) => {
+  const [y, m, d] = String(datum).slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return { jahr: NaN, kw: NaN };
+  const date = new Date(Date.UTC(y, m - 1, d));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day); // Donnerstag derselben Woche
+  const jahr = date.getUTCFullYear();
+  const kw = Math.ceil(((date - Date.UTC(jahr, 0, 1)) / 86400000 + 1) / 7);
+  return { jahr, kw };
+};
 
 // TZ-sicherer Monats-Check auf YYYY-MM-DD-Strings.
 // datum: "2026-04-19" oder "2026-04-19T..." — Zeitanteil wird ignoriert.
@@ -96,7 +128,7 @@ export const getBaustelleFullRange = (stundeneintraege, baustelleId) => {
     : null;
 };
 
-// Aggregiert Stundeneinträge nach Arbeitszeit (auf 0.1h gerundet) → liefert
+// Aggregiert Stundeneinträge nach Arbeitszeit (Viertelstunden) → liefert
 // [{stunden, anzahl, mannstunden}, ...] absteigend nach mannstunden sortiert.
 // 0-Stunden-Einträge werden ignoriert (z.B. wenn Pause > Schichtlänge).
 // Genutzt vom Regiebericht: "3 Mann × 8h" statt einzelner Personen-Zeilen.
@@ -105,7 +137,9 @@ export const aggregateEinsaetze = (eintraege) => {
   (eintraege || []).forEach((e) => {
     const std = bStdNum(e.beginn, e.ende, e.pause);
     if (!(std > 0)) return;
-    const key = std.toFixed(1);
+    // Gruppieren nach dem exakten Viertelstunden-Wert. Früher toFixed(1):
+    // 7,75 h wurde zu 7,8 h und "3 Mann × 7,75" zu 23,4 statt 23,25.
+    const key = String(std);
     map.set(key, (map.get(key) || 0) + 1);
   });
   return Array.from(map.entries())
@@ -134,7 +168,11 @@ export const fK = (d) =>
 // (konsistent mit 3b-02 Non-Negative-Guards).
 export const parseDecimal = (v) => {
   if (v === null || v === undefined || v === "") return 0;
-  const s = String(v).trim().replace(",", ".");
+  let s = String(v).trim().replace(/\s|€/g, "");
+  // "1.234,50": Punkt = Tausender, Komma = Dezimal. Früher wurde daraus 1,234.
+  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
+  // Rest-Müll ("12abc") nicht still als 12 lesen.
+  if (!/^\d*\.?\d+$|^\d+\.$/.test(s)) return 0;
   const n = parseFloat(s);
   return Number.isFinite(n) && n >= 0 ? n : 0;
 };

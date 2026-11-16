@@ -5,6 +5,8 @@ import {
   fDat,
   escHtml,
   aggregateEinsaetze,
+  fStd,
+  todayIso,
   getReportDates,
   getCurrentWeekRange,
   getCurrentMonthRange,
@@ -15,7 +17,7 @@ import {
 } from "../../utils/helpers";
 import { ScreenLayout, SigPad, Card } from "../ui";
 
-const fH = (h) => (Number.isInteger(h) ? h + " h" : h.toFixed(1) + " h");
+const fH = (h) => fStd(h) + " h";
 
 /**
  * Erzeugt das HTML für EINEN Bericht (1 Tag). Pure-function — nimmt alle
@@ -128,7 +130,7 @@ function buildReportHtml({ bs, datum, eintraege, berichtNr, forPrint }) {
 
 const RegView = () => {
   const { data, goBack, show } = useApp();
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayIso();
   const [vonDatum, setVonDatum] = useState(today);
   const [bisDatum, setBisDatum] = useState(today);
   const [bi, sBi] = useState(data.baustellen[0]?.id || "");

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, Save, Edit3, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { CS, BTN, RED, IC, fDat, bStd } from "../../utils/helpers";
+import { CS, BTN, RED, IC, fDat, bStd, todayIso } from "../../utils/helpers";
 import { ScreenLayout, PhotoGrid, TimePicker, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 import { uploadPhoto } from "../../lib/storage";
@@ -27,7 +27,7 @@ const SteView = () => {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const initFd = {
     baustelleId: sb?.id || "",
-    datum: new Date().toISOString().split("T")[0],
+    datum: todayIso(),
     beginn: "07:00",
     ende: "16:00",
     pause: 30,

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStdNum, fK, P, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { bStdNum, fStd, fK, P, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
 import { buildLohnCsv, downloadCsv } from "../../utils/lohnexport";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
@@ -31,7 +31,7 @@ const StundenUebersicht = () => {
       return m + 1;
     });
   };
-  const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
+  const fH = (h) => fStd(h) + "h";
 
   // 6-06 Prio 1: byUser-Pipeline memoizen. Vorher pro Render:
   //   me.filter()  +  allUsers.map(filter+reduce+forEach)  +  byUser.reduce

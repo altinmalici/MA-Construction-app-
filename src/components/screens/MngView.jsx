@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, X, AlertCircle, CheckCircle, Trash2, Building2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fK, IC, BTN, CS, P, RED, GREEN } from "../../utils/helpers";
+import { fK, IC, BTN, CS, P, RED, GREEN, todayIso } from "../../utils/helpers";
 import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 import { uploadPhoto } from "../../lib/storage";
@@ -66,7 +66,7 @@ const MngView = () => {
           prioritaet: mf.prioritaet,
           status: "offen",
           zustaendig: mf.zustaendig || null,
-          erstelltAm: new Date().toISOString().split("T")[0],
+          erstelltAm: todayIso(),
           frist: mf.frist,
           fotos,
         });

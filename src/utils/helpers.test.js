@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  round15,
+  fStd,
+  isoWeek,
+  todayIso,
   genPin,
   bStd,
   bStdNum,
@@ -52,8 +56,10 @@ describe("parseDecimal (Komma + Punkt)", () => {
   it("Number-Input wird durchgereicht: 45 → 45", () => {
     expect(parseDecimal(45)).toBe(45);
   });
-  it("Tausenderpunkt + Komma: '1.234,56' → 1.234 (dokumentiert: erstes Komma → Punkt, parseFloat stoppt am zweiten Punkt)", () => {
-    expect(parseDecimal("1.234,56")).toBe(1.234);
+  it("Tausenderpunkt + Komma: '1.234,56' → 1234.56", () => {
+    expect(parseDecimal("1.234,56")).toBe(1234.56);
+    expect(parseDecimal("12.345.678,9")).toBe(12345678.9);
+    expect(parseDecimal("1 234,50 €")).toBe(1234.5);
   });
 });
 
@@ -107,35 +113,35 @@ describe("isMitarbeiterEntry", () => {
 
 describe("bStd (Stunden-Berechnung)", () => {
   it("a) normale Schicht 08:00-16:00 ohne Pause = 8.0h", () => {
-    expect(bStd("08:00", "16:00", 0)).toBe("8.0");
+    expect(bStd("08:00", "16:00", 0)).toBe("8");
   });
 
   it("b) 08:00-16:00 mit 30min Pause = 7.5h", () => {
-    expect(bStd("08:00", "16:00", 30)).toBe("7.5");
+    expect(bStd("08:00", "16:00", 30)).toBe("7,5");
   });
 
   it("c) Mitternachts-Übergang 22:00-02:00 ohne Pause = 4.0h", () => {
-    expect(bStd("22:00", "02:00", 0)).toBe("4.0");
+    expect(bStd("22:00", "02:00", 0)).toBe("4");
   });
 
   it("d) Nachtschicht 22:00-06:00 mit 30min Pause = 7.5h", () => {
-    expect(bStd("22:00", "06:00", 30)).toBe("7.5");
+    expect(bStd("22:00", "06:00", 30)).toBe("7,5");
   });
 
   it("e) Beginn = Ende 00:00-00:00 = 0.0h (Convention)", () => {
-    expect(bStd("00:00", "00:00", 0)).toBe("0.0");
+    expect(bStd("00:00", "00:00", 0)).toBe("0");
   });
 
   it("f) kleiner Mitternachts-Sprung 23:30-00:30 = 1.0h", () => {
-    expect(bStd("23:30", "00:30", 0)).toBe("1.0");
+    expect(bStd("23:30", "00:30", 0)).toBe("1");
   });
 
   it("g) 08:00-16:00 mit 60min Pause = 7.0h", () => {
-    expect(bStd("08:00", "16:00", 60)).toBe("7.0");
+    expect(bStd("08:00", "16:00", 60)).toBe("7");
   });
 
   it("h) Pause > Schicht-Länge → 0.0h (Safety-Cap, kein Negativ-Wert)", () => {
-    expect(bStd("08:00", "09:00", 120)).toBe("0.0");
+    expect(bStd("08:00", "09:00", 120)).toBe("0");
   });
 });
 
@@ -475,5 +481,82 @@ describe("genUsername", () => {
     existing.push("altin.malici");
     const u = genUsername("Altin Malici", existing);
     expect(u).toMatch(/^altin\.malici\d+$/);
+  });
+});
+
+describe("Viertelstunden-Regel (Audit D-08, D-11, D-12)", () => {
+  it("bStdNum rundet immer auf 15 Minuten", () => {
+    expect(bStdNum("07:00", "15:10", 30)).toBe(7.75); // 7,67 → 7,75
+    expect(bStdNum("07:00", "15:00", 20)).toBe(7.75); // 7,67 → 7,75
+    expect(bStdNum("07:00", "15:07", 0)).toBe(8); // 8,12 → 8
+    expect(bStdNum("07:00", "15:08", 0)).toBe(8.25); // 8,13 → 8,25
+    expect(bStdNum("07:00", "15:15", 30)).toBe(7.75);
+  });
+  it("round15 / fStd", () => {
+    expect(round15(8.6)).toBe(8.5);
+    expect(fStd(8)).toBe("8");
+    expect(fStd(7.5)).toBe("7,5");
+    expect(fStd(7.75)).toBe("7,75");
+    expect(fStd(23.25)).toBe("23,25");
+    expect(fStd(1234.5)).toBe("1.234,5");
+  });
+  it("kaputte Zeitangaben ergeben 0 statt NaN", () => {
+    expect(bStdNum("abc", "16:00", 0)).toBe(0);
+    expect(bStdNum("08:00", "16:00", "x")).toBe(8);
+  });
+  it("Regiebericht: 3 Mann × 7,75 h = 23,25 h (nicht 23,4)", () => {
+    const e = { beginn: "07:00", ende: "15:15", pause: 30 };
+    const r = aggregateEinsaetze([e, e, e]);
+    expect(r).toEqual([{ stunden: 7.75, anzahl: 3, mannstunden: 23.25 }]);
+  });
+  it("Regiebericht: 7,25 und 7,5 landen in getrennten Zeilen", () => {
+    const r = aggregateEinsaetze([
+      { beginn: "07:00", ende: "14:45", pause: 30 },
+      { beginn: "07:00", ende: "15:00", pause: 30 },
+    ]);
+    expect(r.map((x) => x.stunden).sort()).toEqual([7.25, 7.5]);
+  });
+});
+
+describe("isoWeek (Audit D-16)", () => {
+  it("2027 (1. Januar = Freitag): 4. Januar ist KW 1, nicht KW 2", () => {
+    expect(isoWeek("2027-01-04")).toEqual({ jahr: 2027, kw: 1 });
+    expect(isoWeek("2027-01-01")).toEqual({ jahr: 2026, kw: 53 });
+    expect(isoWeek("2027-12-31")).toEqual({ jahr: 2027, kw: 52 });
+  });
+  it("übliche Jahre und Jahreswechsel", () => {
+    expect(isoWeek("2026-11-16")).toEqual({ jahr: 2026, kw: 47 });
+    expect(isoWeek("2026-01-01")).toEqual({ jahr: 2026, kw: 1 });
+    expect(isoWeek("2024-12-30")).toEqual({ jahr: 2025, kw: 1 });
+    expect(isoWeek("2021-01-03")).toEqual({ jahr: 2020, kw: 53 });
+    expect(isoWeek("2032-01-05")).toEqual({ jahr: 2032, kw: 2 });
+  });
+  it("Zeitanteil wird ignoriert; kaputte Eingabe → NaN", () => {
+    expect(isoWeek("2026-11-16T23:59:00Z").kw).toBe(47);
+    expect(Number.isNaN(isoWeek("").kw)).toBe(true);
+  });
+});
+
+describe("parseDecimal – keine stillen Fehlwerte (Audit D-19)", () => {
+  it("Unsinn wird 0, nicht der Zahlen-Anfang", () => {
+    expect(parseDecimal("12abc")).toBe(0);
+    expect(parseDecimal("abc")).toBe(0);
+    expect(parseDecimal("1.2.3")).toBe(0);
+  });
+  it("übliche Eingaben bleiben", () => {
+    expect(parseDecimal("45")).toBe(45);
+    expect(parseDecimal("45,5")).toBe(45.5);
+    expect(parseDecimal("45.5")).toBe(45.5);
+    expect(parseDecimal(",5")).toBe(0.5);
+    expect(parseDecimal("12.")).toBe(12);
+  });
+});
+
+describe("todayIso (Audit D-24)", () => {
+  it("liefert das ÖRTLICHE Datum, auch kurz nach Mitternacht", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 10, 17, 0, 30)); // 17.11. 00:30 Ortszeit
+    expect(todayIso()).toBe("2026-11-17");
+    vi.useRealTimers();
   });
 });

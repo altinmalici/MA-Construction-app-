@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Save, LogOut } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStdNum, P, G, RED, GREEN, IC } from "../../utils/helpers";
+import { bStdNum, fStd, P, G, RED, GREEN, IC } from "../../utils/helpers";
 import { ScreenLayout, Bdg, ConfirmModal, Card } from "../ui";
 
 const ProfilView = () => {
@@ -163,7 +163,7 @@ const ProfilView = () => {
         >
           <Card padding={14} style={{ textAlign: "center" }}>
             <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
-              {totalH.toFixed(0)}h
+              {fStd(Math.round(totalH))}h
             </p>
             <p style={{ fontSize: 12, color: "#8e8e93" }}>Stunden</p>
           </Card>

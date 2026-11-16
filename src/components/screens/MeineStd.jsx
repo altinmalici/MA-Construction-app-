@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, bStdNum, fDat, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { bStd, bStdNum, fStd, isoWeek, fDat, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
 const MeineStd = () => {
@@ -45,13 +45,7 @@ const MeineStd = () => {
   // Gruppiert nach Woche
   const byWeek = {};
   me.forEach((e) => {
-    const d = new Date(e.datum);
-    const day = d.getDay() || 7;
-    const thu = new Date(d);
-    thu.setDate(d.getDate() + 4 - day);
-    const kw = Math.ceil(
-      ((thu - new Date(thu.getFullYear(), 0, 1)) / 86400000 + 1) / 7,
-    );
+    const { kw } = isoWeek(e.datum);
     const w = `KW ${String(kw).padStart(2, "0")}`;
     if (!byWeek[w]) byWeek[w] = [];
     byWeek[w].push(e);
@@ -92,7 +86,7 @@ const MeineStd = () => {
       >
         <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
-            {moH.toFixed(1)}h
+            {fStd(moH)}h
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Monat</p>
         </Card>
@@ -104,7 +98,7 @@ const MeineStd = () => {
         </Card>
         <Card padding={14} style={{ textAlign: "center" }}>
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
-            {totalH.toFixed(1)}h
+            {fStd(totalH)}h
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93" }}>Gesamt</p>
         </Card>
@@ -145,7 +139,7 @@ const MeineStd = () => {
                         color: "#3c3c43",
                       }}
                     >
-                      {wH.toFixed(1)}h
+                      {fStd(wH)}h
                     </span>
                   </div>
                   <div style={{ padding: 10 }} className="space-y-1">

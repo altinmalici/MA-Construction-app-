@@ -1,3 +1,4 @@
+import { todayIso } from '../../utils/helpers.js';
 import { supabase } from '../supabase.js';
 import { uploadDocument, deleteDocument, getDocumentUrl } from '../storage.js';
 import { requestWithRetry } from './_request.js';
@@ -27,7 +28,7 @@ export async function create(doc) {
     name: doc.name,
     typ: doc.typ || 'dokument',
     groesse: doc.groesse || '–',
-    datum: doc.datum || new Date().toISOString().split('T')[0],
+    datum: doc.datum || todayIso(),
     storage_path: doc.storagePath || null,
   };
   const { data, error } = await supabase
@@ -50,7 +51,7 @@ export async function createWithFile({ file, baustelleId, typ = 'dokument' }) {
   if (!baustelleId) throw new Error('baustelleId fehlt');
 
   const groesseStr = formatFileSize(file.size);
-  const heute = new Date().toISOString().split('T')[0];
+  const heute = todayIso();
 
   // 1. Row anlegen (bekommt ID, noch ohne storage_path)
   const { data: row, error: insertErr } = await supabase

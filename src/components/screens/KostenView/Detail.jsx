@@ -3,6 +3,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useApp } from "../../../context/AppContext";
 import {
   bStdNum,
+  fStd,
   fE,
   fK,
   P,
@@ -19,7 +20,7 @@ import {
 } from "../../ui";
 import { KAT_LABELS, KAT_COLORS } from "./aggregations.js";
 
-const fH = (h) => (Number.isInteger(h) ? h + "h" : h.toFixed(1) + "h");
+const fH = (h) => fStd(h) + "h";
 
 /**
  * KostenView Detail-Sub-Component (6-03a Phase 2).
@@ -149,7 +150,7 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
                     (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
                     0,
                   );
-                  return Number.isInteger(h) ? h : h.toFixed(1);
+                  return fStd(h);
                 })()}
               </p>
               <p style={{ fontSize: 12, color: "#8e8e93" }}>Stunden</p>

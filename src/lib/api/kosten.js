@@ -1,3 +1,4 @@
+import { todayIso } from '../../utils/helpers.js';
 import { supabase } from '../supabase.js';
 import { requestWithRetry } from './_request.js';
 
@@ -25,7 +26,7 @@ export async function create(k) {
     kategorie: k.kategorie || 'material',
     beschreibung: k.beschreibung,
     betrag: k.betrag,
-    datum: k.datum || new Date().toISOString().split('T')[0],
+    datum: k.datum || todayIso(),
     ersteller: k.ersteller || null,
   };
   const { data, error } = await supabase

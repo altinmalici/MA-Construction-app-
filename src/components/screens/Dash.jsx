@@ -11,7 +11,7 @@ import {
   Bell,
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { G, BTN, RED, P, CS, COLORS, isInMonth } from "../../utils/helpers";
+import { G, BTN, RED, P, CS, COLORS, isInMonth, todayIso } from "../../utils/helpers";
 import { ScreenLayout, Card } from "../ui";
 
 const Dash = () => {
@@ -20,7 +20,7 @@ const Dash = () => {
   // Audit P-MEDIUM: Widget-Counts memoized — vorher O(n) filter pro
   // Render je Modul. Mit useMemo werden die Filter nur neu berechnet,
   // wenn die zugrunde liegende Datenliste sich tatsächlich ändert.
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayIso();
 
   const mb = useMemo(
     () =>

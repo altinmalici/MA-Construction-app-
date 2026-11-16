@@ -75,3 +75,41 @@ describe("buildLohnCsv", () => {
     expect(csv).toContain("GESAMT;21,00;;902,50");
   });
 });
+
+describe("CSV-Sicherheit und Konsistenz (Audit D-13, D-11)", () => {
+  it("Formel-Injektion: Texte mit = + - @ am Anfang werden entschärft", async () => {
+    const { csvCell } = await import("./lohnexport.js");
+    expect(csvCell("=SUMME(A1:A9)")).toBe("'=SUMME(A1:A9)");
+    expect(csvCell("+49 170 123")).toBe("'+49 170 123");
+    expect(csvCell("@cmd")).toBe("'@cmd");
+    expect(csvCell("-Rückbau Wand")).toBe("'-Rückbau Wand");
+    expect(csvCell('=HYPERLINK("x";"y")')).toBe(`"'=HYPERLINK(""x"";""y"")"`);
+  });
+
+  it("vom Export formatierte Zahlen und normale Texte bleiben unverändert", async () => {
+    const { csvCell } = await import("./lohnexport.js");
+    expect(csvCell("-12,50")).toBe("-12,50");
+    expect(csvCell("1.234,56")).toBe("1.234,56");
+    expect(csvCell("Estrich")).toBe("Estrich");
+    expect(csvCell(null)).toBe("");
+  });
+
+  it("Zeilenumbruch und Anführungszeichen in der Tätigkeit zerreißen die Zeile nicht", async () => {
+    const { csvRow } = await import("./lohnexport.js");
+    expect(csvRow(["a", 'Wand "Nord"\nverputzt', "b"])).toBe('a;"Wand ""Nord""\nverputzt";b');
+  });
+
+  it("Lohn-CSV rechnet mit denselben Viertelstunden wie die App", async () => {
+    const { buildLohnCsv } = await import("./lohnexport.js");
+    const { bStdNum } = await import("./helpers.js");
+    const csv = buildLohnCsv({
+      entries: [{ mitarbeiterId: "u1", baustelleId: "b1", datum: "2026-11-16", beginn: "07:00", ende: "15:10", pause: 30, arbeit: "=1+1" }],
+      hoursOf: (e) => bStdNum(e.beginn, e.ende, e.pause),
+      userById: new Map([["u1", { name: "Max", stundensatz: 40 }]]),
+      baustelleById: new Map([["b1", { kunde: "Huber" }]]),
+      monthLabel: "November 2026",
+    });
+    expect(csv).toContain("7,75;40,00;310,00");
+    expect(csv).toContain("'=1+1");
+  });
+});

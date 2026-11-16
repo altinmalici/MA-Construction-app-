@@ -1,3 +1,4 @@
+import { todayIso } from '../../utils/helpers.js';
 import { supabase } from '../supabase.js';
 import { deletePhotos } from '../storage.js';
 import { requestWithRetry } from './_request.js';
@@ -22,7 +23,7 @@ export async function create(m) {
     prioritaet: m.prioritaet || 'mittel',
     status: m.status || 'offen',
     zustaendig: m.zustaendig || null,
-    erstellt_am: m.erstelltAm || new Date().toISOString().split('T')[0],
+    erstellt_am: m.erstelltAm || todayIso(),
     frist: m.frist || null,
     fotos: m.fotos || [],
   };
