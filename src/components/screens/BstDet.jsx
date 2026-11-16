@@ -147,7 +147,8 @@ const BstDet = () => {
               if (debounceRef.current) clearTimeout(debounceRef.current);
               debounceRef.current = setTimeout(async () => {
                 try {
-                  await actions.baustellen.update(b.id, { fortschritt: val });
+                  // updateField schreibt NUR diese eine Spalte (Audit U-01).
+                  await actions.baustellen.updateField(b.id, "fortschritt", val);
                 } catch (err) {
                   console.error("[BstDet.slider]", err);
                   show(err?.message || "Fehler beim Speichern", "error");

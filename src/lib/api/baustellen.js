@@ -1,5 +1,4 @@
 import { supabase } from '../supabase.js';
-import { stripUndefined } from '../../utils/objects.js';
 import { requestWithRetry } from './_request.js';
 
 // Whitelist allowed for partial single-field updates via updateField().
@@ -86,26 +85,48 @@ export async function create(bs) {
   return data.id;
 }
 
+// Wie ein Feld beim Schreiben normalisiert wird (leere Eingaben → DB-Default).
+const UPDATE_NORMALIZERS = {
+  kunde: (v) => v,
+  adresse: (v) => v || '',
+  status: (v) => v || 'geplant',
+  fortschritt: (v) => v || 0,
+  ansprechpartner: (v) => v || '',
+  telefon: (v) => v || '',
+  zugang: (v) => v || '',
+  startdatum: (v) => v || null,
+  enddatum: (v) => v || null,
+  budget: (v) => v || 0,
+  details: (v) => v || {},
+};
+
+// Schreibt NUR die Felder, die in `bs` tatsaechlich vorkommen. Frueher
+// wurden fehlende Felder mit Standardwerten ueberschrieben und die
+// Zuweisungen immer synchronisiert — ein Teil-Update wie {fortschritt}
+// leerte so die ganze Baustelle und entfernte das Team (Audit U-01).
+// Zuweisungen werden nur synchronisiert, wenn BEIDE Listen uebergeben sind
+// (der RPC ersetzt immer beide).
 export async function update(id, bs) {
   const { mitarbeiter, subunternehmer, ...fields } = bs;
-  const row = stripUndefined({
-    kunde: fields.kunde,
-    adresse: fields.adresse || '',
-    status: fields.status || 'geplant',
-    fortschritt: fields.fortschritt || 0,
-    ansprechpartner: fields.ansprechpartner || '',
-    telefon: fields.telefon || '',
-    zugang: fields.zugang || '',
-    startdatum: fields.startdatum || null,
-    enddatum: fields.enddatum || null,
-    budget: fields.budget || 0,
-    details: fields.details || {},
-  });
+  const hasMit = mitarbeiter !== undefined;
+  const hasSub = subunternehmer !== undefined;
+  if (hasMit !== hasSub) {
+    throw new Error(
+      '[baustellen.update] mitarbeiter und subunternehmer müssen beide übergeben werden (oder beide fehlen).',
+    );
+  }
 
-  const { error } = await supabase.from('baustellen').update(row).eq('id', id);
-  if (error) throw error;
+  const row = {};
+  for (const [key, normalize] of Object.entries(UPDATE_NORMALIZERS)) {
+    if (fields[key] !== undefined) row[key] = normalize(fields[key]);
+  }
 
-  await syncJunctions(id, mitarbeiter || [], subunternehmer || []);
+  if (Object.keys(row).length > 0) {
+    const { error } = await supabase.from('baustellen').update(row).eq('id', id);
+    if (error) throw error;
+  }
+
+  if (hasMit) await syncJunctions(id, mitarbeiter, subunternehmer);
 }
 
 export async function updateField(id, field, value) {
