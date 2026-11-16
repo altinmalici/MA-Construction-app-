@@ -274,7 +274,7 @@ Grundlage: `docs/AUDIT_2026-11.md` (69 Befunde). Laufprotokoll, PR-Links und man
 | AP-1 | Build/Tests/Lint stabil, Abhängigkeiten patch/minor, `docs/SETUP.md` | 🟢 DONE |
 | AP-2 | Kritische Bugs & Sicherheit (U-01, S-01, S-02, D-01, RLS/RPC-Härtung) | 🟢 DONE — Migration `migration_2026_11_16_01_security_hardening.sql` muss von Hand ausgeführt werden |
 | AP-3 | Bautagebuch speichern | 🟢 DONE — optionale Migration `migration_2026_11_16_02_bautagebuch_wetter.sql` |
-| AP-4 | PIN / "Willkommen zurück" / Auto-Lock | 🔴 TODO |
+| AP-4 | PIN / "Willkommen zurück" / Auto-Lock | 🟡 umgesetzt + getestet, Review-Lauf und Gerätetest offen |
 | AP-5 | Mitarbeiter-Onboarding robust + Einladungs-Link | 🔴 TODO |
 | AP-6 | Mängel-Branch prüfen | 🟢 DONE — bereits vollständig in `main`, nichts zu tun |
 | AP-7 | Hohe/mittlere Audit-Punkte | 🔴 TODO |
