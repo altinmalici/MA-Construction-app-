@@ -35,12 +35,19 @@ const emptyData = {
 
 export function useAppData() {
   const [data, setData] = useState(emptyData);
-  const [loading, setLoading] = useState(true);
+  // Kein Laden beim App-Start mehr: ohne Sitzung liefert RLS ohnehin nur
+  // leere Listen, und ohne Netz erschien statt des Logins der Fehlerbildschirm.
+  // Geladen wird nach dem Login (AppContext.completeLogin → loadAll).
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const mountedRef = useRef(true);
 
   // Load all data from Supabase
-  const loadAll = useCallback(async () => {
+  // silent=true: Fehler nur loggen (Auffrischen im Hintergrund, z.B. nach dem
+  // Entsperren) — sonst würde der App-weite Fehlerbildschirm den offenen
+  // Screen samt Eingaben ersetzen.
+  const loadAll = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const [
         users,
@@ -71,8 +78,18 @@ export function useAppData() {
       }
     } catch (err) {
       console.error('Daten laden fehlgeschlagen:', err);
-      if (mountedRef.current) setError(err.message);
+      if (mountedRef.current && !silent) setError(err.message);
+    } finally {
+      if (mountedRef.current && !silent) setLoading(false);
     }
+  }, []);
+
+  // Alles verwerfen (Logout / Nutzerwechsel), damit der nächste Nutzer am
+  // selben Gerät nie die Daten des vorherigen sieht.
+  const resetData = useCallback(() => {
+    if (!mountedRef.current) return;
+    setData(emptyData);
+    setError(null);
   }, []);
 
   // 6-02: Merge eines einzelnen Realtime-Events in den lokalen State
@@ -148,15 +165,8 @@ export function useAppData() {
 
   useEffect(() => {
     mountedRef.current = true;
-    // setState passiert async im finally-Callback nach loadAll(). Lint sieht
-    // den synchronen loadAll-Aufruf konservativ als Effect-setState — hier
-    // erlaubt: kein cascading render, sondern One-Shot-Init.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadAll().finally(() => {
-      if (mountedRef.current) setLoading(false);
-    });
     return () => { mountedRef.current = false; };
-  }, [loadAll]);
+  }, []);
 
   // Nachladen NACH einem erfolgreichen Schreibvorgang darf den Erfolg nicht in
   // einen Fehler verwandeln. Früher warf z.B. create() bei gescheitertem
@@ -174,9 +184,6 @@ export function useAppData() {
 
   const actions = {
     auth: {
-      login: async (pin) => {
-        return await api.auth.login(pin);
-      },
       loginAsUser: async (username, pin) => {
         return await api.auth.loginAsUser(username, pin);
       },
@@ -411,6 +418,7 @@ export function useAppData() {
 
     reload,
     loadAll,
+    resetData,
   };
 
   return { data, loading, error, actions, mergeIncomingRow };
