@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Save, UserPlus, CheckCircle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { genUsername, genPin, parseDecimal, IC, BTN, GREEN, CS } from "../../utils/helpers";
@@ -21,18 +21,19 @@ const MitForm = () => {
   const [n, setN] = useState(ex?.name || "");
   const [ss, setSs] = useState(String(ex?.stundensatz || 45));
   const [un, setUn] = useState(ex?.username || "");
-  useEffect(() => {
-    if (ex || !n.trim()) {
-      if (!ex) setUn("");
+  // Benutzername folgt dem Namen, solange ein NEUER Mitarbeiter angelegt wird.
+  // Sobald der Chef den Benutzernamen von Hand ändert, bleibt er stehen, bis
+  // der Name erneut geändert wird.
+  const onNameChange = (value) => {
+    setN(value);
+    if (ex) return;
+    if (!value.trim()) {
+      setUn("");
       return;
     }
     const existing = data.users.map((u) => u.username).filter(Boolean);
-    setUn(genUsername(n.trim(), existing));
-    // Absichtlich nur auf Name-Änderung lauschen — sobald der User den
-    // Username manuell ändert, soll die Auto-Generierung pausieren bis
-    // Name sich erneut ändert. data.users/ex bewusst ausgelassen.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [n]);
+    setUn(genUsername(value.trim(), existing));
+  };
   const save = () =>
     withSaving(async () => {
       if (!n.trim()) {
@@ -223,7 +224,7 @@ const MitForm = () => {
             </label>
             <input
               value={n}
-              onChange={(e) => setN(e.target.value)}
+              onChange={(e) => onNameChange(e.target.value)}
               placeholder="Vor- und Nachname"
               className={IC}
               style={{ background: "rgba(118,118,128,0.12)", border: "none" }}

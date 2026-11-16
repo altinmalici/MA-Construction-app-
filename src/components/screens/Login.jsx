@@ -4,6 +4,10 @@ import { useApp } from "../../context/AppContext";
 import { P, BTN, RED, GREEN, IC, G } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 
+// Ende der 30-s-Sperre nach 3 Fehlversuchen (ausserhalb der Komponente,
+// damit kein unreiner Aufruf im Render-Pfad steht).
+const lockUntilIso = () => new Date(Date.now() + 30000).toISOString();
+
 const Login = () => {
   const { actions, setCu, nav, sessionUser } = useApp();
   const [mode, setMode] = useState("C"); // A=first time, B=set PIN, C=returning
@@ -34,10 +38,7 @@ const Login = () => {
   const displayedUser = sessionUser || lastUser;
 
   useEffect(() => {
-    if (!lockedUntil) {
-      setLockSec(0);
-      return;
-    }
+    if (!lockedUntil) return;
     const tick = () => {
       const r = Math.ceil((new Date(lockedUntil) - new Date()) / 1000);
       if (r <= 0) {
@@ -50,8 +51,8 @@ const Login = () => {
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, [lockedUntil]);
-  const isLocked =
-    permLocked || (lockedUntil && new Date() < new Date(lockedUntil));
+  // lockSec wird vom Timer oben gepflegt — kein Date.now() im Render.
+  const isLocked = permLocked || (!!lockedUntil && lockSec > 0);
   const wrongAttempt = () => {
     const na = attempts + 1;
     setAttempts(na);
@@ -59,7 +60,8 @@ const Login = () => {
       setPermLocked(true);
       setErr("Gesperrt. Kontaktiere den Bauleiter.");
     } else if (na >= 3 && na % 3 === 0) {
-      setLockedUntil(new Date(Date.now() + 30000).toISOString());
+      setLockSec(30);
+      setLockedUntil(lockUntilIso());
       setErr(`Gesperrt (30s)`);
     } else setErr("Falscher PIN");
   };
@@ -202,7 +204,7 @@ const Login = () => {
     }
   };
 
-  const Numpad = ({ disabled: d }) => (
+  const renderNumpad = (d = false) => (
     <div
       style={{
         display: "grid",
@@ -237,7 +239,7 @@ const Login = () => {
       ))}
     </div>
   );
-  const Dots = ({ value }) => (
+  const renderDots = (value) => (
     <div
       role="status"
       aria-label={`${value.length} von 4 Ziffern eingegeben`}
@@ -262,7 +264,7 @@ const Login = () => {
       ))}
     </div>
   );
-  const ErrLine = () => (
+  const renderErrLine = () => (
     <div role="alert" aria-live="assertive" style={{ height: 24, textAlign: "center" }}>
       {isLocked && !permLocked ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>
@@ -369,7 +371,7 @@ const Login = () => {
                 inputMode="numeric"
               />
             </div>
-            <ErrLine />
+            {renderErrLine()}
             <button
               onClick={goOnboard}
               disabled={
@@ -462,11 +464,11 @@ const Login = () => {
             </p>
           </div>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <Dots value={cp} />
-            <ErrLine />
+            {renderDots(cp)}
+            {renderErrLine()}
           </div>
           <div style={{ width: "100%" }}>
-            <Numpad />
+            {renderNumpad()}
           </div>
         </div>
       </ScreenLayout>
@@ -540,11 +542,11 @@ const Login = () => {
           )}
         </div>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <Dots value={pin} />
-          <ErrLine />
+          {renderDots(pin)}
+          {renderErrLine()}
         </div>
         <div style={{ width: "100%" }}>
-          <Numpad disabled={isLocked} />
+          {renderNumpad(isLocked)}
         </div>
         <div
           style={{

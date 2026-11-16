@@ -110,6 +110,11 @@ export function AppProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const fileRef = useRef(null);
   const [photoCb, setPhotoCb] = useState(null);
+  const show = (m, t = "success") => {
+    const id = Date.now() + Math.random();
+    // Max 3 parallele Toasts — älteste werden verdrängt.
+    setToasts((prev) => [...prev, { id, message: m, type: t }].slice(-3));
+  };
   // clockTime wurde lokalisiert in <Clock />-Komponente (Audit P-MEDIUM):
   // vorher löste die Minutentick-State-Update einen App-weiten Re-Render
   // aus, weil clockTime im AppContext-Value steckte.
@@ -214,6 +219,9 @@ export function AppProvider({ children }) {
   // Safety: if not logged in, show login
   useEffect(() => {
     if (!authChecking && !cu && v !== "login") {
+      // Sicherheitsnetz, kein Render-Kaskaden-Risiko: läuft nur im
+      // Ausnahmefall "nicht eingeloggt, aber anderer Screen".
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHistory([]);
       setVRaw("login");
     }
@@ -296,11 +304,6 @@ export function AppProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, data.baustellen.length, cu]);
 
-  const show = (m, t = "success") => {
-    const id = Date.now() + Math.random();
-    // Max 3 parallele Toasts — älteste werden verdrängt.
-    setToasts((prev) => [...prev, { id, message: m, type: t }].slice(-3));
-  };
   const dismissToast = (id) =>
     setToasts((prev) => prev.filter((t) => t.id !== id));
   const chef = cu?.role === "chef";
