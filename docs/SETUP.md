@@ -29,6 +29,8 @@ Bundle-Analyse nur bei Bedarf: `ANALYZE=1 npm run build` schreibt `stats.html` i
 
 Fehlt eine Variable, bricht die App beim Start mit einer klaren Meldung ab (`src/lib/supabase.js`). `.env` und `.env.local` sind in `.gitignore` und gehören nie ins Repo.
 
+SQL-Tests: `supabase/tests/` spielt alle Migrationen in ein Wegwerf-Postgres im Arbeitsspeicher ein (PGlite) und prüft Rollen, Policies und RPCs. Neue Migrationen dort mit testen.
+
 Die Tests brauchen die Variablen ebenfalls (das Supabase-Modul wird beim Import geprüft), erreichen die Datenbank aber nicht: `src/test/setup.js` sperrt `fetch` für alle Tests.
 
 GitHub-Secrets (Repo → Settings → Secrets and variables → Actions): `VITE_SUPABASE_URL` und `VITE_SUPABASE_ANON_KEY`. Beide Workflows (`ci.yml`, `keep-alive.yml`) nutzen sie.

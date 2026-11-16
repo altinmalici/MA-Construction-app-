@@ -273,7 +273,7 @@ Grundlage: `docs/AUDIT_2026-11.md` (69 Befunde). Laufprotokoll, PR-Links und man
 | AP-0 | Audit (`docs/AUDIT_2026-11.md`) | 🟢 DONE |
 | AP-1 | Build/Tests/Lint stabil, Abhängigkeiten patch/minor, `docs/SETUP.md` | 🟢 DONE |
 | AP-2 | Kritische Bugs & Sicherheit (U-01, S-01, S-02, D-01, RLS/RPC-Härtung) | 🟢 DONE — Migration `migration_2026_11_16_01_security_hardening.sql` muss von Hand ausgeführt werden |
-| AP-3 | Bautagebuch speichern | 🔴 TODO |
+| AP-3 | Bautagebuch speichern | 🟢 DONE — optionale Migration `migration_2026_11_16_02_bautagebuch_wetter.sql` |
 | AP-4 | PIN / "Willkommen zurück" / Auto-Lock | 🔴 TODO |
 | AP-5 | Mitarbeiter-Onboarding robust + Einladungs-Link | 🔴 TODO |
 | AP-6 | Mängel-Branch prüfen | 🟢 DONE — bereits vollständig in `main`, nichts zu tun |
@@ -358,6 +358,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-11-16 · AP-3 · Branch `autopilot-2026-11-16-p3-bautagebuch` · Bautagebuch-Speichern: Baustelle wird zur Renderzeit bestimmt (vorher einmalig beim Öffnen → leer bei noch nicht geladenen Daten, Auswahl bei einer Baustelle ausgeblendet). Wetter/Temperatur als optionale Felder statt erfundener Werte, Datumsprüfung, deutsche Fehlermeldungen (`src/utils/errors.js`), Sortierung nach Datum. +26 Tests.
 - 2026-11-16 · AP-2 · Branch `autopilot-2026-11-16-p2-kritisch` · U-01: Fortschritts-Regler leerte die Baustelle und entfernte das Team (`baustellen.update` schreibt jetzt nur übergebene Felder, Regler nutzt `updateField`). D-01: Offline-Warteschlange wird nach Login, bei `online`, im Vordergrund und per Intervall abgearbeitet (`useOfflineSync`). S-01…S-08: Härtungs-Migration + 34 RLS-/RPC-Tests gegen lokales Postgres (`supabase/tests/`).
 - 2026-11-16 · AP-1 · Branch `autopilot-2026-11-16-p1-stabil` · Abhängigkeiten patch/minor aktualisiert (`npm audit` 31 → 14 Meldungen, Rest braucht Major-Upgrades von vitest/vite-plugin-pwa/sharp); 14 neue Lint-Fehler aus eslint-plugin-react-hooks 7.1 behoben (Login, MitForm, AppContext); Tests ohne `act`-Warnungen und mit gesperrtem Netz (vorher schrieb der ErrorBoundary-Test in die echte `error_log`); `stats.html` nicht mehr im Deploy; `docs/SETUP.md` neu.
 - 2026-11-16 · AP-0 · Branch `autopilot-2026-11-16` · Audit `docs/AUDIT_2026-11.md` mit 69 Befunden (4 kritisch).
