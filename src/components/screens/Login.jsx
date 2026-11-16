@@ -223,7 +223,10 @@ const Login = () => {
     setPinStep(1);
     setErr("");
     try {
-      await actions.auth.signOut();
+      // Nur lokal: entfernt die Sitzung sofort. Ein globales Abmelden
+      // wartet erst auf den Server und könnte danach eine inzwischen neu
+      // begonnene Sitzung wieder löschen.
+      await actions.auth.signOut({ localOnly: true });
     } catch {
       /* best effort */
     }
@@ -737,7 +740,8 @@ const Login = () => {
                 // des bisherigen Nutzers noch im Gerät liegt. Löst
                 // SIGNED_OUT aus → Daten werden verworfen.
                 try {
-                  await actions.auth.signOut();
+                  // lokal reicht und ist sofort wirksam (siehe cancelSetPin)
+                  await actions.auth.signOut({ localOnly: true });
                 } catch {
                   /* signOut beim User-Switch best-effort */
                 }
