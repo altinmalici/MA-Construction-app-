@@ -1,17 +1,22 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
-import { requestWithRetry } from './_request.js';
+import { selectAll } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper. Junction-Query bleibt direkt.
-  const { data, error } = await requestWithRetry(
-    () => supabase.from('kalender').select('*').order('datum'),
+  const { data, error } = await selectAll(
+    () => supabase.from('kalender').select('*').order('datum').order('id'),
     { signal },
   );
   if (error) throw error;
 
-  // Fetch mitarbeiter junction
-  const { data: mitData } = await supabase.from('kalender_mitarbeiter').select('kalender_id, user_id');
+  // Zuordnungen. Fehler NICHT schlucken: sonst erscheinen alle Termine ohne
+  // Mitarbeiter.
+  const { data: mitData, error: mitErr } = await selectAll(
+    () => supabase.from('kalender_mitarbeiter').select('kalender_id, user_id').order('kalender_id').order('user_id'),
+    { signal },
+  );
+  if (mitErr) throw mitErr;
   const mitMap = {};
   (mitData || []).forEach(r => {
     if (!mitMap[r.kalender_id]) mitMap[r.kalender_id] = [];
@@ -42,9 +47,14 @@ export async function create(entry) {
   if (error) throw error;
 
   if (mitarbeiter?.length) {
-    await supabase.from('kalender_mitarbeiter').insert(
+    // Früher ungeprüft: "Termin gespeichert", aber ohne Mitarbeiter.
+    const { error: mitErr } = await supabase.from('kalender_mitarbeiter').insert(
       mitarbeiter.map(uid => ({ kalender_id: data.id, user_id: uid }))
     );
+    if (mitErr) {
+      await supabase.from('kalender').delete().eq('id', data.id);
+      throw mitErr;
+    }
   }
   return data.id;
 }

@@ -21,6 +21,41 @@
  *     { retries: 2, signal: ctrl.signal }
  *   );
  */
+// Netzfehler, wie supabase-js/PostgREST ihn zurückgibt: kein Postgres-Code,
+// Meldung vom fetch ("TypeError: Failed to fetch", Safari: "Load failed").
+export function isFetchFailure(error) {
+  if (!error) return false;
+  if (error.code) return false;
+  return /failed to fetch|load failed|networkerror|network request failed|fetch failed/i.test(
+    String(error.message || ""),
+  );
+}
+
+/**
+ * Lädt ALLE Zeilen einer Abfrage seitenweise. Supabase/PostgREST kappt eine
+ * Antwort standardmäßig bei 1000 Zeilen — ohne Fehler. Bei aufsteigender
+ * Sortierung fehlten dann still die NEUESTEN Einträge (zuerst bei den
+ * Stundeneinträgen).
+ *
+ * @param {() => any} build  liefert eine frische Supabase-Abfrage MIT
+ *   eindeutiger Sortierung (z.B. .order('created_at').order('id'))
+ * @returns {Promise<{data: any[]|null, error: any}>}
+ */
+export async function selectAll(build, { pageSize = 1000, signal, maxPages = 200 } = {}) {
+  const rows = [];
+  for (let page = 0; page < maxPages; page++) {
+    const from = page * pageSize;
+    const { data, error } = await requestWithRetry(
+      () => build().range(from, from + pageSize - 1),
+      { signal },
+    );
+    if (error) return { data: null, error };
+    rows.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+  return { data: rows, error: null };
+}
+
 export async function requestWithRetry(queryFn, options = {}) {
   const {
     retries = 2,
@@ -53,6 +88,14 @@ export async function requestWithRetry(queryFn, options = {}) {
       ]);
       clearTimeout(timeoutId);
       signal?.removeEventListener("abort", onAbort);
+      // supabase-js WIRFT bei Netzfehlern nicht, sondern liefert sie als
+      // { error } zurück — ohne diese Prüfung wurde nie wiederholt.
+      if (isFetchFailure(result?.error) && attempt < retries) {
+        lastErr = result.error;
+        const delay = retryDelayMs * Math.pow(3, attempt);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
       // Logic-Errors NICHT retried — direkt zurück an den Aufrufer.
       return result;
     } catch (err) {

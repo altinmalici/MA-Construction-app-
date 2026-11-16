@@ -1,5 +1,5 @@
 import { supabase } from '../supabase.js';
-import { requestWithRetry } from './_request.js';
+import { requestWithRetry, selectAll } from './_request.js';
 
 // Whitelist allowed for partial single-field updates via updateField().
 // Other columns (kunde, adresse, budget, details, ...) must go through
@@ -23,9 +23,14 @@ export async function getAll({ signal } = {}) {
 
   // Fetch all junction entries at once
   const [mitRes, subRes] = await Promise.all([
-    supabase.from('baustellen_mitarbeiter').select('baustelle_id, user_id'),
-    supabase.from('baustellen_subunternehmer').select('baustelle_id, sub_id'),
+    selectAll(() => supabase.from('baustellen_mitarbeiter').select('baustelle_id, user_id').order('baustelle_id').order('user_id'), { signal }),
+    selectAll(() => supabase.from('baustellen_subunternehmer').select('baustelle_id, sub_id').order('baustelle_id').order('sub_id'), { signal }),
   ]);
+  // Fehler NICHT schlucken: Sonst erscheinen alle Baustellen ohne Team —
+  // Mitarbeiter sehen "keine Baustellen zugewiesen", und speichert der Chef
+  // in diesem Zustand ein Formular, löscht er die echten Zuweisungen.
+  if (mitRes.error) throw mitRes.error;
+  if (subRes.error) throw subRes.error;
 
   const mitMap = {};
   (mitRes.data || []).forEach(r => {

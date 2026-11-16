@@ -11,6 +11,7 @@ const builder = (table) => {
     delete() { calls.push({ table, op: "delete" }); b._op = "delete"; return b; },
     select() { if (!b._op) { calls.push({ table, op: "select" }); b._op = "select"; } return b; },
     order() { return b; },
+    range() { return b; },
     eq() { return b; },
     single() { return Promise.resolve(responses[`${table}.${b._op}`] ?? { data: null, error: null }); },
     then(res, rej) {

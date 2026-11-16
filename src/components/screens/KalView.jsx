@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, X, Save, Trash2 } from "lucide-react";
+import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
 import { fDat, fK, IC, BTN, P, PD } from "../../utils/helpers";
 import { ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
@@ -70,7 +71,7 @@ const KalView = () => {
         sKf({ titel: "", baustelleId: "", mitarbeiter: [] });
       } catch (e) {
         console.error("[KalView.saveTermin]", e);
-        show(e?.message || "Fehler beim Speichern", "error");
+        show(fehlerText(e, "Fehler beim Speichern"), "error");
       }
     });
   const delTermin = (id) => setConfirmDelete(id);
@@ -83,7 +84,7 @@ const KalView = () => {
       show("Gelöscht");
     } catch (e) {
       console.error("[KalView.delTermin]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(fehlerText(e, "Fehler beim Löschen"), "error");
     }
   };
   return (

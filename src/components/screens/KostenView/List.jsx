@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { csvRow, deNum, deDate, downloadCsv } from "../../../utils/lohnexport";
+import { fehlerText } from "../../../utils/errors";
 import { useApp } from "../../../context/AppContext";
 import { bStdNum, fStd, todayIso, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../../utils/helpers";
 import { ScreenLayout, PBar, Empty, IconButton } from "../../ui";
@@ -69,7 +70,7 @@ const List = ({ onSelectBs }) => {
         sKf({ ...kf, beschreibung: "", betrag: "" });
       } catch (e) {
         console.error("[KostenView.saveKost]", e);
-        show(e?.message || "Fehler beim Speichern", "error");
+        show(fehlerText(e, "Fehler beim Speichern"), "error");
       }
     });
 

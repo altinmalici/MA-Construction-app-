@@ -1,20 +1,21 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
-import { requestWithRetry } from './_request.js';
+import { selectAll } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper. Junction-Query bleibt direkt.
-  const { data, error } = await requestWithRetry(
-    () => supabase.from('bautagebuch').select('*').order('created_at'),
+  const { data, error } = await selectAll(
+    () => supabase.from('bautagebuch').select('*').order('created_at').order('id'),
     { signal },
   );
   if (error) throw error;
 
   // Fetch anwesende junction
   // Fehler NICHT schlucken: sonst erscheinen alle Einträge ohne Anwesende.
-  const { data: anw, error: anwErr } = await supabase
-    .from('bautagebuch_anwesende')
-    .select('bautagebuch_id, user_id');
+  const { data: anw, error: anwErr } = await selectAll(
+    () => supabase.from('bautagebuch_anwesende').select('bautagebuch_id, user_id').order('bautagebuch_id').order('user_id'),
+    { signal },
+  );
   if (anwErr) throw anwErr;
   const anwMap = {};
   (anw || []).forEach(r => {

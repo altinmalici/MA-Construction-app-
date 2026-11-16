@@ -1,12 +1,13 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
-import { requestWithRetry } from './_request.js';
+import { selectAll } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper für GET. Bei Network-Fail max
   // 2 Retries mit exponential backoff, dann Throw an Aufrufer.
-  const { data, error } = await requestWithRetry(
-    () => supabase.from('stundeneintraege').select('*').order('created_at'),
+  // Seitenweise: sonst fehlen ab 1000 Einträgen still die neuesten.
+  const { data, error } = await selectAll(
+    () => supabase.from('stundeneintraege').select('*').order('created_at').order('id'),
     { signal },
   );
   if (error) throw error;

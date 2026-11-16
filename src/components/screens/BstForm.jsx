@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { Check, Save } from "lucide-react";
+import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
 import { BTN, IC, parseDecimal } from "../../utils/helpers";
 import { ScreenLayout, Spinner, ConfirmModal, Section } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const BstForm = () => {
-  const { em, sb, data, actions, show, chef, nav, setSb, setEm, goBack } =
+  const { em, sb, data, actions, show, chef, nav, setSb, setEm, goBack, setVRaw } =
     useApp();
   const { saving, withSaving } = useSaving();
   const ex = em && sb ? data.baustellen.find((b) => b.id === sb.id) : null;
@@ -80,16 +81,22 @@ const BstForm = () => {
           await actions.baustellen.update(ex.id, bd);
           setSb({ ...bd, id: ex.id });
           show("Aktualisiert");
+          setEm(false);
+          // Zurück zur Detailansicht, aus der das Formular geöffnet wurde.
+          // nav("bsd") würde das Formular in den Verlauf legen: "Zurück" in
+          // der Detailansicht öffnete dann wieder ein leeres Formular.
+          goBack();
         } else {
           const newId = await actions.baustellen.create(bd);
           setSb({ ...bd, id: newId });
           show("Angelegt");
+          setEm(false);
+          // Formular durch die Detailansicht ERSETZEN (kein Verlaufseintrag).
+          setVRaw("bsd");
         }
-        setEm(false);
-        nav("bsd");
       } catch (e) {
         console.error("[BstForm.save]", e);
-        show(e?.message || "Fehler beim Speichern", "error");
+        show(fehlerText(e, "Fehler beim Speichern"), "error");
       }
     });
   return (

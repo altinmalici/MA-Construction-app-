@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { fehlerText } from "../../../utils/errors";
 import { useApp } from "../../../context/AppContext";
 import {
   bStdNum,
@@ -74,7 +75,7 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
       show("Gelöscht");
     } catch (e) {
       console.error("[KostenView.Detail.delKost]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(fehlerText(e, "Fehler beim Löschen"), "error");
     }
   };
 
