@@ -10,8 +10,8 @@
 | 1 – Build/Tests/Lint | 🟢 fertig | `autopilot-2026-11-16-p1-stabil` | [#3](https://github.com/altinmalici/MA-Construction-app-/pull/3) | nein |
 | 2 – Kritische Bugs & Sicherheit | 🟢 fertig | `autopilot-2026-11-16-p2-kritisch` | [#4](https://github.com/altinmalici/MA-Construction-app-/pull/4) | **ja** (`migration_2026_11_16_01_security_hardening.sql`) |
 | 3 – Bautagebuch speichern | 🟢 fertig | `autopilot-2026-11-16-p3-bautagebuch` | [#5](https://github.com/altinmalici/MA-Construction-app-/pull/5) | ja, nach dem Merge (`migration_2026_11_16_02_bautagebuch_wetter.sql`) |
-| 4 – PIN / Willkommen zurück / Auto-Lock | 🟡 umgesetzt, ohne Review-Lauf | `autopilot-2026-11-16-p4-pin-lock` | PR-P4 | ja, erst NACH Merge (`migration_2026_11_16_03_pin_lookup_sperren.sql`) |
-| 5, 7, 8, 9, 10 | 🔴 nicht begonnen | — | — | — |
+| 4 – PIN / Willkommen zurück / Auto-Lock | 🟢 fertig, mit Review | `autopilot-2026-11-16-p4-pin-lock` | [#6](https://github.com/altinmalici/MA-Construction-app-/pull/6) | ja, erst NACH Merge (`migration_2026_11_16_03_pin_lookup_sperren.sql`) |
+| 5 – Onboarding robust + Einladungs-Link | 🟢 fertig | `autopilot-2026-11-16-p5-onboarding` | PR-P5 | ja (`migration_2026_11_16_04_onboarding.sql`), Reihenfolge egal |
 | 6 – Mängel-Branch | 🟢 nichts zu tun | — | — | nein |
 
 Paket 6: `feat/ux-maengel-architektur` ist bereits vollständig in `main` (alle 6 Commits patch-gleich, `git cherry`). Kein Rebase, kein PR.
@@ -46,15 +46,33 @@ Im Supabase SQL-Editor (Projekt `roeqphnopokfdktvvbpp`), in dieser Reihenfolge. 
 - **Wann:** Erst nach Merge + Auslieferung von Paket 4 UND nachdem alle Geräte die neue Version geladen haben. Die alte App-Version braucht die Funktion für den Login auf Geräten ohne gemerkten Nutzer.
 - Ändert keine Daten.
 
+### 4. `supabase/migration_2026_11_16_04_onboarding.sql` — vor oder nach dem Merge von Paket 5
+
+- **Was:** Einladungs-Link (Tabelle `onboarding_tokens`, drei Funktionen), `repair_orphan_user`, `cleanup_orphan_auth_users`; `reset_onboarding_v2` beendet zusätzlich laufende Sitzungen.
+- **Voraussetzung:** Migration 1 ist ausgeführt.
+- **Wann:** Egal. Die App erkennt selbst, ob die Funktionen da sind. Ohne Migration läuft der bisherige Einladungs-PIN weiter; "Zugang reparieren" und "Verwaiste Konten bereinigen" melden dann, dass die Migration fehlt.
+- Ändert keine bestehenden Daten.
+- **Diagnose vorab (nur lesend):** `docs/sql/onboarding_diagnose.sql` zeigt pro Mitarbeiter, ob Profil und Anmelde-Konto zusammenpassen, und listet verwaiste Konten.
+
 ## EMPFOHLENE MERGE-REIHENFOLGE
 
 #2 (Audit) → #3 (P1) → #4 (P2) → #5 (P3) → PR P4. Jeder PR baut auf dem vorherigen auf.
 
 ## ÜBERSPRUNGEN / NICHT ERREICHT
 
-Der Lauf endete am Nutzungslimit nach Paket 4. Nicht begonnen: Paket 5 (Onboarding, Einladungs-Link, `repair_orphan_user`, Diagnose-SQL), 7 (restliche hohe/mittlere Audit-Punkte), 8 (Performance, iPhone-UX, PWA-Update-Hinweis), 9 (Testabdeckung), 10 (Abschluss-Doku). Paket 4 hat keinen Review-Lauf bekommen.
+*Wird am Ende des Laufs ausgefüllt.*
 
 ## Hinweise
+
+- Paket 5, Ursachen für "Mitarbeiter-Anlage scheitert oft" (aus Code und SQL abgeleitet, nicht an der Live-DB bestätigt):
+  1. Schlug nach erfolgreicher Anlage oder PIN-Reset nur das Nachladen fehl, zeigte die App "Fehler" und der neue PIN wurde nie angezeigt (behoben in Paket 3).
+  2. "PIN zurücksetzen" lag ohne Rückfrage neben "Bearbeiten" und machte den bisherigen PIN sofort ungültig; kam die Nachricht nicht an, war der Mitarbeiter ausgesperrt. Jetzt: Einladungs-Link lässt den alten PIN bis zum Einlösen gültig; der PIN-Reset fragt nach.
+  3. Benutzernamen mit Großbuchstaben, Leerzeichen oder Akzenten ergaben Konten, die sich nie anmelden konnten (GoTrue schreibt E-Mails klein). Jetzt Prüfung in App und Datenbank.
+  4. Ein Anmelde-Konto ohne Profil blockiert das erneute Anlegen desselben Benutzernamens mit "bereits vergeben". Jetzt: eigener Hinweis + "Verwaiste Konten bereinigen".
+  5. `reset_onboarding_v2` aktualisierte bei fehlendem Anmelde-Konto nur das Profil — der neue Einladungs-PIN konnte dann nie funktionieren. Jetzt klarer Fehler + "Zugang reparieren".
+  6. Fehlermeldungen waren pauschal ("Fehler", "Verbindungsfehler"). Jetzt konkrete deutsche Meldungen.
+- Paket 5: Der Einladungs-Link öffnet sich im Browser (Safari), nicht in der installierten App. Der Mitarbeiter legt dort seinen PIN fest und ist im Browser angemeldet; in der Home-Bildschirm-App meldet er sich danach mit Benutzername + PIN an.
+- Review der Korrekturen (Lauf 4): gefunden und behoben — offline erfasste Einträge wären ohne gültige Sitzung fälschlich als "abgelehnt" markiert worden; der Dialog mit abgelehnten Einträgen war ohne Anmeldung erreichbar; der App-Start hat bei jedem Kaltstart die Sitzungen desselben Nutzers auf anderen Geräten beendet (jetzt nur lokal).
 
 - Paket 4: Auf einem Gerät ohne gemerkten Nutzer fragt der Login jetzt Benutzername + PIN ab (vorher nur PIN mit globaler Suche). Die Sperre legt sich als PIN-Screen über den offenen Screen, Formular-Eingaben bleiben erhalten. Zusätzlich sperrt die App nach 15 Minuten ohne Eingabe (`INACTIVITY_LOCK_MS` in `src/config.js`, 0 = aus) — das weicht von der früheren Entscheidung "kein Idle-Timeout" ab und war im Auftrag als optional genannt.
 - Paket 4: Daten werden erst nach dem Login geladen; ohne Netz erscheint der Login statt des Fehlerbildschirms.
