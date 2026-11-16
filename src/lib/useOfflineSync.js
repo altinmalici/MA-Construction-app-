@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { queueSize } from "./offlineQueue.js";
+import { getPending, gehoertZu } from "./offlineQueue.js";
 
 // Wie oft bei nicht leerer Warteschlange erneut versucht wird.
 export const OFFLINE_SYNC_INTERVAL_MS = 30 * 1000;
@@ -14,15 +14,17 @@ export const OFFLINE_SYNC_INTERVAL_MS = 30 * 1000;
  *
  * @param {object} opts
  * @param {string|null|undefined} opts.userId  eingeloggter Nutzer (sonst inaktiv)
- * @param {() => Promise<{synced:number, remaining:number}>} opts.sync
+ * @param {boolean} [opts.isChef]  Chef sendet alle Einträge, Mitarbeiter nur eigene
+ * @param {(who:{userId:string,isChef:boolean}) => Promise<{synced:number, failed:number, remaining:number}>} opts.sync
  * @param {(res:{synced:number, remaining:number}) => void} [opts.onSynced]
- *        wird gerufen, wenn mindestens ein Eintrag synchronisiert wurde
+ *        wird gerufen, wenn mindestens ein Eintrag synchronisiert wurde oder
+ *        endgültig fehlgeschlagen ist
  */
 // Modulweit: verhindert zwei parallele Läufe über dieselbe Warteschlange,
 // auch wenn der Effekt bei einem Nutzerwechsel neu startet.
 let running = false;
 
-export function useOfflineSync({ userId, sync, onSynced }) {
+export function useOfflineSync({ userId, isChef = false, sync, onSynced }) {
   // Refs: sync/onSynced werden pro Render neu erzeugt, sollen den Effekt
   // aber nicht neu starten.
   const syncRef = useRef(sync);
@@ -39,11 +41,13 @@ export function useOfflineSync({ userId, sync, onSynced }) {
     const run = async () => {
       if (cancelled || running) return;
       if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-      if (queueSize() === 0) return;
+      // Nur wenn für DIESEN Nutzer etwas zu senden ist (fehlgeschlagene und
+      // fremde Einträge lösen keinen Lauf aus).
+      if (!getPending().some((item) => gehoertZu(item, userId, isChef))) return;
       running = true;
       try {
-        const res = await syncRef.current();
-        if (!cancelled && res?.synced > 0) onSyncedRef.current?.(res);
+        const res = await syncRef.current({ userId, isChef });
+        if (!cancelled && (res?.synced > 0 || res?.failed > 0)) onSyncedRef.current?.(res);
       } catch {
         /* vermutlich wieder offline → nächster Auslöser versucht es erneut */
       } finally {
@@ -57,13 +61,16 @@ export function useOfflineSync({ userId, sync, onSynced }) {
 
     run();
     window.addEventListener("online", run);
+    // "Alle erneut versuchen" im Sync-Hinweis
+    window.addEventListener("ma-queue-retry", run);
     document.addEventListener("visibilitychange", onVisible);
     const timer = setInterval(run, OFFLINE_SYNC_INTERVAL_MS);
     return () => {
       cancelled = true;
       window.removeEventListener("online", run);
+      window.removeEventListener("ma-queue-retry", run);
       document.removeEventListener("visibilitychange", onVisible);
       clearInterval(timer);
     };
-  }, [userId]);
+  }, [userId, isChef]);
 }

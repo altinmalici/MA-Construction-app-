@@ -33,7 +33,7 @@ export const istNetzFehler = (e) => {
   // properties of undefined") darf nicht als Verbindungsproblem erscheinen.
   if (e.name === "AbortError") return true;
   const m = String(e.message || e);
-  return /failed to fetch|load failed|networkerror|network request failed|fetch failed|netzwerk|timeout/i.test(m);
+  return /failed to fetch|load failed|networkerror|network request failed|fetch failed|netzwerk/i.test(m);
 };
 
 /**

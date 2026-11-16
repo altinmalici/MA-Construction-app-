@@ -434,8 +434,11 @@ const Dash = () => {
           <button
             key={k}
             onClick={() => {
-              // Globale Ansicht: keine zuvor geöffnete Baustelle mitschleppen.
-              setSb(null);
+              // Globale Ansichten: keine zuvor geöffnete Baustelle mitschleppen
+              // (sonst ist die Liste still gefiltert). Ausnahme Stunden:
+              // dort ist die zuletzt geöffnete Baustelle eine gewollte
+              // Vorauswahl im Formular.
+              if (k !== "ste") setSb(null);
               nav(k);
             }}
             style={{
