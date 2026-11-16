@@ -113,15 +113,36 @@ export async function getPhotoUrl(path, expiresIn = 3600) {
  * 5-Foto-Mängel-Listen.
  * @returns {Promise<Object<string,string>>} Map path → signedUrl
  */
+// Zwischenspeicher für signierte URLs. Ohne ihn wurde nach JEDEM Nachladen
+// der Daten jedes Foto neu signiert — die URL änderte sich, und der Browser
+// lud alle Vorschaubilder erneut herunter (Datenvolumen auf der Baustelle).
+const urlCache = new Map(); // path → { url, bis }
+const CACHE_PUFFER_MS = 5 * 60 * 1000; // rechtzeitig vor Ablauf erneuern
+
+export function clearPhotoUrlCache() {
+  urlCache.clear();
+}
+
 export async function getPhotoUrls(paths, expiresIn = 3600) {
   if (!paths || paths.length === 0) return {};
+  const now = Date.now();
+  const map = {};
+  const fehlend = [];
+  for (const p of paths) {
+    const hit = urlCache.get(p);
+    if (hit && hit.bis - CACHE_PUFFER_MS > now) map[p] = hit.url;
+    else fehlend.push(p);
+  }
+  if (fehlend.length === 0) return map;
   const { data, error } = await supabase.storage
     .from('photos')
-    .createSignedUrls(paths, expiresIn);
+    .createSignedUrls(fehlend, expiresIn);
   if (error) throw error;
-  const map = {};
   for (const item of data) {
-    if (item.path && item.signedUrl) map[item.path] = item.signedUrl;
+    if (item.path && item.signedUrl) {
+      map[item.path] = item.signedUrl;
+      urlCache.set(item.path, { url: item.signedUrl, bis: now + expiresIn * 1000 });
+    }
   }
   return map;
 }

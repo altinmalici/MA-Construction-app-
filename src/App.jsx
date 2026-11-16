@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import { Spinner } from "./components/ui";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { importWithReload } from "./lib/pwaUpdate.js";
+import { useKeyboardScroll } from "./hooks/useKeyboardScroll.js";
 
 // Eager: kritischer Pfad — Login direkt nach Start, Dash direkt danach,
 // TabBar dauerhaft sichtbar. Alles andere wird on-demand geladen.
@@ -11,26 +13,26 @@ import TabBar from "./components/screens/TabBar";
 
 // Lazy: 20 Screens. React lädt den Chunk beim ersten Aufruf der Route nach
 // und behält ihn dann im Memory; zweiter Besuch ist sofort.
-const BstList = lazy(() => import("./components/screens/BstList"));
-const BstDet = lazy(() => import("./components/screens/BstDet"));
-const BstForm = lazy(() => import("./components/screens/BstForm"));
-const SteView = lazy(() => import("./components/screens/SteView"));
-const MeineStd = lazy(() => import("./components/screens/MeineStd"));
-const MngView = lazy(() => import("./components/screens/MngView"));
-const BtbView = lazy(() => import("./components/screens/BtbView"));
-const DokView = lazy(() => import("./components/screens/DokView"));
-const MatView = lazy(() => import("./components/screens/MatView"));
-const NotifView = lazy(() => import("./components/screens/NotifView"));
-const KalView = lazy(() => import("./components/screens/KalView"));
-const TagView = lazy(() => import("./components/screens/TagView"));
-const RegView = lazy(() => import("./components/screens/RegView"));
-const KostenView = lazy(() => import("./components/screens/KostenView"));
-const MitView = lazy(() => import("./components/screens/MitView"));
-const MitForm = lazy(() => import("./components/screens/MitForm"));
-const SubView = lazy(() => import("./components/screens/SubView"));
-const ProfilView = lazy(() => import("./components/screens/ProfilView"));
-const StundenUebersicht = lazy(() => import("./components/screens/StundenUebersicht"));
-const MehrView = lazy(() => import("./components/screens/MehrView"));
+const BstList = lazy(importWithReload(() => import("./components/screens/BstList")));
+const BstDet = lazy(importWithReload(() => import("./components/screens/BstDet")));
+const BstForm = lazy(importWithReload(() => import("./components/screens/BstForm")));
+const SteView = lazy(importWithReload(() => import("./components/screens/SteView")));
+const MeineStd = lazy(importWithReload(() => import("./components/screens/MeineStd")));
+const MngView = lazy(importWithReload(() => import("./components/screens/MngView")));
+const BtbView = lazy(importWithReload(() => import("./components/screens/BtbView")));
+const DokView = lazy(importWithReload(() => import("./components/screens/DokView")));
+const MatView = lazy(importWithReload(() => import("./components/screens/MatView")));
+const NotifView = lazy(importWithReload(() => import("./components/screens/NotifView")));
+const KalView = lazy(importWithReload(() => import("./components/screens/KalView")));
+const TagView = lazy(importWithReload(() => import("./components/screens/TagView")));
+const RegView = lazy(importWithReload(() => import("./components/screens/RegView")));
+const KostenView = lazy(importWithReload(() => import("./components/screens/KostenView")));
+const MitView = lazy(importWithReload(() => import("./components/screens/MitView")));
+const MitForm = lazy(importWithReload(() => import("./components/screens/MitForm")));
+const SubView = lazy(importWithReload(() => import("./components/screens/SubView")));
+const ProfilView = lazy(importWithReload(() => import("./components/screens/ProfilView")));
+const StundenUebersicht = lazy(importWithReload(() => import("./components/screens/StundenUebersicht")));
+const MehrView = lazy(importWithReload(() => import("./components/screens/MehrView")));
 
 const ScreenLoader = () => (
   <div
@@ -48,6 +50,7 @@ const ScreenLoader = () => (
 
 function AppRouter() {
   const { v, cu, locked } = useApp();
+  useKeyboardScroll();
   return (
     <>
       {/* inert: gesperrter Screen ist weder tipp- noch fokussierbar. */}

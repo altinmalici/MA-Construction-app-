@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useRef, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import { useAppData } from "../lib/useAppData.js";
 import { useRealtime } from "../lib/useRealtime.js";
@@ -9,6 +9,7 @@ import { G, P, BTN, RED } from "../utils/helpers";
 import { Toast, Spinner, Clock } from "../components/ui";
 import OfflineBanner from "../components/ui/OfflineBanner";
 import PendingSyncBadge from "../components/ui/PendingSyncBadge";
+import UpdatePrompt from "../components/ui/UpdatePrompt";
 import { compressImage, blobToDataURL } from "../utils/image";
 
 
@@ -92,20 +93,39 @@ export function AppProvider({ children }) {
   const [authChecking, setAuthChecking] = useState(true);
   // true = App ist gesperrt, PIN-Screen liegt über dem aktuellen Screen.
   const [locked, setLocked] = useState(false);
-  const [v, setVRaw] = useState("login");
-  const [history, setHistory] = useState([]);
+  // Aktueller View + Verlauf in EINEM State: so lassen sich nav/goBack als
+  // stabile Funktionen schreiben (kein Zugriff auf v/history aus dem
+  // Render nötig) — Voraussetzung dafür, dass der Context-Wert unten
+  // memoisiert werden kann.
+  const [navState, setNavState] = useState({ v: "login", history: [] });
+  const v = navState.v;
+  const history = navState.history;
   const prevV = history.length > 0 ? history[history.length - 1] : null;
-  const nav = (newView) => {
-    setHistory((h) => [...h, v]);
-    setVRaw(newView);
-  };
-  const goBack = () => {
-    if (history.length > 0) {
-      const prev = history[history.length - 1];
-      setHistory((h) => h.slice(0, -1));
-      setVRaw(prev);
-    }
-  };
+  const setVRaw = useCallback(
+    (nv) => setNavState((s) => ({ ...s, v: typeof nv === "function" ? nv(s.v) : nv })),
+    [],
+  );
+  const setHistory = useCallback(
+    (h) =>
+      setNavState((s) => ({
+        ...s,
+        history: typeof h === "function" ? h(s.history) : h,
+      })),
+    [],
+  );
+  const nav = useCallback(
+    (newView) => setNavState((s) => ({ v: newView, history: [...s.history, s.v] })),
+    [],
+  );
+  const goBack = useCallback(
+    () =>
+      setNavState((s) =>
+        s.history.length > 0
+          ? { v: s.history[s.history.length - 1], history: s.history.slice(0, -1) }
+          : s,
+      ),
+    [],
+  );
   const [sb, setSb] = useState(null);
   const [em, setEm] = useState(false);
   const [editUser, setEditUser] = useState(null);
@@ -114,11 +134,11 @@ export function AppProvider({ children }) {
   const [toasts, setToasts] = useState([]);
   const fileRef = useRef(null);
   const [photoCb, setPhotoCb] = useState(null);
-  const show = (m, t = "success") => {
+  const show = useCallback((m, t = "success") => {
     const id = Date.now() + Math.random();
     // Max 3 parallele Toasts — älteste werden verdrängt.
     setToasts((prev) => [...prev, { id, message: m, type: t }].slice(-3));
-  };
+  }, []);
   // clockTime wurde lokalisiert in <Clock />-Komponente (Audit P-MEDIUM):
   // vorher löste die Minutentick-State-Update einen App-weiten Re-Render
   // aus, weil clockTime im AppContext-Value steckte.
@@ -207,9 +227,12 @@ export function AppProvider({ children }) {
     },
   });
 
-  const effectiveSessionUser = cu
-    ? { name: cu.name, username: cu.username }
-    : sessionUser;
+  const cuName = cu?.name;
+  const cuUsername = cu?.username;
+  const effectiveSessionUser = useMemo(
+    () => (cuName ? { name: cuName, username: cuUsername } : sessionUser),
+    [cuName, cuUsername, sessionUser],
+  );
   // Safety: if not logged in, show login
   useEffect(() => {
     if (!authChecking && !cu && v !== "login") {
@@ -219,7 +242,7 @@ export function AppProvider({ children }) {
       setHistory([]);
       setVRaw("login");
     }
-  }, [cu, v, authChecking]);
+  }, [cu, v, authChecking, setHistory, setVRaw]);
 
   // Auto-Lock: Hintergrund >= BACKGROUND_LOCK_MS oder Inaktivität. Die Sperre
   // setzt nur `locked` — der aktuelle Screen bleibt gemountet (Formular-
@@ -238,8 +261,9 @@ export function AppProvider({ children }) {
   //    Daten werden still im Hintergrund aufgefrischt.
   //  - Neuer Login / anderer Nutzer: alter Stand wird verworfen, Start auf
   //    dem Dashboard, Daten werden frisch geladen.
-  const completeLogin = (u) => {
-    const unlockSameUser = locked && cu?.id === u.id;
+  const cuId = cu?.id;
+  const completeLogin = useCallback((u) => {
+    const unlockSameUser = locked && cuId === u.id;
     setLocked(false);
     setCu(u);
     if (unlockSameUser) {
@@ -255,7 +279,7 @@ export function AppProvider({ children }) {
     setMitSummary(null);
     setVRaw("dash");
     actions.loadAll();
-  };
+  }, [locked, cuId, actions, setHistory, setVRaw]);
 
   // Seed: Testbaustelle (NUR Dev-Env, um leere Prod-DB nicht zu überraschen)
   // Smoke-Test 2026-04-30: Mitarbeiter triggerten den Seed-INSERT, RLS lehnte
@@ -306,7 +330,7 @@ export function AppProvider({ children }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   const chef = cu?.role === "chef";
   const unread = data.benachrichtigungen.filter((n) => !n.gelesen).length;
-  const addN = async (typ, text, bid) => {
+  const addN = useCallback(async (typ, text, bid) => {
     try {
       await actions.benachrichtigungen.create({
         typ,
@@ -317,11 +341,11 @@ export function AppProvider({ children }) {
     } catch (e) {
       console.error("Benachrichtigung fehlgeschlagen:", e);
     }
-  };
-  const trigPhoto = (cb) => {
+  }, [actions]);
+  const trigPhoto = useCallback((cb) => {
     setPhotoCb(() => cb);
     fileRef.current?.click();
-  };
+  }, []);
   // Foto-Pipeline: File → Canvas-Compress (1600px, q=0.7) → {blob, previewDataUrl}.
   // PhotoGrid rendert previewDataUrl sofort. Konsumenten (MngView/SteView)
   // uploaden den blob erst beim Save und ersetzen ihn durch den Storage-Pfad.
@@ -338,7 +362,7 @@ export function AppProvider({ children }) {
       show(err?.message || "Foto konnte nicht verarbeitet werden", "error");
     }
   };
-  const eName = (e) => {
+  const eName = useCallback((e) => {
     if (e.personTyp === "sub") {
       const s = data.subunternehmer.find((x) => x.id === e.subId);
       return s ? s.name : "Sub";
@@ -346,7 +370,52 @@ export function AppProvider({ children }) {
     if (e.personTyp === "sonstige") return e.personName || "Sonstige";
     const u = data.users.find((x) => x.id === e.mitarbeiterId);
     return u?.name || "?";
-  };
+  }, [data.subunternehmer, data.users]);
+
+  // Context-Wert memoisieren: Er ändert sich nur, wenn sich etwas ändert,
+  // das Screens tatsächlich lesen. Toasts und der Foto-Callback gehören
+  // nicht dazu — früher renderte jeder Toast und jede Foto-Auswahl den
+  // gesamten aktuellen Screen samt TabBar neu.
+  const ctx = useMemo(
+    () => ({
+      data,
+      actions,
+      cu,
+      setCu,
+      locked,
+      completeLogin,
+      sessionUser: effectiveSessionUser,
+      v,
+      nav,
+      goBack,
+      prevV,
+      history,
+      setHistory,
+      setVRaw,
+      sb,
+      setSb,
+      em,
+      setEm,
+      sq,
+      setSq,
+      chef,
+      show,
+      trigPhoto,
+      addN,
+      eName,
+      unread,
+      editUser,
+      setEditUser,
+      mitSummary,
+      setMitSummary,
+      fileRef,
+    }),
+    [
+      data, actions, cu, locked, completeLogin, effectiveSessionUser, v, nav,
+      goBack, prevV, history, setHistory, setVRaw, sb, em, sq, chef, show,
+      trigPhoto, addN, eName, unread, editUser, mitSummary,
+    ],
+  );
 
   // App-Level Error: useAppData fehlgeschlagen → kein endloses Spinning,
   // sondern Hinweis + Retry. window.location.reload() resettet auch
@@ -471,40 +540,6 @@ export function AppProvider({ children }) {
       </div>
     );
 
-  const ctx = {
-    data,
-    actions,
-    cu,
-    setCu,
-    locked,
-    completeLogin,
-    sessionUser: effectiveSessionUser,
-    v,
-    nav,
-    goBack,
-    prevV,
-    history,
-    setHistory,
-    setVRaw,
-    sb,
-    setSb,
-    em,
-    setEm,
-    sq,
-    setSq,
-    chef,
-    show,
-    trigPhoto,
-    addN,
-    eName,
-    unread,
-    editUser,
-    setEditUser,
-    mitSummary,
-    setMitSummary,
-    fileRef,
-  };
-
   return (
     <AppContext.Provider value={ctx}>
       <div className="device-wrapper font-sans">
@@ -574,6 +609,7 @@ export function AppProvider({ children }) {
 
             <div className="device-screen">
               <OfflineBanner />
+              <UpdatePrompt />
               <PendingSyncBadge
                 userId={cu?.id}
                 isChef={cu?.role === "chef"}
@@ -584,7 +620,8 @@ export function AppProvider({ children }) {
                 ref={fileRef}
                 onChange={onFile}
                 accept="image/*"
-                capture="environment"
+                // Kein capture-Attribut: iOS bietet dann "Foto aufnehmen"
+                // UND "Fotomediathek" an (vorher nur die Kamera).
                 style={{
                   display: "none",
                   position: "absolute",

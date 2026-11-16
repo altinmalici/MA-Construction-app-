@@ -63,7 +63,10 @@ const StundenDetailModal = ({ open, eintrag, baustelle, userName, onClose }) => 
           borderRadius: "16px 16px 0 0",
           width: "100%",
           maxWidth: 600,
-          maxHeight: "85vh",
+          // dvh: echte sichtbare Höhe (iOS-Leisten); Abstand zum
+          // Home-Indikator, damit der letzte Inhalt nicht darunter liegt.
+          maxHeight: "85dvh",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",

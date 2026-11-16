@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import * as api from './api/index.js';
+import { clearPhotoUrlCache } from './storage.js';
 import { getPending, getQueue, dequeue, markFailed, dauerfehlerText, gehoertZu } from './offlineQueue.js';
 
 // 6-02b: Postgres-Realtime-Payloads kommen mit snake_case-Keys; der App-State
@@ -108,6 +109,7 @@ export function useAppData() {
     if (!mountedRef.current) return;
     setData(emptyData);
     setError(null);
+    clearPhotoUrlCache();
   }, []);
 
   // 6-02: Merge eines einzelnen Realtime-Events in den lokalen State
@@ -202,7 +204,9 @@ export function useAppData() {
 
   // ---- Action creators ----
 
-  const actions = {
+  // Stabil über Renders: Konsumenten (Context, Effekte) werden nicht bei
+  // jedem Render mit einem neuen actions-Objekt versorgt.
+  const actions = useMemo(() => ({
     auth: {
       loginAsUser: async (username, pin) => {
         return await api.auth.loginAsUser(username, pin);
@@ -482,7 +486,7 @@ export function useAppData() {
     reload,
     loadAll,
     resetData,
-  };
+  }), [reload, refresh, loadAll, resetData, mergeIncomingRow]);
 
   return { data, loading, error, actions, mergeIncomingRow };
 }

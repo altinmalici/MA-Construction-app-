@@ -12,8 +12,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      // Service Worker registriert sich selbst + zieht Updates automatisch.
-      registerType: 'autoUpdate',
+      // "prompt": Ein neuer Service Worker wartet, bis der Nutzer in der App
+      // auf "Aktualisieren" tippt (src/lib/pwaUpdate.js). Registriert wird
+      // von dort aus, nicht per automatisch eingefügtem Skript.
+      registerType: 'prompt',
+      injectRegister: false,
       // Dev: SW deaktiviert — Reload-Loops + Stale-Cache stören sonst HMR.
       devOptions: { enabled: false },
       manifest: {
@@ -97,12 +100,10 @@ export default defineConfig({
 
         // Alte SW-Versionen beim Aktivieren entsorgen.
         cleanupOutdatedCaches: true,
-        // Update-UI bewusst nicht implementiert: skipWaiting+clientsClaim
-        // übernimmt neue Versionen stillschweigend beim nächsten Load. Falls
-        // später ein "App aktualisiert — neu laden?"-Toast gewünscht:
-        // registerType: 'prompt' + useRegisterSW-Hook aus virtual:pwa-register/react.
-        skipWaiting: true,
-        clientsClaim: true,
+        // KEIN skipWaiting/clientsClaim: Der neue Service Worker darf die
+        // laufende alte Seite nicht übernehmen (deren Chunks wären dann weg).
+        skipWaiting: false,
+        clientsClaim: false,
       },
     }),
     // Bundle-Analyse nur auf Wunsch (ANALYZE=1 npm run build) und ausserhalb

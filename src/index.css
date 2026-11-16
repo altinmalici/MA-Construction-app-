@@ -99,6 +99,34 @@ input, textarea {
 .app-scroll::-webkit-scrollbar { display: none; }
 .app-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Touch-Ziele: mindestens 44×44 px Trefferfläche für JEDEN Button und Link,
+   ohne das Aussehen zu ändern. Kleine Knöpfe (Chips, Icons, Textlinks)
+   bekommen eine unsichtbare, zentrierte Fläche. Elemente mit eigener
+   Position (absolute/fixed per Inline-Style) behalten sie. */
+button,
+a[href] {
+  position: relative;
+}
+button::after,
+a[href]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+/* Deaktivierte Knöpfe sollen Nachbarn keine Trefferfläche wegnehmen. */
+button:disabled::after {
+  display: none;
+}
+
+/* Tastatur: fokussierte Felder nicht direkt an den unteren Rand scrollen. */
+.app-scroll {
+  scroll-padding-bottom: 96px;
+}
+
 /* Button press feel */
 button:active:not(:disabled) {
   transform: scale(0.97);
