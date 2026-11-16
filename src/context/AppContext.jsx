@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useRef, useEffect, useCallback } f
 import { AlertCircle } from "lucide-react";
 import { useAppData } from "../lib/useAppData.js";
 import { useRealtime } from "../lib/useRealtime.js";
+import { useOfflineSync } from "../lib/useOfflineSync.js";
 import { G, P, BTN, RED } from "../utils/helpers";
 import { Toast, Spinner, Clock } from "../components/ui";
 import OfflineBanner from "../components/ui/OfflineBanner";
@@ -188,30 +189,18 @@ export function AppProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cu?.id]);
 
-  // Offline-Warteschlange automatisch abarbeiten: beim Start und sobald wieder
-  // Netz da ist. Bestaetigung, wenn etwas synchronisiert wurde.
-  useEffect(() => {
-    let cancelled = false;
-    const flush = async () => {
-      try {
-        const res = await actions.stundeneintraege.syncOffline();
-        if (!cancelled && res.synced > 0) {
-          show(
-            `${res.synced} offline erfasste${res.synced === 1 ? "r" : ""} Eintrag${res.synced === 1 ? "" : "e"} synchronisiert`,
-          );
-        }
-      } catch {
-        /* vermutlich noch offline → naechster Versuch bei 'online' */
-      }
-    };
-    flush();
-    window.addEventListener("online", flush);
-    return () => {
-      cancelled = true;
-      window.removeEventListener("online", flush);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Offline-Warteschlange abarbeiten: nach dem Login, bei "online", bei
+  // Rückkehr in den Vordergrund und per Intervall, solange etwas wartet.
+  // Früher lief das nur beim App-Start (ohne Sitzung → RLS lehnt ab) und bei
+  // "online" — nach einem Neustart blieben Stunden hängen (Audit D-01).
+  useOfflineSync({
+    userId: cu?.id,
+    sync: actions.stundeneintraege.syncOffline,
+    onSynced: (res) =>
+      show(
+        `${res.synced} offline erfasste${res.synced === 1 ? "r" : ""} Eintrag${res.synced === 1 ? "" : "e"} synchronisiert`,
+      ),
+  });
 
   const effectiveSessionUser = cu
     ? { name: cu.name, username: cu.username }

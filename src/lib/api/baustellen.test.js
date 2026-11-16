@@ -81,3 +81,57 @@ describe("baustellen.updateField — Whitelist", () => {
     );
   });
 });
+
+// Audit 2026-11 U-01: Der Fortschritts-Regler rief update(id, {fortschritt})
+// auf. update() schrieb daraufhin ALLE Spalten mit Standardwerten und
+// synchronisierte leere Zuweisungen → Baustelle geleert, Team entfernt.
+describe("baustellen.update — überschreibt nichts, was nicht übergeben wurde", () => {
+  let supabase, update;
+  beforeEach(async () => {
+    ({ supabase } = await import("../supabase.js"));
+    ({ update } = await import("./baustellen.js"));
+    capturedPayload = undefined;
+    mockUpdate.mockClear();
+    mockEq.mockClear();
+    mockEq.mockImplementation(() => Promise.resolve({ error: null }));
+    supabase.rpc.mockReset();
+    supabase.rpc.mockResolvedValue({ error: null });
+  });
+
+  it("Teil-Update schreibt nur die übergebenen Felder", async () => {
+    await update("b1", { fortschritt: 60 });
+    expect(capturedPayload).toEqual({ fortschritt: 60 });
+  });
+
+  it("Teil-Update fasst die Team-Zuweisungen NICHT an", async () => {
+    await update("b1", { fortschritt: 60 });
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it("volles Formular: alle Felder + Zuweisungen werden geschrieben", async () => {
+    await update("b1", {
+      kunde: "Huber", adresse: "", status: "aktiv", fortschritt: 0,
+      ansprechpartner: "", telefon: "", zugang: "", startdatum: "", enddatum: "",
+      budget: 0, details: {}, mitarbeiter: ["u1"], subunternehmer: [],
+    });
+    expect(capturedPayload).toEqual({
+      kunde: "Huber", adresse: "", status: "aktiv", fortschritt: 0,
+      ansprechpartner: "", telefon: "", zugang: "", startdatum: null, enddatum: null,
+      budget: 0, details: {},
+    });
+    expect(supabase.rpc).toHaveBeenCalledWith("sync_baustelle_junctions", {
+      p_baustelle_id: "b1", p_mitarbeiter_ids: ["u1"], p_sub_ids: [],
+    });
+  });
+
+  it("leere Listen bedeuten ausdrücklich: alle Zuweisungen entfernen", async () => {
+    await update("b1", { mitarbeiter: [], subunternehmer: [] });
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(supabase.rpc).toHaveBeenCalledTimes(1);
+  });
+
+  it("nur EINE der beiden Listen → Fehler statt stillem Löschen der anderen", async () => {
+    await expect(update("b1", { mitarbeiter: ["u1"] })).rejects.toThrow(/beide/i);
+    expect(supabase.rpc).not.toHaveBeenCalled();
+  });
+});
