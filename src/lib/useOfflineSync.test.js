@@ -117,6 +117,7 @@ describe("useOfflineSync", () => {
     await flush();
     await flush();
     expect(onSynced).toHaveBeenCalledWith({ synced: 2, remaining: 0 });
+    expect(sync).toHaveBeenCalledWith({ userId: "u1", isChef: false });
   });
 
   it("ein Fehler im Sync blockiert spätere Versuche nicht", async () => {
