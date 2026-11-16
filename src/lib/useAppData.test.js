@@ -222,3 +222,39 @@ describe("mergeIncomingRow", () => {
     expect(result.current.data.maengel[0].baustelleId).toBeUndefined();
   });
 });
+
+// Audit A-02/D-03/U-04: Schreiben ok, Nachladen scheitert → darf kein Fehler sein.
+describe("Actions: Nachladen ist best-effort", () => {
+  it("create gelingt, auch wenn das anschließende Nachladen scheitert", async () => {
+    const api = await import("./api/index.js");
+    const { renderHook, act } = await import("@testing-library/react");
+    const { useAppData } = await import("./useAppData.js");
+    const spyCreate = vi.spyOn(api.bautagebuch, "create").mockResolvedValue("bt1");
+    const spyGet = vi.spyOn(api.bautagebuch, "getAll").mockRejectedValue(new TypeError("Failed to fetch"));
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { result } = renderHook(() => useAppData());
+    await act(async () => {
+      await expect(
+        result.current.actions.bautagebuch.create({ baustelleId: "b1" }),
+      ).resolves.toBeUndefined();
+    });
+    expect(spyCreate).toHaveBeenCalledTimes(1);
+    expect(spyGet).toHaveBeenCalled();
+    spyCreate.mockRestore(); spyGet.mockRestore(); errSpy.mockRestore();
+  });
+
+  it("ein Fehler beim Schreiben selbst wird weiter geworfen", async () => {
+    const api = await import("./api/index.js");
+    const { renderHook, act } = await import("@testing-library/react");
+    const { useAppData } = await import("./useAppData.js");
+    const spyCreate = vi.spyOn(api.bautagebuch, "create").mockRejectedValue({ code: "42501" });
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { result } = renderHook(() => useAppData());
+    await act(async () => {
+      await expect(
+        result.current.actions.bautagebuch.create({ baustelleId: "b1" }),
+      ).rejects.toMatchObject({ code: "42501" });
+    });
+    spyCreate.mockRestore(); errSpy.mockRestore();
+  });
+});

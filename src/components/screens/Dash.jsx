@@ -433,7 +433,14 @@ const Dash = () => {
         {widgetItems.map(({ k, i: I, c, l, s, n }) => (
           <button
             key={k}
-            onClick={() => nav(k)}
+            onClick={() => {
+              // Globale Ansichten: keine zuvor geöffnete Baustelle mitschleppen
+              // (sonst ist die Liste still gefiltert). Ausnahme Stunden:
+              // dort ist die zuletzt geöffnete Baustelle eine gewollte
+              // Vorauswahl im Formular.
+              if (k !== "ste") setSb(null);
+              nav(k);
+            }}
             style={{
               background: "white",
               borderRadius: 12,

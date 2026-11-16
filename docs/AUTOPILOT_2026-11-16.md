@@ -8,7 +8,8 @@
 |---|---|---|---|---|
 | 0 – Audit | 🟢 fertig | `autopilot-2026-11-16` | [#2](https://github.com/altinmalici/MA-Construction-app-/pull/2) | nein |
 | 1 – Build/Tests/Lint | 🟢 fertig | `autopilot-2026-11-16-p1-stabil` | [#3](https://github.com/altinmalici/MA-Construction-app-/pull/3) | nein |
-| 2 – Kritische Bugs & Sicherheit | 🟢 fertig | `autopilot-2026-11-16-p2-kritisch` | PR-P2 | **ja** (`migration_2026_11_16_01_security_hardening.sql`) |
+| 2 – Kritische Bugs & Sicherheit | 🟢 fertig | `autopilot-2026-11-16-p2-kritisch` | [#4](https://github.com/altinmalici/MA-Construction-app-/pull/4) | **ja** (`migration_2026_11_16_01_security_hardening.sql`) |
+| 3 – Bautagebuch speichern | 🟢 fertig | `autopilot-2026-11-16-p3-bautagebuch` | PR-P3 | ja, nach dem Merge (`migration_2026_11_16_02_bautagebuch_wetter.sql`) |
 | 6 – Mängel-Branch | 🟢 nichts zu tun | — | — | nein |
 
 Paket 6: `feat/ux-maengel-architektur` ist bereits vollständig in `main` (alle 6 Commits patch-gleich, `git cherry`). Kein Rebase, kein PR.
@@ -31,11 +32,23 @@ Im Supabase SQL-Editor (Projekt `roeqphnopokfdktvvbpp`), in dieser Reihenfolge. 
 - **Bekannte Nebenwirkung:** Liegen auf einem geteilten Handy offline erfasste Stunden von Mitarbeiter A in der Warteschlange und Mitarbeiter B meldet sich an, werden sie erst synchronisiert, wenn A oder der Chef sich dort anmeldet (bisher wurden sie unter B's Sitzung eingetragen). Falls Mitarbeiter künftig Stunden für Kollegen erfassen sollen, muss Teil 3 der Datei angepasst werden.
 - Verifikations-Abfragen und Rollback stehen am Ende der Datei.
 
+### 2. `supabase/migration_2026_11_16_02_bautagebuch_wetter.sql` — direkt NACH dem Merge von Paket 3
+
+- **Was:** Das Bautagebuch-Formular hatte nie Wetterfelder, die API schrieb trotzdem bei jedem Eintrag "sonnig, 12 °C". Die Datei entfernt diese erfundenen Standardwerte und leert sie bei den vorhandenen Einträgen.
+- **Wann:** Erst wenn Paket 3 live ist (die alte App-Version schreibt die erfundenen Werte weiter). Dann zeitnah.
+- **Ändert Daten:** `wetter`/`temperatur` aller Einträge mit genau "sonnig"/12 werden geleert — nur beim ersten Ausführen.
+- **Ohne die Migration** funktioniert Paket 3 trotzdem; alte Einträge zeigen dann aber fälschlich "sonnig, 12 °C" an.
+
 ## ÜBERSPRUNGEN
 
 *Noch nichts.*
 
 ## Hinweise
+
+- Paket 3: Ursache des Bautagebuch-Fehlers war keine RLS-Policy. Die Baustelle wurde beim Öffnen des Screens einmalig festgelegt; waren die Daten da noch nicht geladen, blieb sie leer, und bei genau einer Baustelle war die Auswahl ausgeblendet. Per Test nachgestellt. Ob das der einzige Auslöser im Alltag war, zeigt erst der Test am Gerät.
+- Paket 3: Alle Aktionen (`useAppData`) behandeln das Nachladen nach einem erfolgreichen Schreibvorgang jetzt als best-effort. Vorher wurde aus "gespeichert, aber Liste nicht aktualisiert" eine Fehlermeldung, die zum doppelten Speichern einlud (Audit A-02, D-03, U-04).
+- Paket 3: Dashboard-Kacheln und "Mehr" setzen die zuletzt geöffnete Baustelle zurück, damit globale Listen nicht still gefiltert sind (Audit U-09, Teil).
+- Paket 3, offene Frage: Bautagebuch-Einträge darf laut RLS und UI nur der Chef anlegen. Sollen das auch Mitarbeiter (Vorarbeiter) dürfen, braucht es eine Policy-Änderung.
 
 - Paket 2: SQL-Migrationen wurden gegen ein lokales Wegwerf-Postgres (PGlite, neue Dev-Abhängigkeit `@electric-sql/pglite`) getestet, in das alle bisherigen Repo-Migrationen eingespielt werden. Dort ließen sich S-01 und S-02 vor der Migration tatsächlich ausnutzen. GoTrue (Login selbst) läuft in diesem Test nicht, und ob die Live-DB exakt dem Repo-Stand entspricht, ist ungeprüft.
 - Paket 2 (U-01): Der Regler-Fehler besteht seit dem Phase-2-Split. Jede Baustelle, deren Fortschritts-Regler seitdem bewegt wurde, hat Adresse, Kontakt, Zeitraum, Budget, Rechnungsdaten und Team verloren. Das lässt sich nicht automatisch wiederherstellen; siehe Prüf-Abfrage oben.
