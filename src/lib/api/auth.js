@@ -145,6 +145,19 @@ export async function getCurrentUser() {
 }
 
 /**
+ * Gibt es gerade eine Sitzung auf diesem Gerät? Liest nur den lokalen
+ * Stand (kein eigener Netzaufruf nötig, solange das Token gültig ist).
+ */
+export async function hasSession() {
+  try {
+    const { data } = await supabase.auth.getSession();
+    return !!data?.session;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * onAuthStateChange Listener registrieren
  */
 export function onAuthStateChange(callback) {
