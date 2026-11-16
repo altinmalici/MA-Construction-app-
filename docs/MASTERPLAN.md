@@ -278,7 +278,7 @@ Grundlage: `docs/AUDIT_2026-11.md` (69 Befunde). Laufprotokoll, PR-Links und man
 | AP-5 | Mitarbeiter-Onboarding robust + Einladungs-Link | 🟢 DONE — Migration `…_04_onboarding.sql` |
 | AP-6 | Mängel-Branch prüfen | 🟢 DONE — bereits vollständig in `main`, nichts zu tun |
 | AP-7 | Hohe/mittlere Audit-Punkte | 🟢 DONE — offene Reste in `docs/AUTOPILOT_2026-11-16.md` |
-| AP-8 | Performance & iPhone-UX | 🔴 TODO |
+| AP-8 | Performance & iPhone-UX | 🟢 DONE — Gerätetest offen |
 | AP-9 | Testabdeckung | 🔴 TODO |
 | AP-10 | Doku & Abschluss | 🔴 TODO |
 
@@ -358,6 +358,7 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-11-16 · AP-8 · Branch `autopilot-2026-11-16-p8-perf-ux` · PWA-Update-Hinweis statt stillem Auto-Update (`registerType: prompt`, `src/lib/pwaUpdate.js`), fehlende Lazy-Chunks lösen einmaliges Neuladen aus; Context-Wert und `actions` memoisiert, Navigation als ein State; 44-px-Trefferflächen per CSS; Tastatur hält das fokussierte Feld sichtbar; Foto-URLs werden zwischengespeichert; Foto-Auswahl bietet Kamera und Mediathek.
 - 2026-11-16 · AP-7 · Branch `autopilot-2026-11-16-p7-audit` · Viertelstunden-Rundung zentral in `bStdNum` (Übersicht/Kosten/Regiebericht/Lohnexport rechnen gleich), Regiebericht mit Unterschrift und korrekten Mannstunden, Stundenerfassung ohne Verlust bei schwachem Empfang und ohne Duplikate, Rückfrage bei freigegebenen Einträgen, seitenweises Laden (`selectAll`), CSV-Härtung, KW-Formel, lokales Datum.
 - 2026-11-16 · AP-5 · Branch `autopilot-2026-11-16-p5-onboarding` · Einladungs-Link (`onboarding_tokens` + create/validate/consume), `repair_orphan_user`, `cleanup_orphan_auth_users`, Diagnose-SQL `docs/sql/onboarding_diagnose.sql`; Chef teilt Link (Teilen/Kopieren/WhatsApp), Mitarbeiter setzt PIN über den Link; PIN-Reset nur nach Rückfrage; alter Einladungs-PIN bleibt als Rückfall.
 - 2026-11-16 · AP-4 · Branch `autopilot-2026-11-16-p4-pin-lock` · Login immer an Benutzernamen gebunden (keine globale PIN-Suche), Sperre als Overlay über dem offenen Screen, Auto-Lock erkennt eingefrorene App, Inaktivitäts-Sperre 15 min (ruht offline), Abmelden auch ohne Netz.

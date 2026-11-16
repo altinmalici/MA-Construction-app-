@@ -12,7 +12,8 @@
 | 3 – Bautagebuch speichern | 🟢 fertig | `autopilot-2026-11-16-p3-bautagebuch` | [#5](https://github.com/altinmalici/MA-Construction-app-/pull/5) | ja, nach dem Merge (`migration_2026_11_16_02_bautagebuch_wetter.sql`) |
 | 4 – PIN / Willkommen zurück / Auto-Lock | 🟢 fertig, mit Review | `autopilot-2026-11-16-p4-pin-lock` | [#6](https://github.com/altinmalici/MA-Construction-app-/pull/6) | ja, erst NACH Merge (`migration_2026_11_16_03_pin_lookup_sperren.sql`) |
 | 5 – Onboarding robust + Einladungs-Link | 🟢 fertig | `autopilot-2026-11-16-p5-onboarding` | [#7](https://github.com/altinmalici/MA-Construction-app-/pull/7) | ja (`migration_2026_11_16_04_onboarding.sql`), Reihenfolge egal |
-| 7 – Hohe/mittlere Audit-Punkte | 🟢 fertig (Teilmenge, siehe Hinweise) | `autopilot-2026-11-16-p7-audit` | PR-P7 | nein |
+| 7 – Hohe/mittlere Audit-Punkte | 🟢 fertig (Teilmenge, siehe Hinweise) | `autopilot-2026-11-16-p7-audit` | [#8](https://github.com/altinmalici/MA-Construction-app-/pull/8) | nein |
+| 8 – Performance & iPhone-UX | 🟢 fertig | `autopilot-2026-11-16-p8-perf-ux` | PR-P8 | nein |
 | 6 – Mängel-Branch | 🟢 nichts zu tun | — | — | nein |
 
 Paket 6: `feat/ux-maengel-architektur` ist bereits vollständig in `main` (alle 6 Commits patch-gleich, `git cherry`). Kein Rebase, kein PR.
@@ -68,6 +69,11 @@ Im Supabase SQL-Editor (Projekt `roeqphnopokfdktvvbpp`), in dieser Reihenfolge. 
 *Wird am Ende des Laufs ausgefüllt.*
 
 ## Hinweise
+
+- Paket 8: Neue Versionen werden nicht mehr still im Hintergrund übernommen. Die App zeigt oben "Neue Version verfügbar – Aktualisieren"; erst der Tipp lädt neu. Beim allerersten Start nach dem Merge läuft noch der alte Service Worker mit dem alten Verhalten, ab dann gilt das neue.
+- Paket 8: Alle Buttons und Links haben per CSS eine unsichtbare Trefferfläche von mindestens 44×44 px; das Aussehen bleibt gleich. Liegen zwei kleine Knöpfe dicht nebeneinander, überlappen sich ihre Trefferflächen um wenige Pixel.
+- Paket 8: Erstes Laden (gzip) liegt bei rund 168 kB (React 69, Supabase 59, App 28, Rest 11); Ziel war unter 350 kB. Gegenüber dem Stand vor dem Lauf (rund 137 kB) kommt der Zuwachs zum größten Teil aus den Bibliotheks-Updates in Paket 1.
+- Paket 8, nicht am Gerät geprüft: Tastatur-Verhalten (fokussiertes Feld wird in die Mitte gescrollt), Auswahl Kamera/Mediathek, Update-Hinweis, Trefferflächen.
 
 - Paket 7, erledigt: D-02, D-03, D-04, D-06, D-07, D-08, D-09, D-10, D-11, D-12, D-13, D-14, D-15, D-16, D-18, D-19, D-23, D-24, U-05, U-06, U-07, U-09, U-12, U-17 aus `docs/AUDIT_2026-11.md`.
 - Paket 7, sichtbare Änderung: Alle Stunden werden jetzt überall auf Viertelstunden gerundet (vorher nur im Lohnexport) und mit bis zu zwei Nachkommastellen angezeigt ("7,75 h"). Summen in Übersicht, Kosten und Regiebericht können sich dadurch gegenüber früher um Minuten ändern und stimmen jetzt mit dem Lohnexport überein.
