@@ -31,3 +31,6 @@ dist-ssr
 # Python bytecode (von Skill-Scripts)
 __pycache__/
 *.pyc
+
+# Bundle-Analyse (ANALYZE=1 npm run build)
+stats.html

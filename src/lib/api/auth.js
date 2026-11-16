@@ -108,7 +108,15 @@ export async function completeOnboarding(userId, newPin) {
  */
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  if (!error) return;
+  // Ohne Netz scheitert das serverseitige Abmelden, und supabase-js (ab
+  // 2.119) lässt die Sitzung dann im Gerät. scope:'local' entfernt sie
+  // zuerst lokal (und feuert SIGNED_OUT) und meldet erst danach den
+  // Netzfehler des Widerrufs — der ist hier egal. Fehler ist es nur, wenn
+  // danach immer noch eine Sitzung da ist.
+  await supabase.auth.signOut({ scope: 'local' });
+  const { data } = await supabase.auth.getSession();
+  if (data?.session) throw error;
 }
 
 /**
