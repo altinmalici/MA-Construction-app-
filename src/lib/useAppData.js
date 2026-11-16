@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as api from './api/index.js';
-import { getPending, dequeue, markFailed, dauerfehlerText, gehoertZu } from './offlineQueue.js';
+import { getPending, getQueue, dequeue, markFailed, dauerfehlerText, gehoertZu } from './offlineQueue.js';
 
 // 6-02b: Postgres-Realtime-Payloads kommen mit snake_case-Keys; der App-State
 // nutzt camelCase. Generisch top-level Keys mappen — Postgres-Rows sind flach,
@@ -19,6 +19,24 @@ const isNewer = (incoming, existing) => {
   if (!incoming.updatedAt) return false;
   return incoming.updatedAt > existing.updatedAt;
 };
+
+// Offline erfasste Stunden, die noch auf diesem Gerät warten (oder vom
+// Server abgelehnt wurden), bleiben in der Liste sichtbar — markiert mit
+// `_pending`. Früher verschwanden sie beim nächsten Nachladen aus "Meine
+// Stunden", obwohl sie noch nicht synchronisiert waren; das lud dazu ein,
+// sie ein zweites Mal einzutragen.
+export function mitWartenden(serverList) {
+  const ids = new Set(serverList.map((e) => e.id));
+  const wartend = getQueue()
+    .filter((item) => item?.entry?.id && !ids.has(item.entry.id))
+    .map((item) => ({
+      freigegeben: false,
+      fotos: [],
+      ...item.entry,
+      _pending: item.failed ? "abgelehnt" : "wartet",
+    }));
+  return wartend.length > 0 ? [...serverList, ...wartend] : serverList;
+}
 
 const emptyData = {
   users: [],
@@ -73,7 +91,7 @@ export function useAppData() {
         api.kosten.getAll(),
       ]);
       if (mountedRef.current) {
-        setData({ users, subunternehmer, baustellen, stundeneintraege, kalender, maengel, bautagebuch, dokumente, benachrichtigungen, kosten });
+        setData({ users, subunternehmer, baustellen, stundeneintraege: mitWartenden(stundeneintraege), kalender, maengel, bautagebuch, dokumente, benachrichtigungen, kosten });
         setError(null);
       }
     } catch (err) {
@@ -157,7 +175,9 @@ export function useAppData() {
     if (mountedRef.current) {
       setData(prev => {
         const next = { ...prev };
-        entities.forEach((e, i) => { next[e] = results[i]; });
+        entities.forEach((e, i) => {
+          next[e] = e === 'stundeneintraege' ? mitWartenden(results[i]) : results[i];
+        });
         return next;
       });
     }

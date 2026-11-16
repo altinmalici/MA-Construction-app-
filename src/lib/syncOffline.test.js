@@ -124,3 +124,27 @@ describe("syncOffline", () => {
     expect(getPending()).toHaveLength(1);
   });
 });
+
+describe("wartende Einträge bleiben nach dem Nachladen sichtbar (Audit D-06)", () => {
+  it("mitWartenden hängt Warteschlangen-Einträge an und markiert sie", async () => {
+    const { mitWartenden } = await import("./useAppData.js");
+    const { markFailed } = await import("./offlineQueue.js");
+    enqueueStunde(e("w1"));
+    enqueueStunde(e("f1"));
+    enqueueStunde(e("s1"));
+    markFailed("f1", "x");
+    const r = mitWartenden([{ id: "s1", datum: "2026-11-16" }, { id: "s2" }]);
+    expect(r.map((x) => [x.id, x._pending])).toEqual([
+      ["s1", undefined], // schon auf dem Server → nicht doppelt
+      ["s2", undefined],
+      ["w1", "wartet"],
+      ["f1", "abgelehnt"],
+    ]);
+  });
+
+  it("leere Warteschlange → Liste unverändert (gleiche Referenz)", async () => {
+    const { mitWartenden } = await import("./useAppData.js");
+    const list = [{ id: "s1" }];
+    expect(mitWartenden(list)).toBe(list);
+  });
+});

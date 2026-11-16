@@ -170,6 +170,18 @@ const MeineStd = () => {
                               <p style={{ color: "#8e8e93" }}>
                                 {fDat(e.datum)} · {e.beginn}–{e.ende}
                               </p>
+                              {e._pending && (
+                                <p
+                                  style={{
+                                    color: e._pending === "abgelehnt" ? "#c62828" : "#b26a00",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {e._pending === "abgelehnt"
+                                    ? "Nicht synchronisiert – oben antippen"
+                                    : "Wartet auf Synchronisierung"}
+                                </p>
+                              )}
                             </div>
                             <span style={{ fontWeight: 600, color: "#000" }}>
                               {bStd(e.beginn, e.ende, e.pause)}h

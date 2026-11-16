@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
+import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
 import { bStdNum, fStd, fK, P, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
 import { buildLohnCsv, downloadCsv } from "../../utils/lohnexport";
@@ -41,7 +42,9 @@ const StundenUebersicht = () => {
   const me = useMemo(
     () =>
       data.stundeneintraege.filter(
-        (e) => isInMonth(e.datum, mo, jr) && isMitarbeiterEntry(e),
+        // _pending: liegt nur auf diesem Gerät, noch nicht in der Datenbank →
+        // gehört weder in die Lohnsumme noch in Export oder Freigabe.
+        (e) => isInMonth(e.datum, mo, jr) && isMitarbeiterEntry(e) && !e._pending,
       ),
     [data.stundeneintraege, mo, jr],
   );
@@ -71,14 +74,25 @@ const StundenUebersicht = () => {
       const k = baustelleById.get(e.baustelleId)?.kunde || "Unbekannt";
       bucket.byBs[k] = (bucket.byBs[k] || 0) + std;
     });
-    return allUsers
-      .map((u) => {
-        const b = acc.get(u.id);
-        return b ? { user: u, ...b } : null;
-      })
-      .filter(Boolean)
+    // ALLE Einträge des Monats müssen in der Übersicht landen — genau die,
+    // die auch im Lohnexport stehen. Früher wurden nur Mitarbeiter + der
+    // eingeloggte Chef gezeigt: Stunden eines zweiten Chefs oder eines nicht
+    // mehr vorhandenen Nutzers fehlten in Summe und Freigabe, standen aber
+    // in der CSV.
+    const known = new Map(
+      [...data.users, ...allUsers].map((u) => [u.id, u]),
+    );
+    return [...acc.entries()]
+      .map(([uid, b]) => ({
+        user: known.get(uid) || {
+          id: uid || "unbekannt",
+          name: "Unbekannt / ehemalig",
+          stundensatz: 0,
+        },
+        ...b,
+      }))
       .sort((a, b) => b.std - a.std);
-  }, [allUsers, me, data.baustellen]);
+  }, [allUsers, me, data.baustellen, data.users]);
 
   const totalStd = useMemo(
     () => byUser.reduce((s, u) => s + u.std, 0),
@@ -110,7 +124,7 @@ const StundenUebersicht = () => {
       await actions.stundeneintraege.setFreigabe(ids, !currentlyAll);
       show(currentlyAll ? "Freigabe zurückgenommen" : "Monat freigegeben");
     } catch (e) {
-      show(e?.message || "Freigabe fehlgeschlagen", "error");
+      show(`Freigabe nicht gespeichert: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
     }
   };
 

@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Check, Save, Edit3, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { CS, BTN, RED, IC, fDat, bStd, todayIso } from "../../utils/helpers";
+import { CS, BTN, RED, IC, fDat, bStd, fStd, todayIso } from "../../utils/helpers";
 import { ScreenLayout, PhotoGrid, TimePicker, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 import { uploadPhoto } from "../../lib/storage";
 import { enqueueStunde } from "../../lib/offlineQueue";
+import { pruefeStunde, baueEintrag, snapPause } from "../../utils/stunden";
+import { fehlerText, istNetzFehler } from "../../utils/errors";
 
 const SteView = () => {
   const {
@@ -43,10 +45,20 @@ const SteView = () => {
   const [fd, sFd] = useState(initFd);
   const [saved, setSaved] = useState(false);
   const [showList, setShowList] = useState(false);
+  // Feste ID pro Formular-Durchgang: Ein zweiter Speicher-Versuch (nach
+  // einer Fehlermeldung) schreibt denselben Eintrag, kein Duplikat.
+  const entryIdRef = useRef(null);
+  const navTimerRef = useRef(null);
+  useEffect(() => () => clearTimeout(navTimerRef.current), []);
+  const [confirmLang, setConfirmLang] = useState(null); // Stunden bei Rückfrage
+  const [confirmFreigabe, setConfirmFreigabe] = useState(false);
+  const [editFreigegeben, setEditFreigegeben] = useState(false);
   if (!cu) return null;
   const mb = chef
     ? data.baustellen
     : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
+  // Bei genau einer möglichen Baustelle ist sie automatisch gewählt.
+  const baustelleId = fd.baustelleId || (mb.length === 1 ? mb[0].id : "");
 
   const startEdit = (e) => {
     setEditId(e.id);
@@ -65,121 +77,124 @@ const SteView = () => {
       subId: e.subId || "",
       personName: e.personName || "",
     });
+    setEditFreigegeben(!!e.freigegeben);
+    entryIdRef.current = null;
     setShowList(false);
   };
 
-  const save = () =>
+
+  const done = (kind) => {
+    entryIdRef.current = null;
+    setSaved(kind);
+    navTimerRef.current = setTimeout(() => {
+      sFd(initFd);
+      setSaved(false);
+      if (!chef) nav(sb ? "bsd" : "dash");
+    }, 1200);
+  };
+
+  // Eintrag in die Offline-Warteschlange legen (kein Netz / Netzfehler).
+  const queue = (entry, hinweis) => {
+    if (!enqueueStunde(entry)) {
+      show("Speicher voll – konnte offline nicht sichern", "error");
+      return false;
+    }
+    actions.stundeneintraege.addLocal(entry);
+    show(hinweis);
+    done("create");
+    return true;
+  };
+
+  // opts.langOk / opts.freigabeOk: Rückfragen wurden bereits bestätigt.
+  const save = (opts = {}) =>
     withSaving(async () => {
-      if (!fd.baustelleId) {
-        show("Baustelle wählen", "error");
+      const form = { ...fd, baustelleId };
+      const check = pruefeStunde(form);
+      if (check.fehler) {
+        show(check.fehler, "error");
         return;
       }
-      if (fd.personTyp === "mitarbeiter" && !fd.mitarbeiterId) {
-        show("Mitarbeiter wählen", "error");
+      if (check.lang && !opts.langOk) {
+        setConfirmLang(check.stunden);
         return;
       }
-      if (fd.personTyp === "sub" && !fd.subId) {
-        show("Subunternehmer wählen", "error");
-        return;
-      }
-      if (fd.personTyp === "sonstige" && !fd.personName.trim()) {
-        show("Name eingeben", "error");
+      // Freigegebene Stunden sind an die Lohnbuchhaltung übergeben: Ändern
+      // nur nach Rückfrage, und die Freigabe wird dabei zurückgenommen.
+      if (editId && editFreigegeben && !opts.freigabeOk) {
+        setConfirmFreigabe(true);
         return;
       }
       const wasEdit = !!editId;
+      if (!entryIdRef.current) entryIdRef.current = crypto.randomUUID();
+      const entryId = editId || entryIdRef.current;
+      const existing = form.fotos.filter((f) => typeof f === "string");
+      const blobs = form.fotos.filter((f) => f && f.blob);
+      const offline = typeof navigator !== "undefined" && navigator.onLine === false;
 
       // OFFLINE: neuer Eintrag ohne Netz → in die Warteschlange statt Fehler.
-      // Foto-Upload braucht Netz, daher offline nur die bereits hochgeladenen
-      // Foto-Pfade; neue Fotos werden ausgelassen (mit Hinweis).
-      if (
-        !editId &&
-        typeof navigator !== "undefined" &&
-        navigator.onLine === false
-      ) {
-        const offlineId = crypto.randomUUID();
-        const hasNewPhotos = fd.fotos.some((f) => f && f.blob);
-        const entry = {
-          ...fd,
-          id: offlineId,
-          fotos: fd.fotos.filter((f) => typeof f === "string"),
-          baustelleId: fd.baustelleId,
-          mitarbeiterId:
-            fd.personTyp === "mitarbeiter" ? fd.mitarbeiterId : null,
-          subId: fd.personTyp === "sub" ? fd.subId : null,
-          personName: fd.personTyp === "sonstige" ? fd.personName.trim() : "",
-        };
-        if (!enqueueStunde(entry)) {
-          show("Speicher voll – konnte offline nicht sichern", "error");
-          return;
-        }
-        actions.stundeneintraege.addLocal(entry);
-        show(
-          hasNewPhotos
+      // Foto-Upload braucht Netz; neue Fotos werden ausgelassen (mit Hinweis).
+      if (!editId && offline) {
+        queue(
+          baueEintrag(form, { id: entryId, fotos: existing }),
+          blobs.length > 0
             ? "Offline gespeichert (ohne Foto – kein Netz)"
             : "Offline gespeichert – synchronisiert bei Empfang",
         );
-        setSaved("create");
-        setTimeout(() => {
-          sFd(initFd);
-          setSaved(false);
-          if (!chef) nav(sb ? "bsd" : "dash");
-        }, 1200);
         return;
       }
 
+      let fotos = existing;
       try {
-        // Atomar: Foto-Upload VOR dem Row-Insert/Update. Bei Create wird
-        // die UUID hier client-seitig vergeben, damit der Storage-Pfad
-        // die endgültige entityId enthält.
-        const entryId = editId || crypto.randomUUID();
-        const existing = [];
-        const blobs = [];
-        for (const f of fd.fotos) {
-          if (typeof f === "string") existing.push(f);
-          else if (f && f.blob) blobs.push(f);
-        }
+        // Foto-Upload VOR dem Schreiben; die ID steht schon fest, damit der
+        // Storage-Pfad zum Eintrag passt.
         const uploaded = await Promise.all(
           blobs.map((p) =>
-            uploadPhoto(p.blob, fd.baustelleId, "stundeneintraege", entryId),
+            uploadPhoto(p.blob, form.baustelleId, "stundeneintraege", entryId),
           ),
         );
-        const fotos = [...existing, ...uploaded.map((u) => u.path)];
+        fotos = [...existing, ...uploaded.map((u) => u.path)];
+        const entry = baueEintrag(form, { id: entryId, fotos });
 
-        const entry = {
-          ...fd,
-          fotos,
-          baustelleId: fd.baustelleId,
-          mitarbeiterId: fd.personTyp === "mitarbeiter" ? fd.mitarbeiterId : null,
-          subId: fd.personTyp === "sub" ? fd.subId : null,
-          personName: fd.personTyp === "sonstige" ? fd.personName.trim() : "",
-        };
         if (editId) {
           await actions.stundeneintraege.update(editId, entry);
-          show("Aktualisiert");
+          if (editFreigegeben) {
+            await actions.stundeneintraege.setFreigabe([editId], false);
+          }
+          show(editFreigegeben ? "Aktualisiert – Freigabe zurückgenommen" : "Aktualisiert");
           setEditId(null);
+          setEditFreigegeben(false);
         } else {
-          await actions.stundeneintraege.create({ ...entry, id: entryId });
+          try {
+            await actions.stundeneintraege.create(entry);
+          } catch (e) {
+            // Schon gespeichert (erster Versuch kam durch, nur die Antwort
+            // ging verloren) → Erfolg, kein Duplikat.
+            if (!(e?.code === "23505" || /duplicate key/i.test(e?.message || ""))) throw e;
+          }
           const pn =
-            fd.personTyp === "mitarbeiter"
-              ? data.users.find((u) => u.id === fd.mitarbeiterId)?.name
-              : fd.personTyp === "sub"
-                ? data.subunternehmer.find((s) => s.id === fd.subId)?.name
-                : fd.personName;
-          addN(
-            "stunden",
-            `${pn || cu.name}: Stunden eingetragen`,
-            fd.baustelleId,
-          );
+            form.personTyp === "mitarbeiter"
+              ? data.users.find((u) => u.id === form.mitarbeiterId)?.name
+              : form.personTyp === "sub"
+                ? data.subunternehmer.find((x) => x.id === form.subId)?.name
+                : form.personName;
+          addN("stunden", `${pn || cu.name}: Stunden eingetragen`, form.baustelleId);
         }
-        setSaved(wasEdit ? "update" : "create");
-        setTimeout(() => {
-          sFd(initFd);
-          setSaved(false);
-          if (!chef) nav(sb ? "bsd" : "dash");
-        }, 1200);
+        done(wasEdit ? "update" : "create");
       } catch (e) {
         console.error("[SteView.save]", e);
-        show(e?.message || "Fehler beim Speichern", "error");
+        // Schwacher Empfang: navigator.onLine sagt "online", die Anfrage
+        // scheitert trotzdem. Neue Einträge dann NICHT verlieren, sondern
+        // wie offline in die Warteschlange legen.
+        if (!editId && istNetzFehler(e)) {
+          queue(
+            baueEintrag(form, { id: entryId, fotos }),
+            blobs.length > 0 && fotos.length === existing.length
+              ? "Kein Empfang – gespeichert ohne Foto, wird später gesendet"
+              : "Kein Empfang – gespeichert, wird später gesendet",
+          );
+          return;
+        }
+        show(`Nicht gespeichert: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
       }
     });
 
@@ -193,13 +208,13 @@ const SteView = () => {
       show("Gelöscht");
     } catch (e) {
       console.error("[SteView.delEntry]", e);
-      show(e?.message || "Fehler beim Löschen", "error");
+      show(`Nicht gelöscht: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
     }
   };
 
   // Einträge für gewählte Baustelle
-  const bsEintraege = fd.baustelleId
-    ? data.stundeneintraege.filter((e) => e.baustelleId === fd.baustelleId)
+  const bsEintraege = baustelleId
+    ? data.stundeneintraege.filter((e) => e.baustelleId === baustelleId)
     : [];
 
   if (saved)
@@ -389,7 +404,7 @@ const SteView = () => {
                 Baustelle
               </label>
               <select
-                value={fd.baustelleId}
+                value={baustelleId}
                 onChange={(e) => sFd({ ...fd, baustelleId: e.target.value })}
                 className={IC}
               >
@@ -620,6 +635,7 @@ const SteView = () => {
                   <input
                     type="number"
                     min="0"
+                    step="15"
                     inputMode="numeric"
                     value={fd.pause}
                     onChange={(e) =>
@@ -628,6 +644,8 @@ const SteView = () => {
                         pause: Math.max(0, parseInt(e.target.value, 10) || 0),
                       })
                     }
+                    // 15-Minuten-Raster: beim Verlassen des Feldes einrasten.
+                    onBlur={() => sFd((p) => ({ ...p, pause: snapPause(p.pause) }))}
                     className={IC}
                   />
                 </div>
@@ -778,8 +796,8 @@ const SteView = () => {
 
           {/* Save Button */}
           <button
-            onClick={save}
-            disabled={!fd.baustelleId || saving}
+            onClick={() => save()}
+            disabled={!baustelleId || saving}
             style={{
               width: "100%",
               padding: "16px 24px",
@@ -794,7 +812,7 @@ const SteView = () => {
               background: BTN,
               boxShadow: "0 2px 8px rgba(124,58,237,0.35)",
               border: "none",
-              opacity: !fd.baustelleId || saving ? 0.5 : 1,
+              opacity: !baustelleId || saving ? 0.5 : 1,
               cursor: saving ? "not-allowed" : "pointer",
             }}
           >
@@ -805,6 +823,7 @@ const SteView = () => {
             <button
               onClick={() => {
                 setEditId(null);
+                setEditFreigegeben(false);
                 sFd(initFd);
               }}
               className="w-full py-3 text-center"
@@ -816,9 +835,38 @@ const SteView = () => {
         </div>
       )}
       <ConfirmModal
+        open={confirmLang !== null}
+        title="Sehr lange Schicht"
+        message={`Das ergibt ${fStd(confirmLang || 0)} Stunden (${fd.beginn}–${fd.ende}). Sind Beginn und Ende richtig?`}
+        confirmLabel="Ja, speichern"
+        cancelLabel="Korrigieren"
+        onConfirm={() => {
+          setConfirmLang(null);
+          return save({ langOk: true });
+        }}
+        onCancel={() => setConfirmLang(null)}
+      />
+      <ConfirmModal
+        open={confirmFreigabe}
+        title="Freigegebenen Eintrag ändern?"
+        message="Dieser Eintrag ist bereits freigegeben (an die Lohnabrechnung übergeben). Beim Ändern wird die Freigabe zurückgenommen."
+        confirmLabel="Ändern"
+        cancelLabel="Abbrechen"
+        destructive
+        onConfirm={() => {
+          setConfirmFreigabe(false);
+          return save({ langOk: true, freigabeOk: true });
+        }}
+        onCancel={() => setConfirmFreigabe(false)}
+      />
+      <ConfirmModal
         open={!!confirmDelete}
         title="Eintrag löschen?"
-        message="Der Stundeneintrag wird dauerhaft entfernt."
+        message={
+          data.stundeneintraege.find((e) => e.id === confirmDelete)?.freigegeben
+            ? "Achtung: Dieser Eintrag ist bereits freigegeben (an die Lohnabrechnung übergeben). Er wird dauerhaft entfernt."
+            : "Der Stundeneintrag wird dauerhaft entfernt."
+        }
         confirmLabel="Löschen"
         cancelLabel="Abbrechen"
         destructive
