@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { fehlerText } from "../../../utils/errors";
 import { useApp } from "../../../context/AppContext";
@@ -40,11 +40,13 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
   const [confirmDeleteKost, setConfirmDeleteKost] = useState(null);
 
   const b = data.baustellen.find((x) => x.id === bsId);
-  if (!b) {
-    // Baustelle weg (z.B. parallel gelöscht) → zurück zur Liste
-    onBack();
-    return null;
-  }
+  // Baustelle weg (z.B. parallel gelöscht) → zurück zur Liste. Im Effekt,
+  // nicht im Render (ein State-Update des Elternteils während des Renderns
+  // ist in React ein Fehler).
+  useEffect(() => {
+    if (!b) onBack();
+  }, [b, onBack]);
+  if (!b) return null;
 
   const { calcLohn, calcTotal, calcKat } = aggregat;
   const total = calcTotal(b.id);

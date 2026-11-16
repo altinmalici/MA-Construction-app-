@@ -15,6 +15,8 @@ import KostenDetail from "./Detail.jsx";
 const KostenView = () => {
   const { data } = useApp();
   const [selBs, setSelBs] = useState(null);
+  // Baustelle, für die das Erfassen-Formular beim Zurückkehren offen sein soll.
+  const [prefillBs, setPrefillBs] = useState(null);
 
   const aggregat = useKostenAggregat({
     baustellen: data.baustellen,
@@ -29,17 +31,26 @@ const KostenView = () => {
         bsId={selBs.id}
         aggregat={aggregat}
         onBack={() => setSelBs(null)}
-        onAddKosten={() => {
-          // List-Form ist nur in der List-View sichtbar — zurück und User
-          // tippt selbst auf "+". Wir öffnen es nicht magisch in der List
-          // weil das eine Cross-Component-State-Manipulation wäre.
+        onAddKosten={(bsId) => {
+          // "+ Kosten" in der Detailansicht: zurück zur Liste und das
+          // Formular gleich mit dieser Baustelle öffnen (vorher passierte
+          // scheinbar nichts).
+          setPrefillBs(bsId);
           setSelBs(null);
         }}
       />
     );
   }
 
-  return <KostenList onSelectBs={setSelBs} />;
+  return (
+    <KostenList
+      onSelectBs={(b) => {
+        setPrefillBs(null);
+        setSelBs(b);
+      }}
+      prefillBs={prefillBs}
+    />
+  );
 };
 
 export default KostenView;

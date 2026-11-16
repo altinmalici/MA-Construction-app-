@@ -14,13 +14,13 @@ import KostenForm from "./Form.jsx";
  * onSelectBs-Prop wird vom Parent (index.jsx) gehalten — Routing zur Detail-
  * View liegt im Container.
  */
-const List = ({ onSelectBs }) => {
+const List = ({ onSelectBs, prefillBs }) => {
   const { data, actions, show, goBack, cu, addN } = useApp();
   const { saving, withSaving } = useSaving();
-  const [sf, setSf] = useState(false);
+  const [sf, setSf] = useState(!!prefillBs);
   const [fl, setFl] = useState("alle");
   const [kf, sKf] = useState({
-    baustelleId: "",
+    baustelleId: prefillBs || "",
     kategorie: "material",
     beschreibung: "",
     betrag: "",
@@ -49,6 +49,11 @@ const List = ({ onSelectBs }) => {
     withSaving(async () => {
       if (!kf.baustelleId || !kf.beschreibung.trim() || !kf.betrag) {
         show("Alle Felder ausfüllen", "error");
+        return;
+      }
+      // "0" oder "abc" würden sonst als 0-€-Eintrag gespeichert.
+      if (!(parseDecimal(kf.betrag) > 0)) {
+        show("Betrag als Zahl größer 0 eingeben (z.B. 1.234,50)", "error");
         return;
       }
       try {
