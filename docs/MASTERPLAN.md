@@ -264,9 +264,11 @@ Neue Assets: `manifest.webmanifest`, `sw.js`, 5 PNG-Icons, 2 SVG-Logos, `scripts
 
 ---
 
-### 🎯 Autopilot-Nachtlauf 2026-11-16 · Status: 🟡 IN PROGRESS
+### 🎯 Autopilot-Lauf 2026-11-16 · Status: 🟢 DONE (PRs offen, nichts gemerged)
 
-Grundlage: `docs/AUDIT_2026-11.md` (69 Befunde). Laufprotokoll, PR-Links und manuell auszuführende Migrationen: `docs/AUTOPILOT_2026-11-16.md`. Nichts davon ist in `main`, bis Altin die PRs merged.
+Grundlage: `docs/AUDIT_2026-11.md` (69 Befunde). Abschlussbericht mit PR-Links, Merge-Reihenfolge, den vier manuell auszuführenden Migrationen und der iPhone-Checkliste: `docs/AUTOPILOT_2026-11-16.md`. Nichts davon ist in `main`, bis Altin die PRs #2 bis #11 der Reihe nach merged.
+
+**Nächste Schritte für Altin:** Migration 1 ausführen → PRs in Reihenfolge mergen und je Block auf dem iPhone prüfen → Migrationen 4, 2, 3 zum jeweils genannten Zeitpunkt. Offene Entscheidungen (Stundensatz-Sichtbarkeit, Benachrichtigungen, Fahrtzeit, PIN-Länge) stehen im Abschlussbericht, Abschnitt 5.
 
 | ID | Paket | Status |
 |---|---|---|
@@ -279,8 +281,8 @@ Grundlage: `docs/AUDIT_2026-11.md` (69 Befunde). Laufprotokoll, PR-Links und man
 | AP-6 | Mängel-Branch prüfen | 🟢 DONE — bereits vollständig in `main`, nichts zu tun |
 | AP-7 | Hohe/mittlere Audit-Punkte | 🟢 DONE — offene Reste in `docs/AUTOPILOT_2026-11-16.md` |
 | AP-8 | Performance & iPhone-UX | 🟢 DONE — Gerätetest offen |
-| AP-9 | Testabdeckung | 🔴 TODO |
-| AP-10 | Doku & Abschluss | 🔴 TODO |
+| AP-9 | Testabdeckung | 🟢 DONE — jede API-Datei hat Tests; Screen-Tests für Stundenübersicht/Regiebericht offen |
+| AP-10 | Doku & Abschluss | 🟢 DONE — `docs/AUTOPILOT_2026-11-16.md` |
 
 ---
 
@@ -358,6 +360,8 @@ Um Scope-Creep zu verhindern, diese Themen werden **nicht** angefasst (außer ex
 
 Jeder abgeschlossene Task wird hier mit Datum + Commit-Hash eingetragen — neueste oben.
 
+- 2026-11-16 · AP-10 · Branch `autopilot-2026-11-16-p10-doku` · Abschlussbericht `docs/AUTOPILOT_2026-11-16.md`, `docs/SETUP.md` mit vollständiger Migrationsliste, README ersetzt.
+- 2026-11-16 · AP-9 · Branch `autopilot-2026-11-16-p9-tests` · Tests für alle API-Module (`stundeneintraege`, `kosten`, `kalender`, `maengel`, `dokumente`, `subunternehmer`, `benachrichtigungen`) + gemeinsamer Supabase-Mock. Stand: 547 Tests in 53 Dateien (vor dem Lauf: 220 in 23).
 - 2026-11-16 · AP-8 · Branch `autopilot-2026-11-16-p8-perf-ux` · PWA-Update-Hinweis statt stillem Auto-Update (`registerType: prompt`, `src/lib/pwaUpdate.js`), fehlende Lazy-Chunks lösen einmaliges Neuladen aus; Context-Wert und `actions` memoisiert, Navigation als ein State; 44-px-Trefferflächen per CSS; Tastatur hält das fokussierte Feld sichtbar; Foto-URLs werden zwischengespeichert; Foto-Auswahl bietet Kamera und Mediathek.
 - 2026-11-16 · AP-7 · Branch `autopilot-2026-11-16-p7-audit` · Viertelstunden-Rundung zentral in `bStdNum` (Übersicht/Kosten/Regiebericht/Lohnexport rechnen gleich), Regiebericht mit Unterschrift und korrekten Mannstunden, Stundenerfassung ohne Verlust bei schwachem Empfang und ohne Duplikate, Rückfrage bei freigegebenen Einträgen, seitenweises Laden (`selectAll`), CSV-Härtung, KW-Formel, lokales Datum.
 - 2026-11-16 · AP-5 · Branch `autopilot-2026-11-16-p5-onboarding` · Einladungs-Link (`onboarding_tokens` + create/validate/consume), `repair_orphan_user`, `cleanup_orphan_auth_users`, Diagnose-SQL `docs/sql/onboarding_diagnose.sql`; Chef teilt Link (Teilen/Kopieren/WhatsApp), Mitarbeiter setzt PIN über den Link; PIN-Reset nur nach Rückfrage; alter Einladungs-PIN bleibt als Rückfall.
