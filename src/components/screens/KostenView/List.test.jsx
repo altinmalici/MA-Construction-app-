@@ -58,7 +58,7 @@ describe("KostenView/List – Kacheln", () => {
 
   it("eingetragene Fahrtzeit zählt zu Stunden und Lohnkosten", () => {
     const c = ctx();
-    c.data.stundeneintraege = [std({ id: "1", baustelleId: "a", fahrtzeit: 60 })]; // 8 h + 1 h
+    c.data.stundeneintraege = [std({ id: "1", baustelleId: "a", datum: "2026-12-01", fahrtzeit: 60 })]; // 8 h + 1 h
     c.data.kosten = [];
     useApp.mockReturnValue(c);
     render(<KostenList onSelectBs={vi.fn()} />);

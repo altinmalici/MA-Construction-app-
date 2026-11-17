@@ -42,8 +42,7 @@ describe("buildLohnCsv", () => {
   it("rechnet Betrag = Stunden x Stundensatz mit Komma-Dezimal", () => {
     const csv = build();
     // 8,5 h x 45 = 382,50
-    // 8,5 h Arbeit + 30 min eingetragene Fahrtzeit = 9 h × 45 € = 405 €
-    expect(csv).toContain("8,50;0,50;9,00;45,00;405,00");
+    expect(csv).toContain("8,50;0,00;8,50;45,00;382,50"); // Fahrtzeit 30 vor dem Stichtag zählt nicht
     // 4 h x 45 = 180,00
     expect(csv).toContain("4,00;45,00;180,00");
   });
@@ -62,18 +61,18 @@ describe("buildLohnCsv", () => {
   it("fuehrt die Freigegeben-Spalte (Ja/Nein)", () => {
     const csv = build();
     expect(csv).toContain("Freigegeben");
-    expect(csv).toContain("405,00;Ja"); // freigegeben: true
+    expect(csv).toContain("382,50;Ja"); // freigegeben: true
     expect(csv).toContain("180,00;Nein"); // freigegeben: false
   });
 
   it("summiert pro Mitarbeiter und Gesamt", () => {
     const csv = build();
     // Max: 8,5 + 4 = 12,5 h ; 382,5 + 180 = 562,5
-    expect(csv).toContain("Max Mustermann;12,50;0,50;13,00;45,00;585,00");
+    expect(csv).toContain("Max Mustermann;12,50;0,00;12,50;45,00;562,50");
     // Anna: 8,5 h x 40 = 340
     expect(csv).toContain("Anna Beispiel;8,50;0,00;8,50;40,00;340,00");
     // GESAMT: 21 h ; 902,50
-    expect(csv).toContain("GESAMT;21,00;0,50;21,50;;925,00");
+    expect(csv).toContain("GESAMT;21,00;0,00;21,00;;902,50");
   });
 });
 
@@ -127,7 +126,7 @@ describe("Fahrtzeit wird bezahlt, wenn sie eingetragen ist", () => {
       monthLabel: "November 2026",
     });
   };
-  const e = (over) => ({ mitarbeiterId: "u1", baustelleId: "b1", datum: "2026-11-16", beginn: "07:00", ende: "15:00", pause: 0, arbeit: "Putz", ...over });
+  const e = (over) => ({ mitarbeiterId: "u1", baustelleId: "b1", datum: "2026-12-01", beginn: "07:00", ende: "15:00", pause: 0, arbeit: "Putz", ...over });
 
   it("eigene Spalten: Arbeitszeit, Fahrtzeit, Stunden gesamt – der Betrag rechnet mit der Summe", async () => {
     const csv = await build([e({ fahrtzeit: 30 })]);
@@ -137,23 +136,34 @@ describe("Fahrtzeit wird bezahlt, wenn sie eingetragen ist", () => {
   });
 
   it("Fahrtzeit 0 oder leer = nichts", async () => {
-    const csv = await build([e({ fahrtzeit: 0 }), e({ datum: "2026-11-17", fahrtzeit: undefined })]);
+    const csv = await build([e({ fahrtzeit: 0 }), e({ datum: "2026-12-02", fahrtzeit: undefined })]);
     expect(csv).toContain("8,00;0,00;8,00;40,00;320,00");
     expect(csv).toContain("GESAMT;16,00;0,00;16,00;;640,00");
   });
 
   it("Zusammenfassung und Gesamt enthalten die Fahrtzeit", async () => {
-    const csv = await build([e({ fahrtzeit: 30 }), e({ datum: "2026-11-17", fahrtzeit: 45 })]);
+    const csv = await build([e({ fahrtzeit: 30 }), e({ datum: "2026-12-02", fahrtzeit: 45 })]);
     expect(csv).toContain("Max;16,00;1,25;17,25;40,00;690,00");
     expect(csv).toContain("GESAMT;16,00;1,25;17,25;;690,00");
   });
 
   it("Fahrtzeit wird auf Viertelstunden gerundet (20 min → 0,25 h)", async () => {
     const { fahrtStd, lohnStd } = await import("./helpers.js");
-    expect(fahrtStd({ fahrtzeit: 20 })).toBe(0.25);
-    expect(fahrtStd({ fahrtzeit: 0 })).toBe(0);
-    expect(fahrtStd({ fahrtzeit: -10 })).toBe(0);
+    const d = "2026-12-01";
+    expect(fahrtStd({ datum: d, fahrtzeit: 20 })).toBe(0.25);
+    expect(fahrtStd({ datum: d, fahrtzeit: 0 })).toBe(0);
+    expect(fahrtStd({ datum: d, fahrtzeit: -10 })).toBe(0);
+    expect(fahrtStd({ datum: d })).toBe(0);
     expect(fahrtStd({})).toBe(0);
-    expect(lohnStd({ beginn: "07:00", ende: "15:00", pause: 0, fahrtzeit: 30 })).toBe(8.5);
+    expect(lohnStd({ datum: d, beginn: "07:00", ende: "15:00", pause: 0, fahrtzeit: 30 })).toBe(8.5);
+  });
+
+  it("Stichtag: alte Einträge (vorbelegte 30 Minuten) bleiben unbezahlt – auch im Export", async () => {
+    const { fahrtStd, FAHRTZEIT_BEZAHLT_AB } = await import("./helpers.js");
+    expect(FAHRTZEIT_BEZAHLT_AB).toBe("2026-11-18");
+    expect(fahrtStd({ datum: "2026-11-17", fahrtzeit: 30 })).toBe(0);
+    expect(fahrtStd({ datum: "2026-11-18", fahrtzeit: 30 })).toBe(0.5);
+    const csv = await build([e({ datum: "2026-11-17", fahrtzeit: 30 })]);
+    expect(csv).toContain("8,00;0,00;8,00;40,00;320,00");
   });
 });

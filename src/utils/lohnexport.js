@@ -40,7 +40,7 @@ const row = csvRow;
  *
  * @param {Object}   p
  * @param {Array}    p.entries        Stundeneintraege des Monats (nur Mitarbeiter)
- * @param {Function} p.hoursOf        (entry) => Stunden als Float
+ * @param {Function} p.hoursOf        (entry) => ARBEITSzeit in Stunden (ohne Fahrt – die Fahrtzeit rechnet der Export selbst dazu)
  * @param {Map}      p.userById       id -> { name, stundensatz }
  * @param {Map}      p.baustelleById  id -> { kunde }
  * @param {string}   p.monthLabel     z.B. 'Juli 2026'

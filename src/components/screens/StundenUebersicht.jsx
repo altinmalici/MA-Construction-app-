@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
-import { bStdNum, lohnStd, fStd, fK, P, isInMonth, isMitarbeiterEntry, shiftMonth } from "../../utils/helpers";
+import { bStdNum, lohnStd, fahrtStd, fStd, fK, P, isInMonth, isMitarbeiterEntry, shiftMonth } from "../../utils/helpers";
 import { buildLohnCsv, downloadCsv } from "../../utils/lohnexport";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
@@ -441,6 +441,7 @@ const StundenUebersicht = () => {
                             </div>
                             <p style={{ color: "#8e8e93", marginTop: 2 }}>
                               {e.beginn}–{e.ende}, Pause {e.pause} Min
+                              {fahrtStd(e) > 0 ? ` + ${fStd(fahrtStd(e))} h Fahrt` : ""}
                               {bs ? " · " + bs.kunde : ""}
                             </p>
                             {e.arbeit && (

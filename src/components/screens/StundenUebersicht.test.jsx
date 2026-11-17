@@ -58,12 +58,24 @@ describe("StundenUebersicht – Summen", () => {
 
 describe("StundenUebersicht – Fahrtzeit", () => {
   it("eingetragene Fahrtzeit zählt zu den Stunden: 7,75 h + 30 min = 8,25 h", () => {
-    mount([e("1", { fahrtzeit: 30 })]);
+    mount([e("1", { datum: "2026-11-20", fahrtzeit: 30 })]);
     expect(screen.getAllByText(/8,25h/).length).toBeGreaterThan(0);
   });
 
-  it("Bildschirm und Lohnexport stimmen überein", () => {
+  it("alter Eintrag (vor dem Stichtag) mit vorbelegten 30 Minuten: unverändert 7,75 h", () => {
     mount([e("1", { fahrtzeit: 30 })]);
+    expect(screen.getAllByText(/7,75h/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/8,25h/)).toBeNull();
+  });
+
+  it("die Zeile nennt die Fahrtzeit, damit die Summe nachvollziehbar ist", () => {
+    mount([e("1", { datum: "2026-11-20", fahrtzeit: 30 })]);
+    fireEvent.click(screen.getByText("Max Muster"));
+    expect(screen.getByText(/\+ 0,5 h Fahrt/)).toBeInTheDocument();
+  });
+
+  it("Bildschirm und Lohnexport stimmen überein", () => {
+    mount([e("1", { datum: "2026-11-20", fahrtzeit: 30 })]);
     fireEvent.click(screen.getByRole("button", { name: /Lohnexport November 2026/ }));
     const csv = downloadCsv.mock.calls[0][1];
     expect(csv).toContain("7,75;0,50;8,25;40,00;330,00");
