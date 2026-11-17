@@ -11,15 +11,38 @@ export const BAUSTELLE_UPDATABLE_FIELDS = Object.freeze([
   'fortschritt',
 ]);
 
+// DB-Funktion (noch) nicht vorhanden → Migration nicht angewandt.
+const istFunktionFehlt = (e) =>
+  e?.code === 'PGRST202' ||
+  e?.code === '42883' ||
+  /could not find the function|function .* does not exist/i.test(String(e?.message || ''));
+
 export async function getAll({ signal } = {}) {
   // Fetch baustellen mit Retry-Wrapper (6-04). Junction-Tables im
   // Promise.all bleiben "nackt" — sie folgen der Haupt-Query und
   // teilen sich konzeptuell denselben Fehler-Pfad.
-  const { data: bsList, error } = await selectAll(
-    () => supabase.from('baustellen').select('*').order('created_at').order('id'),
-    { signal },
-  );
+  // Zwei Quellen (supabase/migration_2026_11_18_03_lohndaten_schutz.sql):
+  //  * Tabelle baustellen – Chef: alles; Mitarbeiter nach der Migration
+  //    nichts mehr (vorher ihre zugewiesenen Baustellen komplett).
+  //  * meine_baustellen() – zugewiesene Baustellen OHNE Budget und
+  //    Rechnungsdaten. Fehlt die Funktion, reicht die Tabelle wie bisher.
+  const [{ data: tabelle, error }, meine] = await Promise.all([
+    selectAll(
+      () => supabase.from('baustellen').select('*').order('created_at').order('id'),
+      { signal },
+    ),
+    supabase.rpc('meine_baustellen'),
+  ]);
   if (error) throw error;
+  if (meine?.error && !istFunktionFehlt(meine.error)) throw meine.error;
+  const byId = new Map();
+  (meine?.data || []).forEach(b => byId.set(b.id, b));
+  tabelle.forEach(b => byId.set(b.id, b)); // vollständige Zeile geht vor
+  const bsList = [...byId.values()].sort(
+    (a, b) =>
+      String(a.created_at || '').localeCompare(String(b.created_at || '')) ||
+      String(a.id).localeCompare(String(b.id)),
+  );
 
   // Fetch all junction entries at once
   const [mitRes, subRes] = await Promise.all([
