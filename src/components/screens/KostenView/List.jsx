@@ -38,12 +38,18 @@ const List = ({ onSelectBs, prefillBs }) => {
   // 6-03a Phase 1: Aggregations-Logic in useKostenAggregat-Hook ausgelagert
   // (siehe ./KostenView/aggregations.js). calc*-Reader und totalAll/budgetAll
   // werden destrukturiert für unveränderte Aufrufer-Signatur.
-  const { calcLohn, calcTotal, calcKat, totalAll, budgetAll } = useKostenAggregat({
+  const { calcLohn, calcTotal, calcKat } = useKostenAggregat({
     baustellen: data.baustellen,
     stundeneintraege: data.stundeneintraege,
     users: data.users,
     kosten: data.kosten,
   });
+
+  // Alle drei Kacheln oben (Gesamtkosten, Budget, Stunden) beziehen sich auf
+  // die gerade angezeigten Baustellen (Filter). Vorher zeigten Kosten und
+  // Budget immer alle Baustellen.
+  const totalGezeigt = bsList.reduce((s, b) => s + calcTotal(b.id), 0);
+  const budgetGezeigt = bsList.reduce((s, b) => s + (Number(b.budget) || 0), 0);
 
   const saveKost = () =>
     withSaving(async () => {
@@ -183,7 +189,7 @@ const List = ({ onSelectBs, prefillBs }) => {
           }}
         >
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
-            {fE(totalAll)}
+            {fE(totalGezeigt)}
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>
             Gesamtkosten
@@ -199,7 +205,7 @@ const List = ({ onSelectBs, prefillBs }) => {
           }}
         >
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
-            {budgetAll > 0 ? fE(budgetAll) : "–"}
+            {budgetGezeigt > 0 ? fE(budgetGezeigt) : "–"}
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>Budget</p>
         </div>

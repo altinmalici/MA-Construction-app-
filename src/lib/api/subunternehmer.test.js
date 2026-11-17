@@ -16,6 +16,10 @@ describe("subunternehmer", () => {
     const page = (n) => ({ data: Array.from({ length: n }, (_, i) => ({ id: `s${i}`, name: "X" })), error: null });
     mock.responses["subunternehmer.select"] = [page(1000), page(3)];
     expect(await getAll()).toHaveLength(1003);
+    const calls = mock.all("subunternehmer", "select");
+    expect(calls.map((c) => c.filters.find((f) => f[0] === "range").slice(1))).toEqual([[0, 999], [1000, 1999]]);
+    // eindeutige Reihenfolge, sonst könnten Zeilen zwischen den Seiten verrutschen
+    expect(calls[0].filters.filter((f) => f[0] === "order").map((f) => f[1])).toEqual(["created_at", "id"]);
   });
 
   it("create gibt die ID zurück und schreibt leere statt fehlender Felder", async () => {
