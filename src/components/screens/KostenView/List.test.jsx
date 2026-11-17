@@ -55,4 +55,15 @@ describe("KostenView/List – Kacheln", () => {
     expect(screen.getAllByText(/5\.000,00/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/6\.000,00/)).toBeNull();
   });
+
+  it("eingetragene Fahrtzeit zählt zu Stunden und Lohnkosten", () => {
+    const c = ctx();
+    c.data.stundeneintraege = [std({ id: "1", baustelleId: "a", datum: "2026-12-01", fahrtzeit: 60 })]; // 8 h + 1 h
+    c.data.kosten = [];
+    useApp.mockReturnValue(c);
+    render(<KostenList onSelectBs={vi.fn()} />);
+    expect(screen.getAllByText("9h").length).toBeGreaterThan(0);
+    // 9 h × 50 € = 450 €
+    expect(screen.getAllByText(/450,00/).length).toBeGreaterThan(0);
+  });
 });

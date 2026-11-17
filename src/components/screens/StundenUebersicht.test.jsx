@@ -56,6 +56,33 @@ describe("StundenUebersicht – Summen", () => {
   });
 });
 
+describe("StundenUebersicht – Fahrtzeit", () => {
+  it("eingetragene Fahrtzeit zählt zu den Stunden: 7,75 h + 30 min = 8,25 h", () => {
+    mount([e("1", { datum: "2026-11-20", fahrtzeit: 30 })]);
+    expect(screen.getAllByText(/8,25h/).length).toBeGreaterThan(0);
+  });
+
+  it("alter Eintrag (vor dem Stichtag) mit vorbelegten 30 Minuten: unverändert 7,75 h", () => {
+    mount([e("1", { fahrtzeit: 30 })]);
+    expect(screen.getAllByText(/7,75h/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/8,25h/)).toBeNull();
+  });
+
+  it("die Zeile nennt die Fahrtzeit, damit die Summe nachvollziehbar ist", () => {
+    mount([e("1", { datum: "2026-11-20", fahrtzeit: 30 })]);
+    fireEvent.click(screen.getByText("Max Muster"));
+    expect(screen.getByText(/\+ 0,5 h Fahrt/)).toBeInTheDocument();
+  });
+
+  it("Bildschirm und Lohnexport stimmen überein", () => {
+    mount([e("1", { datum: "2026-11-20", fahrtzeit: 30 })]);
+    fireEvent.click(screen.getByRole("button", { name: /Lohnexport November 2026/ }));
+    const csv = downloadCsv.mock.calls[0][1];
+    expect(csv).toContain("7,75;0,50;8,25;40,00;330,00");
+    expect(csv).toContain("GESAMT;7,75;0,50;8,25;;330,00");
+  });
+});
+
 describe("StundenUebersicht – Freigabe", () => {
   it("gibt genau die Einträge dieses Mitarbeiters in diesem Monat frei", async () => {
     mount([e("1"), e("2", { datum: "2026-11-11" }), e("3", { datum: "2026-10-31" }), e("4", { mitarbeiterId: "u2" })], [
@@ -97,10 +124,10 @@ describe("StundenUebersicht – Lohnexport", () => {
     expect(downloadCsv).toHaveBeenCalledTimes(1);
     const [name, csv] = downloadCsv.mock.calls[0];
     expect(name).toBe("Lohnexport_2026-11.csv");
-    expect(csv).toContain("Max Muster;10.11.2026;Huber;Putz;07:00;15:15;30;0;7,75;40,00;310,00;Nein");
+    expect(csv).toContain("Max Muster;10.11.2026;Huber;Putz;07:00;15:15;30;0;7,75;0,00;7,75;40,00;310,00;Nein");
     expect(csv).not.toContain("31.10.2026");
     expect(csv.match(/10\.11\.2026/g)).toHaveLength(1); // der wartende Eintrag ist nicht dabei
-    expect(csv).toContain("GESAMT;7,75;;310,00");
+    expect(csv).toContain("GESAMT;7,75;0,00;7,75;;310,00");
   });
 
   it("ohne Einträge ist der Export-Knopf deaktiviert", () => {

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { bStdNum, isMitarbeiterEntry } from "../../../utils/helpers";
+import { lohnStd, isMitarbeiterEntry } from "../../../utils/helpers";
 
 /**
  * Berechnet pro Baustelle:
@@ -30,7 +30,7 @@ export function useKostenAggregat({ baustellen, stundeneintraege, users, kosten 
       const entry = map[e.baustelleId];
       if (!entry) return;
       const u = userById.get(e.mitarbeiterId);
-      const std = bStdNum(e.beginn, e.ende, e.pause);
+      const std = lohnStd(e);
       entry.lohn += std * (u?.stundensatz || 45);
     });
     kosten.forEach((k) => {

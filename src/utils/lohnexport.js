@@ -1,4 +1,4 @@
-import { round15 } from "./helpers.js";
+import { round15, fahrtStd } from "./helpers.js";
 
 // Detaillierter Lohn-/Stundenexport als CSV.
 //
@@ -40,7 +40,7 @@ const row = csvRow;
  *
  * @param {Object}   p
  * @param {Array}    p.entries        Stundeneintraege des Monats (nur Mitarbeiter)
- * @param {Function} p.hoursOf        (entry) => Stunden als Float
+ * @param {Function} p.hoursOf        (entry) => ARBEITSzeit in Stunden (ohne Fahrt – die Fahrtzeit rechnet der Export selbst dazu)
  * @param {Map}      p.userById       id -> { name, stundensatz }
  * @param {Map}      p.baustelleById  id -> { kunde }
  * @param {string}   p.monthLabel     z.B. 'Juli 2026'
@@ -60,7 +60,9 @@ export function buildLohnCsv({ entries, hoursOf, userById, baustelleById, monthL
       "Ende",
       "Pause (Min)",
       "Fahrtzeit (Min)",
-      "Stunden",
+      "Arbeitszeit (Std)",
+      "Fahrtzeit (Std)",
+      "Stunden gesamt",
       "Stundensatz (EUR)",
       "Betrag (EUR)",
       "Freigegeben",
@@ -76,12 +78,17 @@ export function buildLohnCsv({ entries, hoursOf, userById, baustelleById, monthL
   const summary = new Map(); // uid -> { name, satz, std, betrag }
   let totalStd = 0;
   let totalBetrag = 0;
+  let totalArbeit = 0;
+  let totalFahrt = 0;
 
   sorted.forEach((e) => {
     const u = userById.get(e.mitarbeiterId);
     const name = u?.name || "Unbekannt";
     const satz = Number(u?.stundensatz || 0);
-    const std = round15(hoursOf(e));
+    // Arbeitszeit + eingetragene Fahrtzeit; bezahlt wird die Summe.
+    const arbeit = round15(hoursOf(e));
+    const fahrt = fahrtStd(e);
+    const std = arbeit + fahrt;
     const betrag = std * satz;
     const bs = baustelleById.get(e.baustelleId)?.kunde || "";
     lines.push(
@@ -94,6 +101,8 @@ export function buildLohnCsv({ entries, hoursOf, userById, baustelleById, monthL
         e.ende || "",
         e.pause ?? "",
         e.fahrtzeit ?? "",
+        deNum(arbeit),
+        deNum(fahrt),
         deNum(std),
         deNum(satz),
         deNum(betrag),
@@ -102,11 +111,15 @@ export function buildLohnCsv({ entries, hoursOf, userById, baustelleById, monthL
     );
     let s = summary.get(e.mitarbeiterId);
     if (!s) {
-      s = { name, satz, std: 0, betrag: 0 };
+      s = { name, satz, arbeit: 0, fahrt: 0, std: 0, betrag: 0 };
       summary.set(e.mitarbeiterId, s);
     }
+    s.arbeit += arbeit;
+    s.fahrt += fahrt;
     s.std += std;
     s.betrag += betrag;
+    totalArbeit += arbeit;
+    totalFahrt += fahrt;
     totalStd += std;
     totalBetrag += betrag;
   });
@@ -114,14 +127,25 @@ export function buildLohnCsv({ entries, hoursOf, userById, baustelleById, monthL
   lines.push("");
   lines.push(row(["Zusammenfassung", monthLabel]));
   lines.push(
-    row(["Mitarbeiter", "Stunden gesamt", "Stundensatz (EUR)", "Betrag gesamt (EUR)"]),
+    row([
+      "Mitarbeiter",
+      "Arbeitszeit (Std)",
+      "Fahrtzeit (Std)",
+      "Stunden gesamt",
+      "Stundensatz (EUR)",
+      "Betrag gesamt (EUR)",
+    ]),
   );
   [...summary.values()]
     .sort((a, b) => a.name.localeCompare(b.name))
     .forEach((s) => {
-      lines.push(row([s.name, deNum(s.std), deNum(s.satz), deNum(s.betrag)]));
+      lines.push(
+        row([s.name, deNum(s.arbeit), deNum(s.fahrt), deNum(s.std), deNum(s.satz), deNum(s.betrag)]),
+      );
     });
-  lines.push(row(["GESAMT", deNum(totalStd), "", deNum(totalBetrag)]));
+  lines.push(
+    row(["GESAMT", deNum(totalArbeit), deNum(totalFahrt), deNum(totalStd), "", deNum(totalBetrag)]),
+  );
 
   return "﻿" + lines.join("\r\n");
 }

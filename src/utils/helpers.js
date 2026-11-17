@@ -20,6 +20,25 @@ export const bStdNum = (b, e, p) => {
   return round15(Math.max(0, (diff - (Number(p) || 0)) / 60));
 };
 
+// Bezahlte Fahrtzeit eines Eintrags in Stunden (Viertelstunden-Raster).
+// Regel: Fahrtzeit wird nur bezahlt, wenn sie ausdrücklich eingetragen ist
+// (> 0). Dann zählt sie wie Arbeitszeit zum normalen Stundensatz.
+//
+// Stichtag: Bis 17.11.2026 hat die App die Fahrtzeit mit 30 Minuten
+// vorbelegt – diese Werte wurden nie bewusst eingetragen und bisher auch nie
+// bezahlt. Deshalb zählt Fahrtzeit erst für Einträge ab dem Stichtag. Ältere
+// Monate (auch bereits abgerechnete) bleiben damit exakt wie sie waren.
+export const FAHRTZEIT_BEZAHLT_AB = "2026-11-18";
+export const fahrtStd = (e) =>
+  e?.datum && e.datum >= FAHRTZEIT_BEZAHLT_AB
+    ? round15(Math.max(0, Number(e.fahrtzeit) || 0) / 60)
+    : 0;
+
+// Bezahlte Stunden eines Eintrags = Arbeitszeit + eingetragene Fahrtzeit.
+// Grundlage für Stundenübersicht, Lohnexport und Lohnkosten. (Der
+// Regiebericht für den Kunden nennt weiterhin nur die Arbeitszeit.)
+export const lohnStd = (e) => bStdNum(e.beginn, e.ende, e.pause) + fahrtStd(e);
+
 // Stunden als deutscher Text: 8 → "8", 7.5 → "7,5", 7.75 → "7,75".
 // Zwei Nachkommastellen, weil Viertelstunden sonst falsch aussehen
 // (7,75 h wurde mit einer Stelle zu "7.8").

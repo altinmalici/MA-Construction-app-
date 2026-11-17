@@ -3,7 +3,7 @@ import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { csvRow, deNum, deDate, downloadCsv } from "../../../utils/lohnexport";
 import { fehlerText } from "../../../utils/errors";
 import { useApp } from "../../../context/AppContext";
-import { bStdNum, fStd, todayIso, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../../utils/helpers";
+import { lohnStd, fStd, todayIso, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../../utils/helpers";
 import { ScreenLayout, PBar, Empty, IconButton } from "../../ui";
 import { useSaving } from "../../../hooks/useSaving";
 import { useKostenAggregat, KAT_LABELS, KAT_COLORS } from "./aggregations.js";
@@ -97,7 +97,7 @@ const List = ({ onSelectBs, prefillBs }) => {
       const byUser = {};
       ei.forEach((e) => {
         if (!byUser[e.mitarbeiterId]) byUser[e.mitarbeiterId] = 0;
-        byUser[e.mitarbeiterId] += bStdNum(e.beginn, e.ende, e.pause);
+        byUser[e.mitarbeiterId] += lohnStd(e);
       });
       Object.entries(byUser).forEach(([uid, std]) => {
         const u = data.users.find((x) => x.id === uid);
@@ -229,7 +229,7 @@ const List = ({ onSelectBs, prefillBs }) => {
                     isMitarbeiterEntry(e) &&
                     bsList.some((b) => b.id === e.baustelleId),
                 )
-                .reduce((s, e) => s + bStdNum(e.beginn, e.ende, e.pause), 0),
+                .reduce((s, e) => s + lohnStd(e), 0),
             )}
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>
@@ -283,7 +283,7 @@ const List = ({ onSelectBs, prefillBs }) => {
                 (!e.personTyp || e.personTyp === "mitarbeiter"),
             );
             const totalStd = ei.reduce(
-              (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
+              (s, e) => s + lohnStd(e),
               0,
             );
             const lohn = calcLohn(b.id);
@@ -294,7 +294,7 @@ const List = ({ onSelectBs, prefillBs }) => {
             ei.forEach((e) => {
               const uid = e.mitarbeiterId;
               if (!byU[uid]) byU[uid] = 0;
-              byU[uid] += bStdNum(e.beginn, e.ende, e.pause);
+              byU[uid] += lohnStd(e);
             });
             return (
               <button
