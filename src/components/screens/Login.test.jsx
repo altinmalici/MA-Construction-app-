@@ -114,6 +114,61 @@ describe('"Willkommen zurück" – PIN ist an den gemerkten Nutzer gebunden', ()
   });
 });
 
+describe("Fehlversuchs-Sperre ist dauerhaft (Audit A-08)", () => {
+  beforeEach(() => {
+    localStorage.setItem(LAST, JSON.stringify({ name: "Max Muster", username: "m.muster" }));
+  });
+
+  it("überlebt ein Neuladen der App (neu gemountet → weiter gesperrt)", async () => {
+    auth.loginAsUser.mockResolvedValue(null);
+    useApp.mockReturnValue(ctx());
+    render(<Login />);
+    for (let i = 0; i < 3; i++) await typePin("0000");
+    cleanup();
+    render(<Login />);
+    expect(screen.getByRole("button", { name: "1" })).toBeDisabled();
+    expect(screen.getByRole("alert").textContent).toMatch(/Gesperrt/);
+  });
+
+  it('"Erster Zugang?" und zurück setzt die Sperre NICHT zurück', async () => {
+    auth.loginAsUser.mockResolvedValue(null);
+    useApp.mockReturnValue(ctx());
+    render(<Login />);
+    for (let i = 0; i < 3; i++) await typePin("0000");
+    fireEvent.click(screen.getByRole("button", { name: "Erster Zugang?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bereits registriert?" }));
+    expect(screen.getByRole("button", { name: "1" })).toBeDisabled();
+  });
+
+  it("10 Fehlversuche → 15 Minuten gesperrt, danach wieder frei", async () => {
+    auth.loginAsUser.mockResolvedValue(null);
+    useApp.mockReturnValue(ctx());
+    render(<Login />);
+    for (let i = 0; i < 10; i++) {
+      await typePin("0000");
+      if (i < 9) await act(async () => { await vi.advanceTimersByTimeAsync(31000); });
+    }
+    expect(screen.getByRole("alert").textContent).toMatch(/Gesperrt \(noch 15 min\)/);
+    await act(async () => { await vi.advanceTimersByTimeAsync(14 * 60 * 1000); });
+    expect(screen.getByRole("button", { name: "1" })).toBeDisabled();
+    await act(async () => { await vi.advanceTimersByTimeAsync(61 * 1000); });
+    expect(screen.getByRole("button", { name: "1" })).not.toBeDisabled();
+  });
+
+  it("Hinweis 'abgelaufen' erscheint auch, wenn schon Fehlversuche gezählt sind (solange keine Sperre ausgelöst wird)", async () => {
+    auth.loginAsUser.mockResolvedValue(null);
+    auth.loginWithUsername.mockResolvedValue(null);
+    useApp.mockReturnValue(ctx());
+    render(<Login />);
+    await typePin("0000"); // 1 gezählter Fehlversuch
+    fireEvent.click(screen.getByRole("button", { name: "Erster Zugang?" }));
+    fireEvent.change(screen.getByPlaceholderText("z.B. m.mueller"), { target: { value: "m.muster" } });
+    fireEvent.change(screen.getByPlaceholderText("4-stelliger PIN"), { target: { value: "0000" } });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Weiter" })); });
+    expect(screen.getByRole("alert").textContent).toMatch(/PIN falsch oder abgelaufen/);
+  });
+});
+
 describe("Gesperrte App (Sitzung aktiv) – entsperrt nur der eingeloggte Nutzer", () => {
   it("nutzt den Sitzungs-Nutzer, auch wenn im Gerät ein anderer gemerkt ist", async () => {
     localStorage.setItem(LAST, JSON.stringify({ name: "Alt Nutzer", username: "a.alt" }));

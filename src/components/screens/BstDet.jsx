@@ -28,9 +28,14 @@ const BstDet = () => {
   useEffect(() => {
     if (!pendingRef.current) setSliderVal(fr?.fortschritt || 0);
   }, [fr?.fortschritt]);
+  // Letzten Regler-Wert beim Verlassen des Screens noch speichern. Früher
+  // wurde der wartende Timer nur gelöscht — wer innerhalb von 0,4 s nach dem
+  // Loslassen weiterging, verlor die Änderung still.
+  const flushRef = useRef(null);
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (pendingRef.current && flushRef.current) flushRef.current();
     };
   }, []);
   if (!b) return null;
@@ -150,13 +155,18 @@ const BstDet = () => {
               setSliderVal(val);
               pendingRef.current = true;
               if (debounceRef.current) clearTimeout(debounceRef.current);
+              flushRef.current = () => {
+                actions.baustellen
+                  .updateField(b.id, "fortschritt", val)
+                  .catch((err) => console.error("[BstDet.slider flush]", err));
+              };
               debounceRef.current = setTimeout(async () => {
                 try {
                   // updateField schreibt NUR diese eine Spalte (Audit U-01).
                   await actions.baustellen.updateField(b.id, "fortschritt", val);
                 } catch (err) {
                   console.error("[BstDet.slider]", err);
-                  show(err?.message || "Fehler beim Speichern", "error");
+                  show(fehlerText(err, "Fortschritt nicht gespeichert"), "error");
                   setSliderVal(fr.fortschritt || 0);
                 } finally {
                   pendingRef.current = false;

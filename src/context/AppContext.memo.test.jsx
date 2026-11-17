@@ -76,3 +76,71 @@ describe("AppContext – Navigation (ausgeloggt führt jeder View zurück zum Lo
     expect(api.history).toEqual([]);
   });
 });
+
+// Die Nachfrage erscheint nur für einen angemeldeten, nicht gesperrten Nutzer.
+const login = () =>
+  act(async () => {
+    api.completeLogin({ id: "u1", name: "Max", username: "m.muster", role: "mitarbeiter" });
+    await Promise.resolve();
+  });
+
+describe("AppContext – Schutz vor Verlassen mit ungespeicherten Eingaben", () => {
+  it("ohne angemeldetes Formular wird die Aktion sofort ausgeführt", async () => {
+    await mount();
+    const action = vi.fn();
+    act(() => { api.tryLeave(action); });
+    expect(action).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Änderungen verwerfen?")).toBeNull();
+  });
+
+  it("ungespeicherte Eingaben → Nachfrage; 'Weiter bearbeiten' führt die Aktion NICHT aus", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    await mount();
+    await login();
+    const action = vi.fn();
+    act(() => { api.setLeaveGuard(() => true); api.tryLeave(action); });
+    expect(screen.getByText("Änderungen verwerfen?")).toBeInTheDocument();
+    expect(action).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Weiter bearbeiten" })); });
+    expect(action).not.toHaveBeenCalled();
+    expect(screen.queryByText("Änderungen verwerfen?")).toBeNull();
+  });
+
+  it("'Verwerfen' führt die Aktion aus und meldet das Formular ab", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    await mount();
+    await login();
+    const action = vi.fn();
+    act(() => { api.setLeaveGuard(() => true); api.tryLeave(action); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Verwerfen" })); });
+    expect(action).toHaveBeenCalledTimes(1);
+    const second = vi.fn();
+    act(() => { api.tryLeave(second); });
+    expect(second).toHaveBeenCalledTimes(1);
+  });
+
+  it("Formular ohne Änderungen (Guard liefert false) → keine Nachfrage", async () => {
+    await mount();
+    const action = vi.fn();
+    act(() => { api.setLeaveGuard(() => false); api.tryLeave(action); });
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+
+  it("erfolgreicher Login setzt den Fehlversuchs-Zähler des Geräts zurück (auch über den Einladungs-Link)", async () => {
+    localStorage.setItem("ma_login_lock_v1", JSON.stringify({ attempts: 2, lockedUntil: null }));
+    await mount();
+    await act(async () => { api.completeLogin({ id: "u1", name: "Max", username: "m.muster", role: "mitarbeiter" }); });
+    expect(localStorage.getItem("ma_login_lock_v1")).toBeNull();
+  });
+
+  it("offene Nachfrage verschwindet beim Abmelden und wird nicht später ausgeführt", async () => {
+    await mount();
+    await login();
+    const action = vi.fn();
+    act(() => { api.setLeaveGuard(() => true); api.tryLeave(action); });
+    expect(screen.getByText("Änderungen verwerfen?")).toBeInTheDocument();
+    act(() => { h.authCb("SIGNED_OUT"); });
+    expect(screen.queryByText("Änderungen verwerfen?")).toBeNull();
+    expect(action).not.toHaveBeenCalled();
+  });
+});

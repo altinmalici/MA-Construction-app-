@@ -93,6 +93,15 @@ export const toIso = (d) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+// Monat weiter/zurück als EIN Zustand {mo, jr}. Früher wurde das Jahr
+// innerhalb des Monats-Updaters gesetzt (setJr in setMo) — ein Updater darf
+// keine Nebenwirkungen haben; React ruft ihn im Strict Mode doppelt auf, das
+// Jahr sprang dann um 2.
+export const shiftMonth = ({ mo, jr }, delta) => {
+  const d = new Date(jr, mo + delta, 1);
+  return { mo: d.getMonth(), jr: d.getFullYear() };
+};
+
 // Heutiges Datum in ORTSZEIT als YYYY-MM-DD. new Date().toISOString() liefert
 // UTC — zwischen 0 und 1 Uhr (Sommer: 2 Uhr) wäre das noch der Vortag.
 export const todayIso = () => toIso(new Date());

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, X, Save, Trash2 } from "lucide-react";
 import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
-import { fDat, fK, IC, BTN, P, PD } from "../../utils/helpers";
+import { fDat, fK, IC, BTN, P, PD, shiftMonth } from "../../utils/helpers";
 import { ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
@@ -11,29 +11,13 @@ const KalView = () => {
   const { saving, withSaving } = useSaving();
   const [confirmDelete, setConfirmDelete] = useState(null);
   const h = new Date();
-  const [mo, setMo] = useState(h.getMonth());
-  const [jr, setJr] = useState(h.getFullYear());
+  const [monat, setMonat] = useState(() => ({ mo: h.getMonth(), jr: h.getFullYear() }));
+  const { mo, jr } = monat;
   const [selDay, setSelDay] = useState(null);
   const [sf, setSf] = useState(false);
   const [kf, sKf] = useState({ titel: "", baustelleId: "", mitarbeiter: [] });
-  const pv = () => {
-    setMo((m) => {
-      if (m === 0) {
-        setJr((j) => j - 1);
-        return 11;
-      }
-      return m - 1;
-    });
-  };
-  const nx = () => {
-    setMo((m) => {
-      if (m === 11) {
-        setJr((j) => j + 1);
-        return 0;
-      }
-      return m + 1;
-    });
-  };
+  const pv = () => setMonat((m) => shiftMonth(m, -1));
+  const nx = () => setMonat((m) => shiftMonth(m, 1));
   const off = (new Date(jr, mo, 1).getDay() + 6) % 7;
   const days = new Date(jr, mo + 1, 0).getDate();
   const tm = data.kalender.filter((t) => {

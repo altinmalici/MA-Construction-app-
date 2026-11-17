@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { P, BTN, RED, GREEN, IC, G } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 import { fehlerText } from "../../utils/errors";
+import { loadLock, registerFailure } from "../../lib/loginLock";
 import { readInviteToken } from "../../utils/invite";
 import Einladung from "./Einladung";
 
@@ -22,10 +23,6 @@ const loginFehlerText = (e) => {
       return fehlerText(e, "Anmeldung nicht möglich – bitte erneut versuchen");
   }
 };
-
-// Ende der 30-s-Sperre nach 3 Fehlversuchen (ausserhalb der Komponente,
-// damit kein unreiner Aufruf im Render-Pfad steht).
-const lockUntilIso = () => new Date(Date.now() + 30000).toISOString();
 
 const Login = () => {
   const { actions, completeLogin, sessionUser, locked } = useApp();
@@ -56,10 +53,16 @@ const Login = () => {
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [pinStep, setPinStep] = useState(1);
-  const [attempts, setAttempts] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState(null);
-  const [permLocked, setPermLocked] = useState(false);
-  const [lockSec, setLockSec] = useState(0);
+  // Fehlversuche + Sperre liegen dauerhaft im Gerät (src/lib/loginLock.js)
+  // und überleben Neuladen und Moduswechsel.
+  const [, setAttempts] = useState(() => loadLock().attempts);
+  const [lockedUntil, setLockedUntil] = useState(() => loadLock().lockedUntil);
+  // Restzeit sofort aus dem gespeicherten Stand (kein kurzer "frei"-Moment
+  // nach dem Neuladen).
+  const [lockSec, setLockSec] = useState(() => {
+    const until = loadLock().lockedUntil;
+    return until ? Math.max(0, Math.ceil((new Date(until) - new Date()) / 1000)) : 0;
+  });
   const [lastUser, setLastUser] = useState(() => {
     try {
       return JSON.parse(
@@ -81,6 +84,7 @@ const Login = () => {
         setLockedUntil(null);
         setLockSec(0);
         setErr("");
+        setAttempts(loadLock().attempts);
       } else setLockSec(r);
     };
     tick();
@@ -88,18 +92,20 @@ const Login = () => {
     return () => clearInterval(t);
   }, [lockedUntil]);
   // lockSec wird vom Timer oben gepflegt — kein Date.now() im Render.
-  const isLocked = permLocked || (!!lockedUntil && lockSec > 0);
+  const isLocked = !!lockedUntil && lockSec > 0;
+  // Verbucht einen Fehlversuch. Liefert true, wenn dadurch eine Sperre
+  // ausgelöst wurde (dann zeigt die Sperr-Anzeige, kein Hinweistext).
   const wrongAttempt = () => {
-    const na = attempts + 1;
-    setAttempts(na);
-    if (na >= 10) {
-      setPermLocked(true);
-      setErr("Gesperrt. Kontaktiere den Bauleiter.");
-    } else if (na >= 3 && na % 3 === 0) {
-      setLockSec(30);
-      setLockedUntil(lockUntilIso());
-      setErr(`Gesperrt (30s)`);
-    } else setErr("Falscher PIN");
+    const r = registerFailure();
+    setAttempts(r.attempts);
+    if (r.lockedUntil) {
+      setLockSec(r.lang ? 15 * 60 : 30);
+      setLockedUntil(r.lockedUntil);
+      setErr("");
+      return true;
+    }
+    setErr("Falscher PIN");
+    return false;
   };
 
   const goPin = async (p) => {
@@ -127,9 +133,9 @@ const Login = () => {
           completeLogin(u);
         }
       } else {
-        wrongAttempt();
+        const gesperrt = wrongAttempt();
         // Ohne gemerkten Nutzer kann auch der Benutzername falsch sein.
-        if (!displayedUser && attempts + 1 < 3) {
+        if (!displayedUser && !gesperrt) {
           setErr("Benutzername oder PIN falsch");
         }
         setPin("");
@@ -156,13 +162,13 @@ const Login = () => {
         setErr("");
         setAttempts(0);
       } else {
-        wrongAttempt();
+        const gesperrt = wrongAttempt();
         // Beim "Erster Zugang" ist die haeufigste Ursache ein ABGELAUFENER
         // Einladungs-PIN (7 Tage Gueltigkeit) — der Lookup liefert dann leer,
         // identisch zu einem falschen PIN. Solange die Sperre noch nicht
         // greift, deshalb eine ehrliche, handlungsleitende Meldung statt des
         // pauschalen "Falscher PIN".
-        if (attempts + 1 < 3) {
+        if (!gesperrt) {
           setErr(
             "PIN falsch oder abgelaufen – bitte beim Bauleiter einen neuen Einladungs-PIN anfordern.",
           );
@@ -342,12 +348,12 @@ const Login = () => {
   );
   const renderErrLine = () => (
     <div role="alert" aria-live="assertive" style={{ minHeight: 24, textAlign: "center", padding: "0 12px" }}>
-      {isLocked && !permLocked ? (
+      {isLocked ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>
-          Gesperrt ({lockSec}s)
+          {lockSec > 90
+            ? `Gesperrt (noch ${Math.ceil(lockSec / 60)} min)`
+            : `Gesperrt (${lockSec}s)`}
         </p>
-      ) : permLocked ? (
-        <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>{err}</p>
       ) : err ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>{err}</p>
       ) : checking ? (
@@ -491,9 +497,6 @@ const Login = () => {
             onClick={() => {
               setMode("C");
               setErr("");
-              setAttempts(0);
-              setPermLocked(false);
-              setLockedUntil(null);
             }}
             style={{
               marginTop: 24,
@@ -718,9 +721,6 @@ const Login = () => {
               onClick={() => {
                 setMode("A");
                 setErr("");
-                setAttempts(0);
-                setPermLocked(false);
-                setLockedUntil(null);
               }}
               style={{
                 fontSize: 15,
@@ -744,7 +744,6 @@ const Login = () => {
                 setLastUser(null);
                 setPin("");
                 setErr("");
-                setAttempts(0);
                 // IMMER abmelden — auch nach der Sperre, wenn die Sitzung
                 // des bisherigen Nutzers noch im Gerät liegt. Löst
                 // SIGNED_OUT aus → Daten werden verworfen.

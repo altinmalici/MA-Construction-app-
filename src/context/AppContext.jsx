@@ -4,9 +4,10 @@ import { useAppData } from "../lib/useAppData.js";
 import { useRealtime } from "../lib/useRealtime.js";
 import { useOfflineSync } from "../lib/useOfflineSync.js";
 import { useAutoLock } from "../hooks/useAutoLock.js";
+import { clearLock } from "../lib/loginLock.js";
 import { BACKGROUND_LOCK_MS, INACTIVITY_LOCK_MS } from "../config.js";
 import { G, P, BTN, RED } from "../utils/helpers";
-import { Toast, Spinner, Clock } from "../components/ui";
+import { Toast, Spinner, Clock, ConfirmModal } from "../components/ui";
 import OfflineBanner from "../components/ui/OfflineBanner";
 import PendingSyncBadge from "../components/ui/PendingSyncBadge";
 import UpdatePrompt from "../components/ui/UpdatePrompt";
@@ -126,6 +127,26 @@ export function AppProvider({ children }) {
       ),
     [],
   );
+  // Schutz vor versehentlichem Verlassen eines Formulars mit ungespeicherten
+  // Eingaben. Ein Formular meldet per setLeaveGuard eine Funktion an, die
+  // true liefert, solange es ungespeicherte Eingaben hat. Navigation über
+  // die TabBar (und andere Sprünge aus dem Formular heraus) läuft über
+  // tryLeave und fragt dann nach.
+  const leaveGuardRef = useRef(null);
+  const [pendingLeave, setPendingLeave] = useState(null);
+  const setLeaveGuard = useCallback((fn) => {
+    leaveGuardRef.current = fn;
+  }, []);
+  const tryLeave = useCallback((action) => {
+    let dirty = false;
+    try {
+      dirty = !!leaveGuardRef.current?.();
+    } catch {
+      dirty = false;
+    }
+    if (dirty) setPendingLeave(() => action);
+    else action();
+  }, []);
   const [sb, setSb] = useState(null);
   const [em, setEm] = useState(false);
   const [editUser, setEditUser] = useState(null);
@@ -178,6 +199,8 @@ export function AppProvider({ children }) {
     const { data: { subscription } } = actions.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         setCu(null);
+        setPendingLeave(null);
+        leaveGuardRef.current = null;
         setLocked(false);
         actions.resetData();
         setSessionUser(null);
@@ -263,6 +286,9 @@ export function AppProvider({ children }) {
   //    dem Dashboard, Daten werden frisch geladen.
   const cuId = cu?.id;
   const completeLogin = useCallback((u) => {
+    // Jeder erfolgreiche Login (PIN, Onboarding, Einladungs-Link) setzt den
+    // Fehlversuchs-Zähler des Geräts zurück.
+    clearLock();
     const unlockSameUser = locked && cuId === u.id;
     setLocked(false);
     setCu(u);
@@ -271,6 +297,8 @@ export function AppProvider({ children }) {
       return;
     }
     actions.resetData();
+    setPendingLeave(null);
+    leaveGuardRef.current = null;
     setHistory([]);
     setSb(null);
     setSq("");
@@ -409,11 +437,14 @@ export function AppProvider({ children }) {
       mitSummary,
       setMitSummary,
       fileRef,
+      setLeaveGuard,
+      tryLeave,
     }),
     [
       data, actions, cu, locked, completeLogin, effectiveSessionUser, v, nav,
       goBack, prevV, history, setHistory, setVRaw, sb, em, sq, chef, show,
-      trigPhoto, addN, eName, unread, editUser, mitSummary,
+      trigPhoto, addN, eName, unread, editUser, mitSummary, setLeaveGuard,
+      tryLeave,
     ],
   );
 
@@ -660,6 +691,22 @@ export function AppProvider({ children }) {
                 </div>
               )}
               {children}
+              <ConfirmModal
+                // Nicht über dem Sperr- oder Login-Screen zeigen.
+                open={!!pendingLeave && !!cu && !locked}
+                title="Änderungen verwerfen?"
+                message="Die Eingaben im Formular gehen verloren."
+                confirmLabel="Verwerfen"
+                cancelLabel="Weiter bearbeiten"
+                destructive
+                onConfirm={() => {
+                  const action = pendingLeave;
+                  setPendingLeave(null);
+                  leaveGuardRef.current = null;
+                  action?.();
+                }}
+                onCancel={() => setPendingLeave(null)}
+              />
             </div>
 
             <div className="device-home-bar">

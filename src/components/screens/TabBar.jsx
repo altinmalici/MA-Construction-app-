@@ -9,7 +9,7 @@ import {
 import { useApp } from "../../context/AppContext";
 
 const TabBar = () => {
-  const { v, chef, setHistory, setVRaw } = useApp();
+  const { v, chef, setHistory, setVRaw, setSb, tryLeave } = useApp();
   const tabForView = {
     dash: "dash",
     bst: "bst",
@@ -54,10 +54,17 @@ const TabBar = () => {
       {tabs.map(({ id, i: I, l }) => (
         <button
           key={id}
-          onClick={() => {
-            setHistory([]);
-            setVRaw(id);
-          }}
+          onClick={() =>
+            // tryLeave: fragt nach, wenn ein Formular ungespeicherte Eingaben hat.
+            tryLeave(() => {
+              // Tab-Wechsel = globale Ansicht: zuletzt geöffnete Baustelle
+              // nicht mitschleppen (sonst sind Listen still gefiltert).
+              // Ausnahme Stunden: dort ist sie eine gewollte Vorauswahl.
+              if (id !== "ste") setSb(null);
+              setHistory([]);
+              setVRaw(id);
+            })
+          }
           className={`tab-bar-item ${activeTab === id ? "active" : ""}`}
         >
           <I
