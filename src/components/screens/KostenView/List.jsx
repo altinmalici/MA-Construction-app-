@@ -213,11 +213,17 @@ const List = ({ onSelectBs, prefillBs }) => {
           }}
         >
           <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
+            {/* Nur Mitarbeiter-Stunden der angezeigten Baustellen — dieselbe
+                Basis wie die Lohnkosten darunter. Vorher zählten hier auch
+                Subunternehmer und "Sonstige" aller Baustellen mit. */}
             {fH(
-              data.stundeneintraege.reduce(
-                (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
-                0,
-              ),
+              data.stundeneintraege
+                .filter(
+                  (e) =>
+                    isMitarbeiterEntry(e) &&
+                    bsList.some((b) => b.id === e.baustelleId),
+                )
+                .reduce((s, e) => s + bStdNum(e.beginn, e.ende, e.pause), 0),
             )}
           </p>
           <p style={{ fontSize: 12, color: "#8e8e93", marginTop: 4 }}>
@@ -262,7 +268,7 @@ const List = ({ onSelectBs, prefillBs }) => {
             const budget = b.budget || 0;
             const pct =
               budget > 0
-                ? Math.min(100, Math.round((total / budget) * 100))
+                ? Math.round((total / budget) * 100)
                 : 0;
             const isOver = budget > 0 && total > budget;
             const ei = data.stundeneintraege.filter(

@@ -1,10 +1,10 @@
 import { supabase } from '../supabase.js';
-import { requestWithRetry } from './_request.js';
+import { selectAll } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper.
-  const { data, error } = await requestWithRetry(
-    () => supabase.from('subunternehmer').select('*').order('created_at'),
+  const { data, error } = await selectAll(
+    () => supabase.from('subunternehmer').select('*').order('created_at').order('id'),
     { signal },
   );
   if (error) throw error;

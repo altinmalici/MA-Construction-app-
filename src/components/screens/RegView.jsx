@@ -204,7 +204,12 @@ const RegView = () => {
         show("Drucken nicht möglich", "error");
         return;
       }
-      setTimeout(cleanup, 60000);
+      // Kommt "afterprint" nicht (iOS liefert es für iframes nicht
+      // zuverlässig), gab der Drucken-Knopf früher 60 s lang stumm nicht
+      // nach. Jetzt: freigeben, sobald das Fenster wieder den Fokus hat
+      // (Druckdialog geschlossen), spätestens nach 10 s.
+      window.addEventListener("focus", cleanup, { once: true });
+      setTimeout(cleanup, 10000);
     }, 200);
   };
 
@@ -253,11 +258,6 @@ const RegView = () => {
       >
         <div
           onClick={(e) => e.stopPropagation()}
-          onTouchStart={(e) => (touchY.current = e.touches[0].clientY)}
-          onTouchEnd={(e) => {
-            if (e.changedTouches[0].clientY - touchY.current > 80)
-              setShowPdf(false);
-          }}
           style={{
             background: "white",
             borderRadius: 16,
@@ -270,13 +270,22 @@ const RegView = () => {
             boxShadow: "0 10px 40px rgba(0,0,0,0.25)",
           }}
         >
+          {/* Wisch-nach-unten schließt die Vorschau — nur an der Kopfzeile.
+              Früher lag die Geste auf dem ganzen Fenster: Beim Scrollen im
+              Bericht schloss es sich bei jeder Abwärtsbewegung über 80 px. */}
           <div
+            onTouchStart={(e) => (touchY.current = e.touches[0].clientY)}
+            onTouchEnd={(e) => {
+              if (e.changedTouches[0].clientY - touchY.current > 80)
+                setShowPdf(false);
+            }}
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               padding: "12px 16px",
               borderBottom: "0.5px solid rgba(0,0,0,0.1)",
+              touchAction: "none",
             }}
           >
             <span style={{ fontWeight: 600, fontSize: 17, color: "#000" }}>

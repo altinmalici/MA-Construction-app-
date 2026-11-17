@@ -4,7 +4,9 @@ import { requestWithRetry } from './_request.js';
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper.
   const { data, error } = await requestWithRetry(
-    () => supabase.from('benachrichtigungen').select('*').order('datum', { ascending: false }),
+    // Nur die neuesten 200: die Liste wächst sonst unbegrenzt und wird bei
+    // jedem Start komplett geladen.
+    () => supabase.from('benachrichtigungen').select('*').order('datum', { ascending: false }).limit(200),
     { signal },
   );
   if (error) throw error;

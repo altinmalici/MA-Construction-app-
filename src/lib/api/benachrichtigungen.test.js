@@ -11,6 +11,8 @@ describe("benachrichtigungen", () => {
     mock.responses["benachrichtigungen.select"] = { data: [{ id: "n1", typ: "stunden", text: "T", baustelle_id: "b1", datum: "2026-11-16T10:00:00Z", gelesen: false }], error: null };
     expect(await getAll()).toEqual([{ id: "n1", typ: "stunden", text: "T", baustelleId: "b1", datum: "2026-11-16T10:00:00Z", gelesen: false }]);
     expect(mock.find("benachrichtigungen", "select").filters).toContainEqual(["order", "datum", { ascending: false }]);
+    // nur die neuesten 200 – die Liste wächst sonst unbegrenzt
+    expect(mock.find("benachrichtigungen", "select").filters).toContainEqual(["limit", 200]);
   });
 
   it("create: ungelesen, Standard-Typ info, Baustelle optional", async () => {

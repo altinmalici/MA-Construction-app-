@@ -12,6 +12,12 @@ describe("subunternehmer", () => {
     expect(await getAll()).toEqual([{ id: "s1", name: "Elektro Huber", gewerk: "", telefon: "" }]);
   });
 
+  it("lädt seitenweise (mehr als 1000 Zeilen kommen vollständig an)", async () => {
+    const page = (n) => ({ data: Array.from({ length: n }, (_, i) => ({ id: `s${i}`, name: "X" })), error: null });
+    mock.responses["subunternehmer.select"] = [page(1000), page(3)];
+    expect(await getAll()).toHaveLength(1003);
+  });
+
   it("create gibt die ID zurück und schreibt leere statt fehlender Felder", async () => {
     mock.responses["subunternehmer.insert"] = { data: { id: "s1" }, error: null };
     expect(await create({ name: "Elektro Huber" })).toBe("s1");

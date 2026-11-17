@@ -29,6 +29,7 @@ function builder(table) {
     },
     order(col, opts) { call.filters.push(["order", col, opts]); return b; },
     range(from, to) { call.filters.push(["range", from, to]); return b; },
+    limit(n) { call.filters.push(["limit", n]); return b; },
     eq(col, v) { call.filters.push(["eq", col, v]); return b; },
     neq(col, v) { call.filters.push(["neq", col, v]); return b; },
     in(col, v) { call.filters.push(["in", col, v]); return b; },

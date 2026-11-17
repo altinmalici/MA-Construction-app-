@@ -1,19 +1,20 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
-import { requestWithRetry } from './_request.js';
+import { selectAll } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper. RPC-Calls (checkPinExists,
   // resetOnboardingPin, toggleActive, create*) bleiben unwrapped —
   // Brief: nur supabase.from().select() wird gewickelt, keine RPCs.
-  const { data, error } = await requestWithRetry(
+  const { data, error } = await selectAll(
     () =>
       supabase
         .from('users')
         .select(
           'id, name, role, stundensatz, username, is_onboarded, is_active, onboarding_pin_expiry',
         )
-        .order('created_at'),
+        .order('created_at')
+        .order('id'),
     { signal },
   );
   if (error) throw error;

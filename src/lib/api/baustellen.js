@@ -1,5 +1,5 @@
 import { supabase } from '../supabase.js';
-import { requestWithRetry, selectAll } from './_request.js';
+import { selectAll } from './_request.js';
 
 // Whitelist allowed for partial single-field updates via updateField().
 // Other columns (kunde, adresse, budget, details, ...) must go through
@@ -15,8 +15,8 @@ export async function getAll({ signal } = {}) {
   // Fetch baustellen mit Retry-Wrapper (6-04). Junction-Tables im
   // Promise.all bleiben "nackt" — sie folgen der Haupt-Query und
   // teilen sich konzeptuell denselben Fehler-Pfad.
-  const { data: bsList, error } = await requestWithRetry(
-    () => supabase.from('baustellen').select('*').order('created_at'),
+  const { data: bsList, error } = await selectAll(
+    () => supabase.from('baustellen').select('*').order('created_at').order('id'),
     { signal },
   );
   if (error) throw error;
