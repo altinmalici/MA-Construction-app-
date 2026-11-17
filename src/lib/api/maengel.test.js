@@ -44,14 +44,27 @@ describe("maengel.create / getAll", () => {
 });
 
 describe("maengel.remove", () => {
-  it("löscht Storage-Fotos (keine alten Base64-Einträge) und dann die Zeile", async () => {
+  it("löscht ERST die Zeile, dann die Storage-Fotos (keine alten Base64-Einträge)", async () => {
     mock.responses["maengel.select"] = { data: { fotos: ["b1/maengel/m1/a.jpg", "data:image/png;base64,AAA"] }, error: null };
+    // Beim Löschen der Fotos muss die Zeile bereits gelöscht sein.
+    let zeileSchonGeloescht = null;
+    deletePhotos.mockImplementation(async () => {
+      zeileSchonGeloescht = !!mock.find("maengel", "delete");
+    });
     await remove("m1");
+    expect(zeileSchonGeloescht).toBe(true);
     expect(deletePhotos).toHaveBeenCalledWith(["b1/maengel/m1/a.jpg"]);
     expect(mock.find("maengel", "delete").filters).toContainEqual(["eq", "id", "m1"]);
   });
 
-  it("Foto-Aufräumen scheitert → Mangel wird trotzdem gelöscht", async () => {
+  it("Löschen der Zeile scheitert → Fotos bleiben erhalten, Fehler wird geworfen", async () => {
+    mock.responses["maengel.select"] = { data: { fotos: ["x.jpg"] }, error: null };
+    mock.responses["maengel.delete"] = { error: { code: "42501", message: "rls" } };
+    await expect(remove("m1")).rejects.toMatchObject({ code: "42501" });
+    expect(deletePhotos).not.toHaveBeenCalled();
+  });
+
+  it("Foto-Aufräumen scheitert → kein Fehler (der Mangel ist bereits gelöscht)", async () => {
     mock.responses["maengel.select"] = { data: { fotos: ["x.jpg"] }, error: null };
     deletePhotos.mockRejectedValue(new Error("storage"));
     await expect(remove("m1")).resolves.toBeUndefined();
@@ -62,12 +75,6 @@ describe("maengel.remove", () => {
     mock.responses["maengel.select"] = { data: null, error: { code: "PGRST116", message: "0 rows" } };
     await expect(remove("m1")).rejects.toMatchObject({ code: "PGRST116" });
     expect(mock.find("maengel", "delete")).toBeUndefined();
-  });
-
-  it("Löschen der Zeile scheitert → Fehler wird geworfen", async () => {
-    mock.responses["maengel.select"] = { data: { fotos: [] }, error: null };
-    mock.responses["maengel.delete"] = { error: { code: "42501", message: "rls" } };
-    await expect(remove("m1")).rejects.toMatchObject({ code: "42501" });
     expect(deletePhotos).not.toHaveBeenCalled();
   });
 });

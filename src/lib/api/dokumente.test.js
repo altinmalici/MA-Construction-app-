@@ -20,33 +20,59 @@ beforeEach(() => {
 });
 
 describe("dokumente.createWithFile", () => {
-  it("legt Zeile an, lädt hoch und trägt den Pfad ein", async () => {
-    mock.responses["dokumente.insert"] = { data: { id: "d1" }, error: null };
-    uploadDocument.mockResolvedValue({ path: "b1/d1-Plan.pdf" });
-    expect(await createWithFile({ file, baustelleId: "b1" })).toEqual({ id: "d1", storagePath: "b1/d1-Plan.pdf" });
-    expect(mock.find("dokumente", "insert").payload).toMatchObject({ baustelle_id: "b1", name: "Plan.pdf", typ: "dokument", groesse: "2.0 MB" });
-    expect(uploadDocument).toHaveBeenCalledWith(file, "b1", "d1");
-    expect(mock.find("dokumente", "update").payload).toEqual({ storage_path: "b1/d1-Plan.pdf" });
+  it("lädt ERST hoch und legt dann die Zeile gleich mit Pfad an", async () => {
+    const order = [];
+    uploadDocument.mockImplementation(async (_f, bs, id) => { order.push("upload"); return { path: `${bs}/${id}-Plan.pdf` }; });
+    mock.responses["dokumente.insert"] = { data: { id: "x" }, error: null };
+    const push = mock.calls.push;
+    mock.calls.push = function (c) { if (c.op === "insert") order.push("insert"); return push.call(this, c); };
+    let r;
+    try {
+      r = await createWithFile({ file, baustelleId: "b1" });
+    } finally {
+      delete mock.calls.push;
+    }
+    const ins = mock.find("dokumente", "insert");
+    expect(order).toEqual(["upload", "insert"]);
+    expect(ins.payload).toMatchObject({ baustelle_id: "b1", name: "Plan.pdf", typ: "dokument", groesse: "2.0 MB" });
+    // dieselbe, vorab vergebene ID in Pfad, Zeile und Rückgabe
+    expect(ins.payload.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(ins.payload.storage_path).toBe(`b1/${ins.payload.id}-Plan.pdf`);
+    expect(r).toEqual({ id: ins.payload.id, storagePath: ins.payload.storage_path });
+    expect(mock.find("dokumente", "update")).toBeUndefined();
   });
 
-  it("Upload scheitert → Zeile wird zurückgenommen, Fehler geworfen", async () => {
-    mock.responses["dokumente.insert"] = { data: { id: "d1" }, error: null };
+  it("Upload scheitert → es entsteht KEINE Zeile (kein Eintrag ohne Datei)", async () => {
     uploadDocument.mockRejectedValue(new Error("zu groß"));
     await expect(createWithFile({ file, baustelleId: "b1" })).rejects.toThrow("zu groß");
-    expect(mock.find("dokumente", "delete").filters).toContainEqual(["eq", "id", "d1"]);
+    expect(mock.calls).toHaveLength(0);
   });
 
-  it("Pfad lässt sich nicht eintragen → Zeile wird zurückgenommen", async () => {
-    mock.responses["dokumente.insert"] = { data: { id: "d1" }, error: null };
-    uploadDocument.mockResolvedValue({ path: "p" });
-    mock.responses["dokumente.update"] = { error: { code: "42501", message: "rls" } };
+  it("Zeile lässt sich nicht anlegen → hochgeladene Datei wird wieder entfernt", async () => {
+    uploadDocument.mockResolvedValue({ path: "b1/id-Plan.pdf" });
+    mock.responses["dokumente.insert"] = { data: null, error: { code: "42501", message: "rls" } };
     await expect(createWithFile({ file, baustelleId: "b1" })).rejects.toMatchObject({ code: "42501" });
-    expect(mock.find("dokumente", "delete")).toBeTruthy();
+    expect(deleteDocument).toHaveBeenCalledWith("b1/id-Plan.pdf");
   });
 
-  it("ohne Datei oder Baustelle: Fehler, kein Datenbank-Zugriff", async () => {
+  it("…und ein Fehler beim Entfernen überdeckt den eigentlichen Fehler nicht", async () => {
+    uploadDocument.mockResolvedValue({ path: "p" });
+    deleteDocument.mockRejectedValue(new Error("storage weg"));
+    mock.responses["dokumente.insert"] = { data: null, error: { code: "23503", message: "fk" } };
+    await expect(createWithFile({ file, baustelleId: "b1" })).rejects.toMatchObject({ code: "23503" });
+  });
+
+  it("Netzfehler beim Anlegen (unklar, ob gespeichert) → Datei bleibt, damit kein Eintrag ohne Datei entsteht", async () => {
+    uploadDocument.mockResolvedValue({ path: "p" });
+    mock.responses["dokumente.insert"] = { data: null, error: { message: "TypeError: Failed to fetch", code: "" } };
+    await expect(createWithFile({ file, baustelleId: "b1" })).rejects.toMatchObject({ message: /Failed to fetch/ });
+    expect(deleteDocument).not.toHaveBeenCalled();
+  });
+
+  it("ohne Datei oder Baustelle: Fehler, kein Upload und kein Datenbank-Zugriff", async () => {
     await expect(createWithFile({ baustelleId: "b1" })).rejects.toThrow(/Datei fehlt/);
     await expect(createWithFile({ file })).rejects.toThrow(/baustelleId fehlt/);
+    expect(uploadDocument).not.toHaveBeenCalled();
     expect(mock.calls).toHaveLength(0);
   });
 });

@@ -44,31 +44,32 @@ export async function updateStatus(id, status) {
 }
 
 export async function remove(id) {
-  // Storage-Fotos zuerst löschen — Row-Delete dürfen wir nicht ohne
-  // Cleanup machen, sonst bleiben verwaiste Files im Bucket. Legacy
-  // Base64-Einträge ("data:...") liegen nicht im Storage und werden
-  // herausgefiltert.
+  // Reihenfolge: erst die Zeile löschen, DANN die Fotos. Früher umgekehrt —
+  // scheiterte das Löschen der Zeile (z.B. keine Berechtigung), blieb der
+  // Mangel stehen, aber seine Fotos waren weg. Verwaiste Dateien im Speicher
+  // sind das kleinere Übel als ein Mangel ohne Fotos.
   const { data: row, error: readErr } = await supabase
     .from('maengel')
     .select('fotos')
     .eq('id', id)
     .single();
   if (readErr) throw readErr;
+  // Legacy-Base64-Einträge ("data:...") liegen nicht im Storage.
   const paths = (row?.fotos || []).filter(
     (f) => typeof f === 'string' && !f.startsWith('data:'),
   );
+
+  const { error } = await supabase.from('maengel').delete().eq('id', id);
+  if (error) throw error;
+
   if (paths.length > 0) {
     try {
       await deletePhotos(paths);
     } catch (e) {
-      // Foto-Cleanup-Fehler darf den Row-Delete nicht blockieren —
-      // verwaiste Storage-Files sind weniger schlimm als eine nicht
-      // löschbare Mangel-Row. Loggen für späteres Aufräumen.
+      // Aufräumen ist best-effort — der Mangel ist bereits gelöscht.
       console.error('[maengel.remove] storage cleanup failed:', e);
     }
   }
-  const { error } = await supabase.from('maengel').delete().eq('id', id);
-  if (error) throw error;
 }
 
 function mapRow(r) {

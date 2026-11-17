@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Plus, X, AlertCircle, CheckCircle, Trash2, Building2 } from "lucide-react";
-import { fehlerText } from "../../utils/errors";
+import { fehlerText, istNetzFehler } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
 import { fK, IC, BTN, CS, P, RED, GREEN, todayIso } from "../../utils/helpers";
 import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
-import { uploadPhoto } from "../../lib/storage";
+import { uploadPhotos, cleanupPhotos } from "../../lib/storage";
 
 const MngView = () => {
   const { sb, chef, cu, data, actions, show, goBack, trigPhoto, addN, setSb, nav } =
     useApp();
   const { saving, withSaving } = useSaving();
+  // { inhalt, id, paths } des laufenden Speicher-Versuchs (siehe save)
+  const versuchRef = useRef(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [sf, setSf] = useState(false);
   const [fl, setFl] = useState("alle");
@@ -46,46 +48,75 @@ const MngView = () => {
         show("Titel nötig", "error");
         return;
       }
+      const existing = mf.fotos.filter((f) => typeof f === "string");
+      const blobs = mf.fotos.filter((f) => f && f.blob);
+      // Ein Speicher-Versuch = feste ID + bereits hochgeladene Fotos, gebunden
+      // an genau diesen Formular-Inhalt. Ein zweiter Versuch mit UNVERÄNDERTEM
+      // Inhalt (nach einer Fehlermeldung) schreibt denselben Mangel mit
+      // denselben Fotos — kein Duplikat, kein erneuter Upload. Ändert der
+      // Nutzer etwas, ist es ein neuer Mangel mit neuer ID.
+      const inhalt = JSON.stringify([
+        sb.id, mf.titel, mf.beschreibung, mf.prioritaet, mf.zustaendig || null, mf.frist || null,
+        existing, blobs.map((p) => p.blob?.size ?? 0),
+      ]);
+      if (versuchRef.current?.inhalt !== inhalt) {
+        versuchRef.current = { inhalt, id: crypto.randomUUID(), paths: null };
+      }
+      const versuch = versuchRef.current;
       try {
-        const mangelId = crypto.randomUUID();
-        const existing = [];
-        const blobs = [];
-        for (const f of mf.fotos) {
-          if (typeof f === "string") existing.push(f);
-          else if (f && f.blob) blobs.push(f);
+        if (!versuch.paths) {
+          versuch.paths = await uploadPhotos(
+            blobs.map((p) => p.blob),
+            sb.id,
+            "maengel",
+            versuch.id,
+          );
         }
-        const uploaded = await Promise.all(
-          blobs.map((p) => uploadPhoto(p.blob, sb.id, "maengel", mangelId)),
-        );
-        const fotos = [...existing, ...uploaded.map((u) => u.path)];
-
-        await actions.maengel.create({
-          id: mangelId,
-          baustelleId: sb.id,
-          titel: mf.titel,
-          beschreibung: mf.beschreibung,
-          prioritaet: mf.prioritaet,
-          status: "offen",
-          zustaendig: mf.zustaendig || null,
-          erstelltAm: todayIso(),
-          frist: mf.frist,
-          fotos,
-        });
+        try {
+          await actions.maengel.create({
+            id: versuch.id,
+            baustelleId: sb.id,
+            titel: mf.titel,
+            beschreibung: mf.beschreibung,
+            prioritaet: mf.prioritaet,
+            status: "offen",
+            zustaendig: mf.zustaendig || null,
+            erstelltAm: todayIso(),
+            frist: mf.frist,
+            fotos: [...existing, ...versuch.paths],
+          });
+        } catch (e) {
+          // Schon gespeichert: Der erste Versuch kam durch, nur die Antwort
+          // ging verloren. Gleiche ID + gleicher Inhalt → Erfolg. Die Liste
+          // wurde dabei nicht nachgeladen → hier nachholen.
+          if (!(e?.code === "23505" || /duplicate key/i.test(e?.message || ""))) throw e;
+          actions.reload?.("maengel")?.catch?.(() => {});
+        }
+        versuchRef.current = null;
         addN("mangel", `Mangel: ${mf.titel}`, sb.id);
         show("Erfasst");
         setSf(false);
         sMf({ ...mf, titel: "", beschreibung: "", fotos: [] });
       } catch (e) {
         console.error("[MngView.save]", e);
-        show(fehlerText(e, "Fehler beim Speichern"), "error");
+        // Aufräumen NUR bei eindeutiger Ablehnung durch den Server (Fehler-
+        // Code, z.B. keine Berechtigung). Bei einem Netzfehler ist unklar,
+        // ob der Mangel doch gespeichert wurde — dann müssen seine Fotos
+        // bleiben; der nächste Versuch nutzt dieselbe ID und dieselben Fotos.
+        if (e?.code && !istNetzFehler(e)) {
+          await cleanupPhotos(versuch.paths || []);
+          versuchRef.current = null;
+        }
+        show(`Nicht gespeichert: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
       }
     });
   const upSt = async (id, st) => {
     try {
       await actions.maengel.updateStatus(id, st);
       show(st === "erledigt" ? "Erledigt" : "In Arbeit");
-    } catch {
-      show("Fehler", "error");
+    } catch (e) {
+      console.error("[MngView.upSt]", e);
+      show(`Status nicht geändert: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
     }
   };
   const delMng = (id) => setConfirmDelete(id);

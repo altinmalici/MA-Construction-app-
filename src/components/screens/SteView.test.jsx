@@ -2,9 +2,10 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
 
 vi.mock("../../context/AppContext", () => ({ useApp: vi.fn() }));
-vi.mock("../../lib/storage", () => ({ uploadPhoto: vi.fn() }));
+vi.mock("../../lib/storage", () => ({ uploadPhotos: vi.fn() }));
 import { useApp } from "../../context/AppContext";
 import SteView from "./SteView.jsx";
+import { uploadPhotos } from "../../lib/storage";
 import { clearQueue, getPending } from "../../lib/offlineQueue.js";
 
 const B1 = { id: "b1", kunde: "Huber", mitarbeiter: ["u1"] };
@@ -26,6 +27,8 @@ beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   vi.spyOn(navigator, "onLine", "get").mockReturnValue(true);
   clearQueue();
+  uploadPhotos.mockReset();
+  uploadPhotos.mockResolvedValue([]);
   show = vi.fn(); nav = vi.fn(); addN = vi.fn();
   std = {
     create: vi.fn().mockResolvedValue("id"),

@@ -4,7 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { CS, BTN, RED, IC, fDat, bStd, fStd, todayIso } from "../../utils/helpers";
 import { ScreenLayout, PhotoGrid, TimePicker, Spinner, ConfirmModal } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
-import { uploadPhoto } from "../../lib/storage";
+import { uploadPhotos } from "../../lib/storage";
 import { enqueueStunde } from "../../lib/offlineQueue";
 import { pruefeStunde, baueEintrag, snapPause } from "../../utils/stunden";
 import { fehlerText, istNetzFehler } from "../../utils/errors";
@@ -150,12 +150,15 @@ const SteView = () => {
       try {
         // Foto-Upload VOR dem Schreiben; die ID steht schon fest, damit der
         // Storage-Pfad zum Eintrag passt.
-        const uploaded = await Promise.all(
-          blobs.map((p) =>
-            uploadPhoto(p.blob, form.baustelleId, "stundeneintraege", entryId),
-          ),
+        // Alles oder nichts: scheitert ein Foto, werden die übrigen wieder
+        // entfernt (keine verwaisten Dateien).
+        const uploaded = await uploadPhotos(
+          blobs.map((p) => p.blob),
+          form.baustelleId,
+          "stundeneintraege",
+          entryId,
         );
-        fotos = [...existing, ...uploaded.map((u) => u.path)];
+        fotos = [...existing, ...uploaded];
         const entry = baueEintrag(form, { id: entryId, fotos });
 
         if (editId) {
