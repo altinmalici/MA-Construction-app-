@@ -172,6 +172,24 @@ describe("RegView – Bericht-Nummer", () => {
     expect(druckHtml()).toContain("Regiebericht Nr. 03");
   });
 
+  it("Server vergibt für einen Tag keine Nummer (Daten veraltet): kein Druck, kein Hinweistext auf Papier", async () => {
+    regApi.listNummern.mockResolvedValue({});
+    regApi.vergebeNummern.mockResolvedValue({});
+    mountMit([e("1")]);
+    await flush();
+    await drucken();
+    expect(document.querySelector("iframe")).toBeNull();
+    expect(show).toHaveBeenCalledWith(expect.stringContaining("Einträge haben sich geändert"), "error");
+  });
+
+  it("Drucken, bevor die Nummern geladen sind: die Nummer wird trotzdem vergeben", async () => {
+    regApi.listNummern.mockReturnValue(new Promise(() => {}));
+    regApi.vergebeNummern.mockResolvedValue({ "2026-11-17": 5 });
+    mountMit([e("1")]);
+    await drucken();
+    expect(druckHtml()).toContain("Regiebericht Nr. 05");
+  });
+
   it("Gerät ohne Verbindung, das feste Nummern noch nie gesehen hat: bisherige Zählung (wie vor der Migration)", async () => {
     regApi.listNummern.mockRejectedValue(new TypeError("Failed to fetch"));
     const { container } = mountMit([e("1")]);

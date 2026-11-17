@@ -66,7 +66,7 @@ BEGIN
   END IF;
   -- Sperre auf der Baustelle: zwei gleichzeitige Aufrufe vergeben nie
   -- dieselbe Nummer.
-  PERFORM 1 FROM public.baustellen b WHERE b.id = p_baustelle_id FOR UPDATE;
+  PERFORM 1 FROM public.baustellen b WHERE b.id = p_baustelle_id FOR NO KEY UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Baustelle nicht gefunden';
   END IF;

@@ -40,6 +40,12 @@ describe('feste Regiebericht-Nummern', () => {
     expect(await chef(() => vergeben(b1, ['2026-11-01']))).toEqual([{ tag: '2026-11-01', nummer: 4 }]);
   });
 
+  it('Datei erneut ausfuehren, nachdem Nummern vergeben wurden: nichts aendert sich', async () => {
+    const vorher = await q(`SELECT datum::text, nr FROM regiebericht_nummern ORDER BY baustelle_id, nr`);
+    await db.exec(sql);
+    expect(await q(`SELECT datum::text, nr FROM regiebericht_nummern ORDER BY baustelle_id, nr`)).toEqual(vorher);
+  });
+
   it('jede Baustelle zaehlt fuer sich', async () => {
     await std(b2, '2026-11-01');
     expect(await chef(() => vergeben(b2, ['2026-11-01']))).toEqual([{ tag: '2026-11-01', nummer: 1 }]);

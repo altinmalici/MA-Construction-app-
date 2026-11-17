@@ -104,11 +104,19 @@ const RegView = () => {
     };
   }, [bi]);
   const nr = nrState.bi === bi ? nrState : { modus: "offen", map: {} };
-  const berichtNrFor = (datum, modus = nr.modus, map = nr.map) => {
+  const berichtNrFor = (datum, modus = nr.modus, map = nr.map, druck = false) => {
     if (modus === "alt") return alteNr(datum);
     if (map[datum]) return pad2(map[datum]);
-    return modus === "fest" ? "wird beim Drucken vergeben" : "—";
+    // Der Hinweistext gehört nur in die Vorschau, nie auf den Ausdruck.
+    return modus === "fest" && !druck ? "wird beim Drucken vergeben" : "—";
   };
+  const aliveRef = useRef(true);
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
 
   const reportDates = useMemo(
     () => getReportDates(data.stundeneintraege, bi, vonDatum, bisDatum),
@@ -212,11 +220,35 @@ const RegView = () => {
     let map = nr.map;
     if (modus !== "alt" && reportDates.some((d) => !map[d])) {
       try {
-        map = { ...map, ...(await regApi.vergebeNummern(bi, reportDates)) };
+        // Hängende Verbindung: nach 8 s aufgeben statt den Knopf stumm zu
+        // blockieren.
+        const neu = await Promise.race([
+          regApi.vergebeNummern(bi, reportDates),
+          new Promise((_, rej) =>
+            setTimeout(() => rej(Object.assign(new Error("Zeitüberschreitung"), { name: "AbortError" })), 8000),
+          ),
+        ]);
+        if (!aliveRef.current) {
+          printingRef.current = false;
+          return; // Screen wurde inzwischen verlassen
+        }
+        map = { ...map, ...neu };
         modus = "fest";
         merkeFest();
-        sNrState({ bi, modus, map });
+        const fertig = map;
+        sNrState((s) => (s.bi === bi || s.bi === "" ? { bi, modus: "fest", map: fertig } : s));
+        // Der Server vergibt nur für Tage mit Einträgen. Fehlt danach eine
+        // Nummer, sind die Daten hier veraltet.
+        if (reportDates.some((d) => !map[d])) {
+          printingRef.current = false;
+          show("Die Einträge haben sich geändert – bitte App neu laden und erneut drucken", "error");
+          return;
+        }
       } catch (e) {
+        if (!aliveRef.current) {
+          printingRef.current = false;
+          return;
+        }
         if (regApi.istNummernFehlt(e) || (istNetzFehler(e) && !festGesehen())) {
           modus = "alt"; // Migration fehlt → bisherige Zählung
         } else {
@@ -239,7 +271,7 @@ const RegView = () => {
         bs,
         datum,
         eintraege,
-        berichtNr: berichtNrFor(datum, modus, map),
+        berichtNr: berichtNrFor(datum, modus, map, true),
         forPrint: true,
         sig: druckSig,
       });

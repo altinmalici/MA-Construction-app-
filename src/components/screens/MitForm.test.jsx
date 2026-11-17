@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
 
 vi.mock("../../context/AppContext", () => ({ useApp: vi.fn() }));
+vi.mock("../../lib/supabase.js", () => ({ supabase: {} }));
 import { useApp } from "../../context/AppContext";
 import MitForm from "./MitForm.jsx";
 
@@ -68,6 +69,28 @@ describe("MitForm – neuer Mitarbeiter", () => {
     expect(s.link).toBeNull();
     expect(s.pin).toMatch(/^\d{4}$/);
     expect(show).not.toHaveBeenCalledWith(expect.anything(), "error");
+  });
+
+  it("Link scheitert einmal am Netz → zweiter Versuch liefert den Link", async () => {
+    users.createOnboardingToken
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce("e".repeat(48));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mount();
+    fill("Max Muster");
+    await save();
+    expect(users.createOnboardingToken).toHaveBeenCalledTimes(2);
+    expect(setMitSummary.mock.calls[0][0].link).toContain(`einladung=${"e".repeat(48)}`);
+  });
+
+  it("Link scheitert zweimal am Netz → KEIN (womöglich schon ungültiger) PIN, klarer Hinweis", async () => {
+    users.createOnboardingToken.mockRejectedValue(new TypeError("Failed to fetch"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    mount();
+    fill("Max Muster");
+    await save();
+    expect(setMitSummary).not.toHaveBeenCalled();
+    expect(show).toHaveBeenCalledWith(expect.stringContaining('"Einladung senden"'), "error");
   });
 
   it("Anlage scheitert → konkrete Meldung, keine Zusammenfassung", async () => {

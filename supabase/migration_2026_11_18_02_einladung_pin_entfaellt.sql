@@ -13,8 +13,11 @@
 -- bis fuer den Mitarbeiter das naechste Mal ein Link erzeugt wird.
 -- Idempotent. Zeitpunkt beliebig; die App braucht diese Datei nicht.
 --
--- Rueckfall-Weg bleibt: Kann die App keinen Link erzeugen, zeigt sie wie
--- bisher den Einladungs-PIN (dann wurde auch kein Link-Token angelegt).
+-- Rueckfall-Weg bleibt: Gibt es die Link-Funktion nicht, zeigt die App wie
+-- bisher den Einladungs-PIN.
+-- Restrisiko: Wer sich VOR dem Erzeugen des Links schon mit dem
+-- Einladungs-PIN angemeldet hatte, bleibt hoechstens bis zum Ablauf seines
+-- Zugriffstokens (ca. 1 Stunde) angemeldet.
 -- =============================================================
 
 BEGIN;
@@ -31,10 +34,28 @@ RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, extensions
 AS $$
+DECLARE
+  v_auth_id UUID;
 BEGIN
+  -- Nur Mitarbeiter, die ihren eigenen PIN noch NICHT gesetzt haben: Bei
+  -- ihnen ist der Einladungs-PIN zugleich das Anmelde-Passwort. Bei bereits
+  -- eingerichteten Mitarbeitern ist das Passwort ihr echter PIN – der bleibt
+  -- gueltig, bis der Link eingeloest wird.
   UPDATE public.users
   SET onboarding_pin = NULL, onboarding_pin_expiry = NULL
-  WHERE id = NEW.user_id AND onboarding_pin IS NOT NULL;
+  WHERE id = NEW.user_id AND is_onboarded IS NOT TRUE
+  RETURNING auth_id INTO v_auth_id;
+  IF v_auth_id IS NOT NULL THEN
+    -- Anmelde-Passwort durch einen nicht erratbaren Zufallswert ersetzen
+    -- (sonst liesse sich der Einladungs-PIN weiter im normalen Login nutzen)
+    -- und laufende Sitzungen beenden. Der Link setzt beim Einloesen selbst
+    -- ein neues Passwort.
+    UPDATE auth.users
+    SET encrypted_password = crypt(encode(gen_random_bytes(24), 'hex'), gen_salt('bf')),
+        updated_at = now()
+    WHERE id = v_auth_id;
+    DELETE FROM auth.sessions WHERE user_id = v_auth_id;
+  END IF;
   RETURN NEW;
 END;
 $$;

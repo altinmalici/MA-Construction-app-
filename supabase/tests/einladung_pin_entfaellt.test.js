@@ -31,6 +31,32 @@ describe('Einladungs-PIN entfaellt mit dem Link', () => {
     expect(await anon(() => q(`SELECT username FROM validate_onboarding_token($1)`, [t]))).toEqual([{ username: 'm.link' }]);
   });
 
+  const pwOk = async (authId, pin) =>
+    (await q(`SELECT encrypted_password = crypt($2, encrypted_password) AS ok FROM auth.users WHERE id = $1`, [authId, pin]))[0].ok;
+
+  it('der Einladungs-PIN taugt danach auch nicht mehr als Anmelde-Passwort; Sitzungen sind beendet', async () => {
+    const m = await addMitarbeiter(db, 'Pw Test', 'p.test', '1003');
+    expect(await pwOk(m.authId, '1003')).toBe(true);
+    await q(`INSERT INTO auth.sessions (user_id) VALUES ($1)`, [m.authId]);
+    const t = await chef(async () => (await q(`SELECT create_onboarding_token($1) AS t`, [m.id]))[0].t);
+    expect(await pwOk(m.authId, '1003')).toBe(false);
+    expect(await q(`SELECT 1 FROM auth.sessions WHERE user_id = $1`, [m.authId])).toHaveLength(0);
+    // der Link setzt den eigenen PIN – damit geht die Anmeldung
+    await anon(() => q(`SELECT consume_onboarding_token($1, '8642')`, [t]));
+    expect(await pwOk(m.authId, '8642')).toBe(true);
+  });
+
+  it('bereits eingerichteter Mitarbeiter: sein PIN bleibt gueltig, bis der Link eingeloest wird', async () => {
+    const m = await addMitarbeiter(db, 'Alt Hase', 'a.hase', '1004');
+    await as(db, 'authenticated', m.authId, () => q(`SELECT complete_onboarding_v2($1, '7531')`, [m.id]));
+    expect(await pwOk(m.authId, '7531')).toBe(true);
+    await q(`INSERT INTO auth.sessions (user_id) VALUES ($1)`, [m.authId]);
+    await chef(() => q(`SELECT create_onboarding_token($1)`, [m.id]));
+    expect(await pwOk(m.authId, '7531')).toBe(true);
+    expect(await q(`SELECT 1 FROM auth.sessions WHERE user_id = $1`, [m.authId])).toHaveLength(1);
+    expect((await q(`SELECT pin_hash = crypt('7531', pin_hash) AS ok FROM users WHERE id = $1`, [m.id]))[0].ok).toBe(true);
+  });
+
   it('andere Mitarbeiter sind nicht betroffen', async () => {
     expect(await lookup('o.link', '1001')).toHaveLength(1);
   });

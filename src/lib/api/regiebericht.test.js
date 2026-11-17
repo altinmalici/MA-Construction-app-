@@ -28,6 +28,8 @@ describe("regiebericht-Nummern", () => {
     expect(istNummernFehlt({ code: "PGRST202" })).toBe(true);
     expect(istNummernFehlt({ code: "42P01", message: 'relation "regiebericht_nummern" does not exist' })).toBe(true);
     expect(istNummernFehlt({ code: "42501", message: "Keine Berechtigung" })).toBe(false);
+    // ein anderer "does not exist"-Fehler darf NICHT still auf die alte Zählung umschalten
+    expect(istNummernFehlt({ code: "42703", message: 'column "x" does not exist' })).toBe(false);
     expect(istNummernFehlt(new TypeError("Failed to fetch"))).toBe(false);
     expect(istNummernFehlt(null)).toBe(false);
   });

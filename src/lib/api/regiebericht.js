@@ -8,7 +8,10 @@ export function istNummernFehlt(error) {
   if (!error) return false;
   return (
     ['PGRST202', 'PGRST205', '42883', '42P01'].includes(error.code) ||
-    /could not find the (function|table)|does not exist/i.test(String(error.message || ''))
+    // nur Meldungen, die genau diese Tabelle/Funktion nennen
+    /(could not find|does not exist).*regiebericht_nummern|regiebericht_nummern.*(does not exist|could not find)/i.test(
+      String(error.message || ''),
+    )
   );
 }
 
