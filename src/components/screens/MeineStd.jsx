@@ -1,35 +1,19 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { bStd, bStdNum, fStd, isoWeek, fDat, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { bStd, bStdNum, fStd, isoWeek, fDat, isInMonth, isMitarbeiterEntry, shiftMonth } from "../../utils/helpers";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
 const MeineStd = () => {
   const { data, cu, goBack } = useApp();
   const h = new Date();
-  const [mo, setMo] = useState(h.getMonth());
-  const [jr, setJr] = useState(h.getFullYear());
+  const [monat, setMonat] = useState(() => ({ mo: h.getMonth(), jr: h.getFullYear() }));
+  const { mo, jr } = monat;
   // BUG-FU-1: Click auf Einzeleintrag → Detail-Modal mit Foto-Anzeige.
   const [detail, setDetail] = useState(null);
   if (!cu) return null;
-  const pv = () => {
-    setMo((m) => {
-      if (m === 0) {
-        setJr((j) => j - 1);
-        return 11;
-      }
-      return m - 1;
-    });
-  };
-  const nx = () => {
-    setMo((m) => {
-      if (m === 11) {
-        setJr((j) => j + 1);
-        return 0;
-      }
-      return m + 1;
-    });
-  };
+  const pv = () => setMonat((m) => shiftMonth(m, -1));
+  const nx = () => setMonat((m) => shiftMonth(m, 1));
   // Eigene Einträge aus der Datenbank + eigene, die noch auf diesem Gerät
   // warten (offline erfasst). Letztere sind markiert und stehen nur hier.
   const serverIds = new Set(data.stundeneintraege.map((e) => e.id));

@@ -4,6 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { P, BTN, RED, GREEN, IC, G } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 import { fehlerText } from "../../utils/errors";
+import { loadLock, registerFailure, clearLock } from "../../lib/loginLock";
 import { readInviteToken } from "../../utils/invite";
 import Einladung from "./Einladung";
 
@@ -22,10 +23,6 @@ const loginFehlerText = (e) => {
       return fehlerText(e, "Anmeldung nicht möglich – bitte erneut versuchen");
   }
 };
-
-// Ende der 30-s-Sperre nach 3 Fehlversuchen (ausserhalb der Komponente,
-// damit kein unreiner Aufruf im Render-Pfad steht).
-const lockUntilIso = () => new Date(Date.now() + 30000).toISOString();
 
 const Login = () => {
   const { actions, completeLogin, sessionUser, locked } = useApp();
@@ -56,10 +53,17 @@ const Login = () => {
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [pinStep, setPinStep] = useState(1);
-  const [attempts, setAttempts] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState(null);
-  const [permLocked, setPermLocked] = useState(false);
-  const [lockSec, setLockSec] = useState(0);
+  // Fehlversuche + Sperre liegen dauerhaft im Gerät (src/lib/loginLock.js)
+  // und überleben Neuladen und Moduswechsel.
+  const [attempts, setAttempts] = useState(() => loadLock().attempts);
+  const [lockedUntil, setLockedUntil] = useState(() => loadLock().lockedUntil);
+  const permLocked = false;
+  // Restzeit sofort aus dem gespeicherten Stand (kein kurzer "frei"-Moment
+  // nach dem Neuladen).
+  const [lockSec, setLockSec] = useState(() => {
+    const until = loadLock().lockedUntil;
+    return until ? Math.max(0, Math.ceil((new Date(until) - new Date()) / 1000)) : 0;
+  });
   const [lastUser, setLastUser] = useState(() => {
     try {
       return JSON.parse(
@@ -81,6 +85,7 @@ const Login = () => {
         setLockedUntil(null);
         setLockSec(0);
         setErr("");
+        setAttempts(loadLock().attempts);
       } else setLockSec(r);
     };
     tick();
@@ -90,15 +95,16 @@ const Login = () => {
   // lockSec wird vom Timer oben gepflegt — kein Date.now() im Render.
   const isLocked = permLocked || (!!lockedUntil && lockSec > 0);
   const wrongAttempt = () => {
-    const na = attempts + 1;
-    setAttempts(na);
-    if (na >= 10) {
-      setPermLocked(true);
-      setErr("Gesperrt. Kontaktiere den Bauleiter.");
-    } else if (na >= 3 && na % 3 === 0) {
-      setLockSec(30);
-      setLockedUntil(lockUntilIso());
-      setErr(`Gesperrt (30s)`);
+    const r = registerFailure();
+    setAttempts(r.attempts);
+    if (r.lockedUntil) {
+      setLockSec(r.lang ? 15 * 60 : 30);
+      setLockedUntil(r.lockedUntil);
+      setErr(
+        r.lang
+          ? "Zu viele Fehlversuche – 15 Minuten gesperrt"
+          : "Gesperrt (30s)",
+      );
     } else setErr("Falscher PIN");
   };
 
@@ -123,7 +129,9 @@ const Login = () => {
           setMode("B");
           setErr("");
           setAttempts(0);
+          clearLock();
         } else {
+          clearLock();
           completeLogin(u);
         }
       } else {
@@ -155,6 +163,7 @@ const Login = () => {
         setMode("B");
         setErr("");
         setAttempts(0);
+        clearLock();
       } else {
         wrongAttempt();
         // Beim "Erster Zugang" ist die haeufigste Ursache ein ABGELAUFENER
@@ -344,7 +353,9 @@ const Login = () => {
     <div role="alert" aria-live="assertive" style={{ minHeight: 24, textAlign: "center", padding: "0 12px" }}>
       {isLocked && !permLocked ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>
-          Gesperrt ({lockSec}s)
+          {lockSec > 90
+            ? `Gesperrt (noch ${Math.ceil(lockSec / 60)} min)`
+            : `Gesperrt (${lockSec}s)`}
         </p>
       ) : permLocked ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>{err}</p>
@@ -491,9 +502,6 @@ const Login = () => {
             onClick={() => {
               setMode("C");
               setErr("");
-              setAttempts(0);
-              setPermLocked(false);
-              setLockedUntil(null);
             }}
             style={{
               marginTop: 24,
@@ -718,9 +726,6 @@ const Login = () => {
               onClick={() => {
                 setMode("A");
                 setErr("");
-                setAttempts(0);
-                setPermLocked(false);
-                setLockedUntil(null);
               }}
               style={{
                 fontSize: 15,
@@ -744,7 +749,6 @@ const Login = () => {
                 setLastUser(null);
                 setPin("");
                 setErr("");
-                setAttempts(0);
                 // IMMER abmelden — auch nach der Sperre, wenn die Sitzung
                 // des bisherigen Nutzers noch im Gerät liegt. Löst
                 // SIGNED_OUT aus → Daten werden verworfen.

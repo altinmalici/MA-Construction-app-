@@ -76,3 +76,44 @@ describe("AppContext – Navigation (ausgeloggt führt jeder View zurück zum Lo
     expect(api.history).toEqual([]);
   });
 });
+
+describe("AppContext – Schutz vor Verlassen mit ungespeicherten Eingaben", () => {
+  it("ohne angemeldetes Formular wird die Aktion sofort ausgeführt", async () => {
+    await mount();
+    const action = vi.fn();
+    act(() => { api.tryLeave(action); });
+    expect(action).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Änderungen verwerfen?")).toBeNull();
+  });
+
+  it("ungespeicherte Eingaben → Nachfrage; 'Weiter bearbeiten' führt die Aktion NICHT aus", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    await mount();
+    const action = vi.fn();
+    act(() => { api.setLeaveGuard(() => true); api.tryLeave(action); });
+    expect(screen.getByText("Änderungen verwerfen?")).toBeInTheDocument();
+    expect(action).not.toHaveBeenCalled();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Weiter bearbeiten" })); });
+    expect(action).not.toHaveBeenCalled();
+    expect(screen.queryByText("Änderungen verwerfen?")).toBeNull();
+  });
+
+  it("'Verwerfen' führt die Aktion aus und meldet das Formular ab", async () => {
+    const { fireEvent } = await import("@testing-library/react");
+    await mount();
+    const action = vi.fn();
+    act(() => { api.setLeaveGuard(() => true); api.tryLeave(action); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Verwerfen" })); });
+    expect(action).toHaveBeenCalledTimes(1);
+    const second = vi.fn();
+    act(() => { api.tryLeave(second); });
+    expect(second).toHaveBeenCalledTimes(1);
+  });
+
+  it("Formular ohne Änderungen (Guard liefert false) → keine Nachfrage", async () => {
+    await mount();
+    const action = vi.fn();
+    act(() => { api.setLeaveGuard(() => false); api.tryLeave(action); });
+    expect(action).toHaveBeenCalledTimes(1);
+  });
+});

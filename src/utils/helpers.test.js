@@ -581,3 +581,18 @@ describe("Beträge: Tausenderpunkte und strenge Eingabeprüfung (Review P7)", ()
     }
   });
 });
+
+describe("shiftMonth", () => {
+  it("Jahreswechsel vor und zurück", async () => {
+    const { shiftMonth } = await import("./helpers.js");
+    expect(shiftMonth({ mo: 11, jr: 2026 }, 1)).toEqual({ mo: 0, jr: 2027 });
+    expect(shiftMonth({ mo: 0, jr: 2027 }, -1)).toEqual({ mo: 11, jr: 2026 });
+    expect(shiftMonth({ mo: 5, jr: 2026 }, 1)).toEqual({ mo: 6, jr: 2026 });
+  });
+  it("ist rein: zweimal mit demselben Zustand aufgerufen ergibt dasselbe (kein Doppelsprung)", async () => {
+    const { shiftMonth } = await import("./helpers.js");
+    const s = { mo: 11, jr: 2026 };
+    expect(shiftMonth(s, 1)).toEqual(shiftMonth(s, 1));
+    expect(s).toEqual({ mo: 11, jr: 2026 });
+  });
+});

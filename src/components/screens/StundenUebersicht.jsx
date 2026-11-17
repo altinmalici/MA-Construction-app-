@@ -2,36 +2,20 @@ import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
-import { bStdNum, fStd, fK, P, isInMonth, isMitarbeiterEntry } from "../../utils/helpers";
+import { bStdNum, fStd, fK, P, isInMonth, isMitarbeiterEntry, shiftMonth } from "../../utils/helpers";
 import { buildLohnCsv, downloadCsv } from "../../utils/lohnexport";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
 const StundenUebersicht = () => {
   const { data, cu, chef, actions, show, goBack } = useApp();
   const now = new Date();
-  const [mo, setMo] = useState(now.getMonth());
-  const [jr, setJr] = useState(now.getFullYear());
+  const [monat, setMonat] = useState(() => ({ mo: now.getMonth(), jr: now.getFullYear() }));
+  const { mo, jr } = monat;
   const [open, setOpen] = useState(null);
   // BUG-FU-1: Click auf Einzeleintrag → Detail-Modal mit Foto-Anzeige.
   const [detail, setDetail] = useState(null);
-  const pv = () => {
-    setMo((m) => {
-      if (m === 0) {
-        setJr((j) => j - 1);
-        return 11;
-      }
-      return m - 1;
-    });
-  };
-  const nx = () => {
-    setMo((m) => {
-      if (m === 11) {
-        setJr((j) => j + 1);
-        return 0;
-      }
-      return m + 1;
-    });
-  };
+  const pv = () => setMonat((m) => shiftMonth(m, -1));
+  const nx = () => setMonat((m) => shiftMonth(m, 1));
   const fH = (h) => fStd(h) + "h";
 
   // 6-06 Prio 1: byUser-Pipeline memoizen. Vorher pro Render:

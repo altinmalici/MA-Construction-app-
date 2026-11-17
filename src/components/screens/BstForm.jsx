@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Check, Save } from "lucide-react";
 import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
@@ -7,7 +7,7 @@ import { ScreenLayout, Spinner, ConfirmModal, Section } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const BstForm = () => {
-  const { em, sb, data, actions, show, chef, nav, setSb, setEm, goBack, setVRaw } =
+  const { em, sb, data, actions, show, chef, nav, setSb, setEm, goBack, setVRaw, setLeaveGuard, tryLeave } =
     useApp();
   const { saving, withSaving } = useSaving();
   const ex = em && sb ? data.baustellen.find((b) => b.id === sb.id) : null;
@@ -37,6 +37,17 @@ const BstForm = () => {
   const initialRef = useRef(null);
   if (initialRef.current === null) initialRef.current = JSON.stringify(f);
   const isDirty = () => JSON.stringify(f) !== initialRef.current;
+  // Ungespeicherte Eingaben beim Context anmelden: TabBar und Sprünge aus
+  // dem Formular heraus fragen dann nach, statt die Eingaben still zu
+  // verwerfen (der eigene Zurück-Knopf tat das schon).
+  const dirtyRef = useRef(false);
+  useEffect(() => {
+    dirtyRef.current = isDirty();
+  });
+  useEffect(() => {
+    setLeaveGuard(() => dirtyRef.current);
+    return () => setLeaveGuard(null);
+  }, [setLeaveGuard]);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const handleBack = () => {
     if (isDirty()) {
@@ -85,6 +96,7 @@ const BstForm = () => {
           await actions.baustellen.update(ex.id, bd);
           setSb({ ...bd, id: ex.id });
           show("Aktualisiert");
+          setLeaveGuard(null); // gespeichert → nichts mehr zu verlieren
           setEm(false);
           // Zurück zur Detailansicht, aus der das Formular geöffnet wurde.
           // nav("bsd") würde das Formular in den Verlauf legen: "Zurück" in
@@ -94,6 +106,7 @@ const BstForm = () => {
           const newId = await actions.baustellen.create(bd);
           setSb({ ...bd, id: newId });
           show("Angelegt");
+          setLeaveGuard(null);
           setEm(false);
           // Formular durch die Detailansicht ERSETZEN (kein Verlaufseintrag).
           setVRaw("bsd");
@@ -410,7 +423,7 @@ const BstForm = () => {
             <p style={{ fontSize: 13, color: "#8e8e93" }}>
               Noch keine Handwerker angelegt.{" "}
               <button
-                onClick={() => nav("mitf")}
+                onClick={() => tryLeave(() => nav("mitf"))}
                 style={{
                   color: "#3c3c43",
                   textDecoration: "underline",
@@ -475,7 +488,7 @@ const BstForm = () => {
             <p style={{ fontSize: 13, color: "#8e8e93" }}>
               Noch keine Subunternehmer angelegt.{" "}
               <button
-                onClick={() => nav("sub")}
+                onClick={() => tryLeave(() => nav("sub"))}
                 style={{
                   color: "#3c3c43",
                   textDecoration: "underline",

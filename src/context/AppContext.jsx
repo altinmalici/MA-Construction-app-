@@ -6,7 +6,7 @@ import { useOfflineSync } from "../lib/useOfflineSync.js";
 import { useAutoLock } from "../hooks/useAutoLock.js";
 import { BACKGROUND_LOCK_MS, INACTIVITY_LOCK_MS } from "../config.js";
 import { G, P, BTN, RED } from "../utils/helpers";
-import { Toast, Spinner, Clock } from "../components/ui";
+import { Toast, Spinner, Clock, ConfirmModal } from "../components/ui";
 import OfflineBanner from "../components/ui/OfflineBanner";
 import PendingSyncBadge from "../components/ui/PendingSyncBadge";
 import UpdatePrompt from "../components/ui/UpdatePrompt";
@@ -126,6 +126,26 @@ export function AppProvider({ children }) {
       ),
     [],
   );
+  // Schutz vor versehentlichem Verlassen eines Formulars mit ungespeicherten
+  // Eingaben. Ein Formular meldet per setLeaveGuard eine Funktion an, die
+  // true liefert, solange es ungespeicherte Eingaben hat. Navigation über
+  // die TabBar (und andere Sprünge aus dem Formular heraus) läuft über
+  // tryLeave und fragt dann nach.
+  const leaveGuardRef = useRef(null);
+  const [pendingLeave, setPendingLeave] = useState(null);
+  const setLeaveGuard = useCallback((fn) => {
+    leaveGuardRef.current = fn;
+  }, []);
+  const tryLeave = useCallback((action) => {
+    let dirty = false;
+    try {
+      dirty = !!leaveGuardRef.current?.();
+    } catch {
+      dirty = false;
+    }
+    if (dirty) setPendingLeave(() => action);
+    else action();
+  }, []);
   const [sb, setSb] = useState(null);
   const [em, setEm] = useState(false);
   const [editUser, setEditUser] = useState(null);
@@ -409,11 +429,14 @@ export function AppProvider({ children }) {
       mitSummary,
       setMitSummary,
       fileRef,
+      setLeaveGuard,
+      tryLeave,
     }),
     [
       data, actions, cu, locked, completeLogin, effectiveSessionUser, v, nav,
       goBack, prevV, history, setHistory, setVRaw, sb, em, sq, chef, show,
-      trigPhoto, addN, eName, unread, editUser, mitSummary,
+      trigPhoto, addN, eName, unread, editUser, mitSummary, setLeaveGuard,
+      tryLeave,
     ],
   );
 
@@ -660,6 +683,21 @@ export function AppProvider({ children }) {
                 </div>
               )}
               {children}
+              <ConfirmModal
+                open={!!pendingLeave}
+                title="Änderungen verwerfen?"
+                message="Die Eingaben im Formular gehen verloren."
+                confirmLabel="Verwerfen"
+                cancelLabel="Weiter bearbeiten"
+                destructive
+                onConfirm={() => {
+                  const action = pendingLeave;
+                  setPendingLeave(null);
+                  leaveGuardRef.current = null;
+                  action?.();
+                }}
+                onCancel={() => setPendingLeave(null)}
+              />
             </div>
 
             <div className="device-home-bar">
