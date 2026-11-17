@@ -17,6 +17,27 @@ import {
 } from "../../utils/helpers";
 import { ScreenLayout, SigPad, Card } from "../ui";
 import { buildReportHtml } from "../../utils/regiebericht";
+import * as regApi from "../../lib/api/regiebericht";
+import { fehlerText, istNetzFehler } from "../../utils/errors";
+
+// Merkt sich pro Gerät, dass es feste Bericht-Nummern gibt (Migration
+// angewandt). Ab dann wird ohne Verbindung keine Nummer mehr "geraten".
+const FEST_KEY = "ma_regnr_fest_v1";
+const festGesehen = () => {
+  try {
+    return localStorage.getItem(FEST_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+const merkeFest = () => {
+  try {
+    localStorage.setItem(FEST_KEY, "1");
+  } catch {
+    /* egal */
+  }
+};
+const pad2 = (n) => String(n).padStart(2, "0");
 
 const fH = (h) => fStd(h) + " h";
 
@@ -53,9 +74,40 @@ const RegView = () => {
     ].sort();
   }, [data.stundeneintraege, bi]);
 
-  const berichtNrFor = (datum) => {
+  // Bisherige Zählung: Position des Tages. Gilt nur noch, solange die
+  // Migration für feste Nummern nicht angewandt ist.
+  const alteNr = (datum) => {
     const idx = allBaustelleTage.indexOf(datum);
-    return idx >= 0 ? String(idx + 1).padStart(2, "0") : "—";
+    return idx >= 0 ? pad2(idx + 1) : "—";
+  };
+
+  // Feste Nummern: modus "fest" (Tabelle da), "alt" (Migration fehlt),
+  // "offen" (noch nicht geladen / keine Verbindung).
+  const [nrState, sNrState] = useState({ bi: "", modus: "offen", map: {} });
+  useEffect(() => {
+    if (!bi) return undefined;
+    let alive = true;
+    regApi.listNummern(bi).then(
+      (map) => {
+        if (!alive) return;
+        merkeFest();
+        sNrState({ bi, modus: "fest", map });
+      },
+      (e) => {
+        if (!alive) return;
+        const alt = regApi.istNummernFehlt(e) || (istNetzFehler(e) && !festGesehen());
+        sNrState({ bi, modus: alt ? "alt" : "offen", map: {} });
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [bi]);
+  const nr = nrState.bi === bi ? nrState : { modus: "offen", map: {} };
+  const berichtNrFor = (datum, modus = nr.modus, map = nr.map) => {
+    if (modus === "alt") return alteNr(datum);
+    if (map[datum]) return pad2(map[datum]);
+    return modus === "fest" ? "wird beim Drucken vergeben" : "—";
   };
 
   const reportDates = useMemo(
@@ -117,7 +169,7 @@ const RegView = () => {
       sig: reportDates.length === 1 ? sig : null,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportDates, bs, firstDate, allBaustelleTage, sig]);
+  }, [reportDates, bs, firstDate, allBaustelleTage, sig, nrState]);
 
   const multiReportTitle = () => {
     if (reportDates.length === 0) return "Regiebericht";
@@ -154,6 +206,28 @@ const RegView = () => {
     printingRef.current = true;
     removePrintFrame(); // Rest eines früheren Drucks
 
+    // Feste Bericht-Nummern: fehlende Nummern jetzt vergeben. Sind alle
+    // schon bekannt, geht das Drucken auch ohne Verbindung.
+    let modus = nr.modus;
+    let map = nr.map;
+    if (modus !== "alt" && reportDates.some((d) => !map[d])) {
+      try {
+        map = { ...map, ...(await regApi.vergebeNummern(bi, reportDates)) };
+        modus = "fest";
+        merkeFest();
+        sNrState({ bi, modus, map });
+      } catch (e) {
+        if (regApi.istNummernFehlt(e) || (istNetzFehler(e) && !festGesehen())) {
+          modus = "alt"; // Migration fehlt → bisherige Zählung
+        } else {
+          console.error("[RegView.doPrint] Bericht-Nr.", e);
+          printingRef.current = false;
+          show(`Bericht-Nummer nicht vergeben: ${fehlerText(e, "Bitte erneut versuchen.")}`, "error");
+          return;
+        }
+      }
+    }
+
     // Eine Unterschrift bestätigt EINEN Bericht. Bei mehreren Tagen wird sie
     // nicht auf alle gedruckt.
     const druckSig = reportDates.length === 1 ? sig : null;
@@ -165,7 +239,7 @@ const RegView = () => {
         bs,
         datum,
         eintraege,
-        berichtNr: berichtNrFor(datum),
+        berichtNr: berichtNrFor(datum, modus, map),
         forPrint: true,
         sig: druckSig,
       });
