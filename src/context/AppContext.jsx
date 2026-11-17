@@ -4,6 +4,7 @@ import { useAppData } from "../lib/useAppData.js";
 import { useRealtime } from "../lib/useRealtime.js";
 import { useOfflineSync } from "../lib/useOfflineSync.js";
 import { useAutoLock } from "../hooks/useAutoLock.js";
+import { clearLock } from "../lib/loginLock.js";
 import { BACKGROUND_LOCK_MS, INACTIVITY_LOCK_MS } from "../config.js";
 import { G, P, BTN, RED } from "../utils/helpers";
 import { Toast, Spinner, Clock, ConfirmModal } from "../components/ui";
@@ -198,6 +199,8 @@ export function AppProvider({ children }) {
     const { data: { subscription } } = actions.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         setCu(null);
+        setPendingLeave(null);
+        leaveGuardRef.current = null;
         setLocked(false);
         actions.resetData();
         setSessionUser(null);
@@ -283,6 +286,9 @@ export function AppProvider({ children }) {
   //    dem Dashboard, Daten werden frisch geladen.
   const cuId = cu?.id;
   const completeLogin = useCallback((u) => {
+    // Jeder erfolgreiche Login (PIN, Onboarding, Einladungs-Link) setzt den
+    // Fehlversuchs-Zähler des Geräts zurück.
+    clearLock();
     const unlockSameUser = locked && cuId === u.id;
     setLocked(false);
     setCu(u);
@@ -291,6 +297,8 @@ export function AppProvider({ children }) {
       return;
     }
     actions.resetData();
+    setPendingLeave(null);
+    leaveGuardRef.current = null;
     setHistory([]);
     setSb(null);
     setSq("");
@@ -684,7 +692,8 @@ export function AppProvider({ children }) {
               )}
               {children}
               <ConfirmModal
-                open={!!pendingLeave}
+                // Nicht über dem Sperr- oder Login-Screen zeigen.
+                open={!!pendingLeave && !!cu && !locked}
                 title="Änderungen verwerfen?"
                 message="Die Eingaben im Formular gehen verloren."
                 confirmLabel="Verwerfen"

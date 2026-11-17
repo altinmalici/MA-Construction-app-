@@ -14,11 +14,34 @@ export const MAX_VERSUCHE = 10;
 
 const leer = () => ({ attempts: 0, lockedUntil: null });
 
+// Kopie im Arbeitsspeicher: greift, wenn localStorage nicht verfügbar ist
+// (privater Modus, Speicher voll) — dann gilt die Sperre wenigstens bis
+// zum Neuladen, wie früher.
+let memory = null;
+
+function readRaw() {
+  try {
+    // Speicher lesbar → er ist maßgeblich (auch wenn er leer ist).
+    return JSON.parse(localStorage.getItem(KEY) || "null");
+  } catch {
+    // Speicher nicht lesbar → Kopie im Arbeitsspeicher.
+    return memory;
+  }
+}
+
 export function loadLock(now = Date.now()) {
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || "null");
+    const raw = readRaw();
     if (!raw || typeof raw.attempts !== "number") return leer();
-    const until = raw.lockedUntil ? new Date(raw.lockedUntil).getTime() : 0;
+    let until = raw.lockedUntil ? new Date(raw.lockedUntil).getTime() : 0;
+    // Eine Sperre kann nie länger dauern als die lange Sperre. Liegt das
+    // Ende weiter in der Zukunft (Geräte-Uhr wurde zurückgestellt), wird es
+    // begrenzt — sonst wäre das Gerät unbegrenzt gesperrt.
+    if (until - now > LANGE_SPERRE_MS) {
+      until = now + LANGE_SPERRE_MS;
+      raw.lockedUntil = new Date(until).toISOString();
+      save({ attempts: raw.attempts, lockedUntil: raw.lockedUntil });
+    }
     const aktiv = until > now;
     // Eine abgelaufene LANGE Sperre beginnt wieder bei 0 Versuchen.
     if (!aktiv && raw.attempts >= MAX_VERSUCHE) return leer();
@@ -29,10 +52,11 @@ export function loadLock(now = Date.now()) {
 }
 
 function save(state) {
+  memory = state;
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {
-    /* localStorage nicht verfügbar → Sperre gilt nur bis zum Neuladen */
+    /* localStorage nicht verfügbar → Sperre gilt (über `memory`) bis zum Neuladen */
   }
 }
 
@@ -57,6 +81,7 @@ export function registerFailure(now = Date.now()) {
 
 /** Nach erfolgreichem Login. */
 export function clearLock() {
+  memory = null;
   try {
     localStorage.removeItem(KEY);
   } catch {

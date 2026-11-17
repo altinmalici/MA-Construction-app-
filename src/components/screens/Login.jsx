@@ -4,7 +4,7 @@ import { useApp } from "../../context/AppContext";
 import { P, BTN, RED, GREEN, IC, G } from "../../utils/helpers";
 import { ScreenLayout } from "../ui";
 import { fehlerText } from "../../utils/errors";
-import { loadLock, registerFailure, clearLock } from "../../lib/loginLock";
+import { loadLock, registerFailure } from "../../lib/loginLock";
 import { readInviteToken } from "../../utils/invite";
 import Einladung from "./Einladung";
 
@@ -55,9 +55,8 @@ const Login = () => {
   const [pinStep, setPinStep] = useState(1);
   // Fehlversuche + Sperre liegen dauerhaft im Gerät (src/lib/loginLock.js)
   // und überleben Neuladen und Moduswechsel.
-  const [attempts, setAttempts] = useState(() => loadLock().attempts);
+  const [, setAttempts] = useState(() => loadLock().attempts);
   const [lockedUntil, setLockedUntil] = useState(() => loadLock().lockedUntil);
-  const permLocked = false;
   // Restzeit sofort aus dem gespeicherten Stand (kein kurzer "frei"-Moment
   // nach dem Neuladen).
   const [lockSec, setLockSec] = useState(() => {
@@ -93,19 +92,20 @@ const Login = () => {
     return () => clearInterval(t);
   }, [lockedUntil]);
   // lockSec wird vom Timer oben gepflegt — kein Date.now() im Render.
-  const isLocked = permLocked || (!!lockedUntil && lockSec > 0);
+  const isLocked = !!lockedUntil && lockSec > 0;
+  // Verbucht einen Fehlversuch. Liefert true, wenn dadurch eine Sperre
+  // ausgelöst wurde (dann zeigt die Sperr-Anzeige, kein Hinweistext).
   const wrongAttempt = () => {
     const r = registerFailure();
     setAttempts(r.attempts);
     if (r.lockedUntil) {
       setLockSec(r.lang ? 15 * 60 : 30);
       setLockedUntil(r.lockedUntil);
-      setErr(
-        r.lang
-          ? "Zu viele Fehlversuche – 15 Minuten gesperrt"
-          : "Gesperrt (30s)",
-      );
-    } else setErr("Falscher PIN");
+      setErr("");
+      return true;
+    }
+    setErr("Falscher PIN");
+    return false;
   };
 
   const goPin = async (p) => {
@@ -129,15 +129,13 @@ const Login = () => {
           setMode("B");
           setErr("");
           setAttempts(0);
-          clearLock();
         } else {
-          clearLock();
           completeLogin(u);
         }
       } else {
-        wrongAttempt();
+        const gesperrt = wrongAttempt();
         // Ohne gemerkten Nutzer kann auch der Benutzername falsch sein.
-        if (!displayedUser && attempts + 1 < 3) {
+        if (!displayedUser && !gesperrt) {
           setErr("Benutzername oder PIN falsch");
         }
         setPin("");
@@ -163,15 +161,14 @@ const Login = () => {
         setMode("B");
         setErr("");
         setAttempts(0);
-        clearLock();
       } else {
-        wrongAttempt();
+        const gesperrt = wrongAttempt();
         // Beim "Erster Zugang" ist die haeufigste Ursache ein ABGELAUFENER
         // Einladungs-PIN (7 Tage Gueltigkeit) — der Lookup liefert dann leer,
         // identisch zu einem falschen PIN. Solange die Sperre noch nicht
         // greift, deshalb eine ehrliche, handlungsleitende Meldung statt des
         // pauschalen "Falscher PIN".
-        if (attempts + 1 < 3) {
+        if (!gesperrt) {
           setErr(
             "PIN falsch oder abgelaufen – bitte beim Bauleiter einen neuen Einladungs-PIN anfordern.",
           );
@@ -351,14 +348,12 @@ const Login = () => {
   );
   const renderErrLine = () => (
     <div role="alert" aria-live="assertive" style={{ minHeight: 24, textAlign: "center", padding: "0 12px" }}>
-      {isLocked && !permLocked ? (
+      {isLocked ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>
           {lockSec > 90
             ? `Gesperrt (noch ${Math.ceil(lockSec / 60)} min)`
             : `Gesperrt (${lockSec}s)`}
         </p>
-      ) : permLocked ? (
-        <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>{err}</p>
       ) : err ? (
         <p style={{ fontSize: 14, color: RED, fontWeight: 600 }}>{err}</p>
       ) : checking ? (

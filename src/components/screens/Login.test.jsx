@@ -155,15 +155,17 @@ describe("Fehlversuchs-Sperre ist dauerhaft (Audit A-08)", () => {
     expect(screen.getByRole("button", { name: "1" })).not.toBeDisabled();
   });
 
-  it("erfolgreicher Login löscht den Zähler", async () => {
-    auth.loginAsUser.mockResolvedValueOnce(null).mockResolvedValueOnce(null).mockResolvedValue(MAX);
+  it("Hinweis 'abgelaufen' erscheint auch, wenn schon Fehlversuche gezählt sind (solange keine Sperre ausgelöst wird)", async () => {
+    auth.loginAsUser.mockResolvedValue(null);
+    auth.loginWithUsername.mockResolvedValue(null);
     useApp.mockReturnValue(ctx());
     render(<Login />);
-    await typePin("0000");
-    await typePin("0000");
-    await typePin("1234");
-    expect(completeLogin).toHaveBeenCalled();
-    expect(localStorage.getItem("ma_login_lock_v1")).toBeNull();
+    await typePin("0000"); // 1 gezählter Fehlversuch
+    fireEvent.click(screen.getByRole("button", { name: "Erster Zugang?" }));
+    fireEvent.change(screen.getByPlaceholderText("z.B. m.mueller"), { target: { value: "m.muster" } });
+    fireEvent.change(screen.getByPlaceholderText("4-stelliger PIN"), { target: { value: "0000" } });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Weiter" })); });
+    expect(screen.getByRole("alert").textContent).toMatch(/PIN falsch oder abgelaufen/);
   });
 });
 
