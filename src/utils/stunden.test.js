@@ -55,4 +55,11 @@ describe("snapPause / baueEintrag (15-Minuten-Raster)", () => {
     const s = baueEintrag({ ...ok, personTyp: "sonstige", personName: " Hans " }, { id: "x", fotos: [] });
     expect(s).toMatchObject({ mitarbeiterId: null, subId: null, personName: "Hans" });
   });
+  it("pauseBelassen: die gespeicherte Pause eines alten Eintrags bleibt, wenn sie nicht angefasst wurde", () => {
+    const alt = { ...ok, pause: 20 };
+    expect(baueEintrag(alt, { id: "x", fotos: [], pauseBelassen: true }).pause).toBe(20);
+    expect(baueEintrag(alt, { id: "x", fotos: [] }).pause).toBe(15);
+    // geprüft wird mit derselben Pause, die gespeichert wird
+    expect(pruefeStunde({ ...ok, ende: "07:20", pause: 8 }, { pauseBelassen: true }).fehler).toBeNull();
+  });
 });

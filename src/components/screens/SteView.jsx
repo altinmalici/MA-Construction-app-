@@ -51,6 +51,8 @@ const SteView = () => {
   // Feste ID pro Formular-Durchgang: Ein zweiter Speicher-Versuch (nach
   // einer Fehlermeldung) schreibt denselben Eintrag, kein Duplikat.
   const entryIdRef = useRef(null);
+  // Pause des Eintrags, wie er beim Öffnen zum Bearbeiten gespeichert war.
+  const origPauseRef = useRef(null);
   const navTimerRef = useRef(null);
   useEffect(() => () => clearTimeout(navTimerRef.current), []);
   const [confirmLang, setConfirmLang] = useState(null); // Stunden bei Rückfrage
@@ -81,6 +83,7 @@ const SteView = () => {
       personName: e.personName || "",
     });
     setEditFreigegeben(!!e.freigegeben);
+    origPauseRef.current = e.pause ?? 0;
     entryIdRef.current = null;
     setShowList(false);
   };
@@ -112,7 +115,10 @@ const SteView = () => {
   const save = (opts = {}) =>
     withSaving(async () => {
       const form = { ...fd, baustelleId };
-      const check = pruefeStunde(form);
+      // Alter Eintrag, Pause nicht angefasst → gespeicherten Wert belassen.
+      const pauseBelassen =
+        !!editId && Number(fd.pause) === Number(origPauseRef.current);
+      const check = pruefeStunde(form, { pauseBelassen });
       if (check.fehler) {
         show(check.fehler, "error");
         return;
@@ -159,7 +165,7 @@ const SteView = () => {
           entryId,
         );
         fotos = [...existing, ...uploaded];
-        const entry = baueEintrag(form, { id: entryId, fotos });
+        const entry = baueEintrag(form, { id: entryId, fotos, pauseBelassen });
 
         if (editId) {
           await actions.stundeneintraege.update(editId, entry, {
@@ -654,7 +660,16 @@ const SteView = () => {
                     // vor der Null, 450 Minuten).
                     onFocus={(e) => e.target.select()}
                     // 15-Minuten-Raster: beim Verlassen des Feldes einrasten.
-                    onBlur={() => sFd((p) => ({ ...p, pause: snapPause(p.pause) }))}
+                    // Ausnahme: die unveränderte Pause eines alten Eintrags
+                    // bleibt stehen (sonst würde schon das Antippen des
+                    // Feldes die gespeicherte Arbeitszeit ändern).
+                    onBlur={() =>
+                      sFd((p) =>
+                        editId && Number(p.pause) === Number(origPauseRef.current)
+                          ? p
+                          : { ...p, pause: snapPause(p.pause) },
+                      )
+                    }
                     className={IC}
                   />
                 </div>

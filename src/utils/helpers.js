@@ -231,8 +231,16 @@ export const CS = "0 0 0 0.5px rgba(0,0,0,0.04), 0 2px 12px rgba(0,0,0,0.06)";
 export const IC = "ios-input";
 
 // Username generieren
+// Buchstaben, die sich nicht in Grundbuchstabe + Akzent zerlegen lassen
+// (ł, đ, ø …) — ohne diese Tabelle fielen sie ersatzlos weg
+// ("Đorđević" → "orevic").
+const SONDER = {
+  ł: "l", Ł: "L", đ: "d", Đ: "D", ø: "o", Ø: "O", ı: "i", æ: "ae", Æ: "Ae",
+  œ: "oe", Œ: "Oe", þ: "th", Þ: "Th", ð: "d", Ð: "D", ħ: "h", Ħ: "H",
+};
 const clean = (s) =>
   s
+    .replace(/[łŁđĐøØıæÆœŒþÞðÐħĦ]/g, (c) => SONDER[c])
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^A-Za-z0-9-]/g, "");

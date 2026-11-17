@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FileText, FileUp, Trash2, Download, Loader2 } from "lucide-react";
+import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
 import { fK, P, CS } from "../../utils/helpers";
 import { Empty, ScreenLayout, ConfirmModal, IconButton } from "../ui";
@@ -31,7 +32,7 @@ const DokView = () => {
         show("Hochgeladen");
       } catch (err) {
         console.error("[DokView.upload]", err);
-        show(err?.message || "Upload fehlgeschlagen", "error");
+        show(`Upload fehlgeschlagen: ${fehlerText(err, "Bitte erneut versuchen.")}`, "error");
       }
     });
   };
@@ -57,7 +58,7 @@ const DokView = () => {
       document.body.removeChild(a);
     } catch (err) {
       console.error("[DokView.download]", err);
-      show(err?.message || "Download fehlgeschlagen", "error");
+      show(`Download fehlgeschlagen: ${fehlerText(err, "Bitte erneut versuchen.")}`, "error");
     } finally {
       // Defensive: Spinner-State explizit zurücksetzen, auch wenn der
       // Try-Block synchron fertig wurde.
@@ -74,7 +75,7 @@ const DokView = () => {
       show("Gelöscht");
     } catch (err) {
       console.error("[DokView.delete]", err);
-      show(err?.message || "Fehler beim Löschen", "error");
+      show(`Nicht gelöscht: ${fehlerText(err, "Bitte erneut versuchen.")}`, "error");
     }
   };
 

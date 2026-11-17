@@ -596,3 +596,18 @@ describe("shiftMonth", () => {
     expect(s).toEqual({ mo: 11, jr: 2026 });
   });
 });
+
+describe("genUsername – Buchstaben ohne Akzent-Zerlegung", () => {
+  it("ł, đ, ø, æ werden ersetzt statt gestrichen", () => {
+    expect(genUsername("Đorđe Đorđević", [])).toBe("d.dordevic");
+    expect(genUsername("Paweł Wałęsa", [])).toBe("p.walesa");
+    expect(genUsername("Søren Ærø", [])).toBe("s.aero");
+    expect(genUsername("Besnik Çela", [])).toBe("b.cela");
+  });
+  it("Ergebnis ist immer ein gültiger Benutzername", async () => {
+    const { USERNAME_RE } = await import("./helpers.js");
+    for (const n of ["Đorđe Đorđević", "Jörg Müller-Weiß", "Łukasz Żółć", "Max Muster"]) {
+      expect(genUsername(n, [])).toMatch(USERNAME_RE);
+    }
+  });
+});

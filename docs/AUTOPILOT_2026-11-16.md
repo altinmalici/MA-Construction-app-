@@ -187,3 +187,27 @@ Kein Task wurde nach drei Fehlversuchen verworfen. Bewusst nicht umgesetzt:
 - **Bundle:** Erstes Laden rund 168 kB gzip (vor dem Lauf rund 137 kB); der Zuwachs kommt größtenteils aus den Bibliotheks-Updates.
 - **Commit-Betreff:** Der Audit-Commit nennt "81 Befunde"; richtig sind 69. Nicht korrigiert, weil das einen Force-Push bräuchte.
 - **Einladungs-Link:** Er öffnet sich im Browser (Safari), nicht in der installierten App.
+
+## 8. Nachtrag 2026-11-17 (zweite Runde)
+
+Alle PRs #2 bis #11 sind gemerged, die Migrationen 1, 2 (Bautagebuch-Wetter) und 4 (Onboarding) sind ausgeführt. Danach umgesetzt und gemerged:
+
+| PR | Inhalt |
+|---|---|
+| #12 | Pause und Fahrtzeit starten bei 0 |
+| #13 | Fotos & Dateien: Löschreihenfolge, Upload ohne Waisen, "nicht ladbar" statt Spinner |
+| #14 | Login-Sperre übersteht Neuladen; Nachfrage bei ungespeichertem Baustellen-Formular; TabBar setzt Baustelle zurück; Monatswechsel; Regler |
+| #15 | Kosten-Kacheln, Materialnamen, Budget über 100 %, Regiebericht-Vorschau und Drucken, seitenweises Laden |
+| #16 | Benutzernamen-Vorschlag (ł, đ, ø), alte Pausen bleiben beim Bearbeiten, Screen-Tests, Fehler-Log-Migration |
+
+**Wartende Migrationen (nicht ausgeführt):**
+
+1. `supabase/migration_2026_11_16_03_pin_lookup_sperren.sql` — erst wenn alle Geräte die Version mit Login per Benutzername geladen haben.
+2. `supabase/migration_2026_11_17_pause_default_0.sql` — Spalten-Standard `pause` 30 → 0; die App ist nicht betroffen, Zeitpunkt beliebig.
+3. `supabase/migration_2026_11_17_error_log_limit.sql` — begrenzt das Fehler-Log (60 Einträge pro Stunde, höchstens 2000 Zeilen, 90 Tage); braucht Migration 1, Zeitpunkt beliebig.
+
+**Offen, braucht eine Entscheidung:** Sichtbarkeit von Stundensatz/Budget/Rechnungsdaten für Mitarbeiter (S-09, U-13) · Benachrichtigungen pro Nutzer statt gemeinsam (S-10) · PIN-Länge (S-14) · Fahrtzeit (D-26) · Bautagebuch durch Mitarbeiter · Stunden für Kollegen · Bericht-Nr. und "An-/Abfahrt 1×" im Regiebericht (D-21) · Mitarbeiter dürfen eigene Fotos im Speicher löschen (U-10) · Major-Upgrades der Werkzeuge (`npm audit`) · Einladungs-PIN parallel zum Link.
+
+**Nicht umgesetzt, weil ohne iPhone nicht prüfbar:** Dokument-Download in der installierten App (ein Umbau wurde nach dem Review zurückgenommen; es gilt weiter der bisherige Weg über einen Link-Klick).
+
+**Bekannte Grenzen dieser Runde:** Nur das Baustellen-Formular fragt vor dem Verlassen nach; verwaiste Fotos können bei Mitarbeitern liegen bleiben (sie dürfen im Speicher nicht löschen); Drucken des Regieberichts auf dem iPhone ist ungetestet.

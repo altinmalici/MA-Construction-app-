@@ -269,6 +269,36 @@ describe("SteView – Chef bearbeitet", () => {
     expect(std.setFreigabe).not.toHaveBeenCalled();
   });
 
+  it("alter Eintrag mit Pause 20: nur die Tätigkeit ändern lässt die Pause bei 20", async () => {
+    useApp.mockReturnValue(chefCtx(entry({ pause: 20 })));
+    render(<SteView />);
+    openEdit();
+    fireEvent.change(screen.getByDisplayValue("Putz"), { target: { value: "Putz innen" } });
+    await save(/Aktualisieren/);
+    expect(std.update.mock.calls[0][1]).toMatchObject({ pause: 20, arbeit: "Putz innen" });
+  });
+
+  it("…auch wenn das Pause-Feld nur angetippt und wieder verlassen wird", async () => {
+    useApp.mockReturnValue(chefCtx(entry({ pause: 20 })));
+    const { container } = render(<SteView />);
+    openEdit();
+    const pause = container.querySelector('input[step="15"]');
+    fireEvent.focus(pause);
+    fireEvent.blur(pause);
+    expect(pause.value).toBe("20");
+    await save(/Aktualisieren/);
+    expect(std.update.mock.calls[0][1]).toMatchObject({ pause: 20 });
+  });
+
+  it("…wird die Pause geändert, rastet sie auf 15 Minuten ein", async () => {
+    useApp.mockReturnValue(chefCtx(entry({ pause: 20 })));
+    const { container } = render(<SteView />);
+    openEdit();
+    fireEvent.change(container.querySelector('input[step="15"]'), { target: { value: "25" } });
+    await save(/Aktualisieren/);
+    expect(std.update.mock.calls[0][1]).toMatchObject({ pause: 30 });
+  });
+
   it("Netzfehler beim BEARBEITEN wird nicht als neuer Eintrag in die Warteschlange gelegt", async () => {
     std.update.mockRejectedValue(new TypeError("Failed to fetch"));
     useApp.mockReturnValue(chefCtx(entry()));
