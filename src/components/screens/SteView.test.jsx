@@ -45,7 +45,7 @@ describe("SteView – Speichern", () => {
     await save();
     expect(std.create).toHaveBeenCalledTimes(1);
     expect(std.create.mock.calls[0][0]).toMatchObject({
-      baustelleId: "b1", mitarbeiterId: "u1", personTyp: "mitarbeiter", beginn: "07:00", ende: "16:00", pause: 30,
+      baustelleId: "b1", mitarbeiterId: "u1", personTyp: "mitarbeiter", beginn: "07:00", ende: "16:00", pause: 0, fahrtzeit: 0,
     });
     expect(std.create.mock.calls[0][0].id).toMatch(/^[0-9a-f-]{36}$/);
   });
@@ -109,6 +109,121 @@ describe("SteView – Speichern", () => {
     fireEvent.change(pause, { target: { value: "20" } });
     fireEvent.blur(pause);
     expect(pause.value).toBe("15");
+  });
+});
+
+describe("SteView – Pause und Fahrtzeit starten bei 0", () => {
+  const felder = (container) => {
+    const nums = [...container.querySelectorAll('input[type="number"]')];
+    return { pause: nums.find((i) => i.getAttribute("step") === "15"), fahrt: nums.find((i) => i.getAttribute("step") !== "15") };
+  };
+
+  it("neuer Eintrag (Mitarbeiter): beide Felder zeigen 0, nichts ist vorausgefüllt", () => {
+    useApp.mockReturnValue(ctx());
+    const { container } = render(<SteView />);
+    const { pause, fahrt } = felder(container);
+    expect(pause.value).toBe("0");
+    expect(fahrt.value).toBe("0");
+    expect(screen.getByText(/\+ 0min Fahrt/)).toBeInTheDocument();
+  });
+
+  it("neuer Eintrag (Chef): ebenfalls 0 / 0", () => {
+    useApp.mockReturnValue(ctx({ chef: true, cu: { id: "c1", name: "Chef", role: "chef" }, sb: B1 }));
+    const { container } = render(<SteView />);
+    const { pause, fahrt } = felder(container);
+    expect(pause.value).toBe("0");
+    expect(fahrt.value).toBe("0");
+  });
+
+  it("unverändert gespeichert → Pause 0 und Fahrt 0 gehen an den Server; 07:00–16:00 sind volle 9 h", async () => {
+    useApp.mockReturnValue(ctx());
+    render(<SteView />);
+    expect(screen.getByText(/^9h/)).toBeInTheDocument();
+    await save();
+    expect(std.create.mock.calls[0][0]).toMatchObject({ pause: 0, fahrtzeit: 0 });
+  });
+
+  it("Offline-Warteschlange: der Eintrag trägt Pause 0 und Fahrt 0", async () => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    useApp.mockReturnValue(ctx());
+    render(<SteView />);
+    await save();
+    expect(getPending()[0].entry).toMatchObject({ pause: 0, fahrtzeit: 0 });
+  });
+
+  it("eingegebene Werte werden übernommen (0 ist nur der Startwert)", async () => {
+    useApp.mockReturnValue(ctx());
+    const { container } = render(<SteView />);
+    const { pause, fahrt } = felder(container);
+    fireEvent.change(pause, { target: { value: "45" } });
+    fireEvent.change(fahrt, { target: { value: "20" } });
+    await save();
+    expect(std.create.mock.calls[0][0]).toMatchObject({ pause: 45, fahrtzeit: 20 });
+  });
+
+  it("Antippen markiert den Feldinhalt (aus '0' wird beim Tippen nicht '045')", () => {
+    useApp.mockReturnValue(ctx());
+    const { container } = render(<SteView />);
+    const { pause, fahrt } = felder(container);
+    for (const el of [pause, fahrt]) {
+      el.select = vi.fn();
+      fireEvent.focus(el);
+      expect(el.select).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("nach dem Speichern steht das Formular wieder auf 0 / 0 (nicht auf den zuletzt eingegebenen Werten)", async () => {
+    vi.useFakeTimers();
+    useApp.mockReturnValue(ctx());
+    const { container } = render(<SteView />);
+    let f = felder(container);
+    fireEvent.change(f.pause, { target: { value: "45" } });
+    fireEvent.change(f.fahrt, { target: { value: "20" } });
+    await save();
+    expect(std.create.mock.calls[0][0]).toMatchObject({ pause: 45, fahrtzeit: 20 });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1300); });
+    f = felder(container);
+    expect(f.pause.value).toBe("0");
+    expect(f.fahrt.value).toBe("0");
+    vi.useRealTimers();
+  });
+
+  it("Bearbeiten abbrechen → neuer Eintrag startet bei 0 / 0, nicht mit den Werten des alten", () => {
+    const alt = {
+      id: "e1", baustelleId: "b1", datum: "2026-11-10", beginn: "07:00", ende: "16:00", pause: 30,
+      fahrtzeit: 30, arbeit: "Putz", material: "", fotos: [], personTyp: "mitarbeiter", mitarbeiterId: "u1", freigegeben: false,
+    };
+    useApp.mockReturnValue(ctx({
+      chef: true, cu: { id: "c1", name: "Chef", role: "chef" }, sb: B1,
+      data: { baustellen: [B1], stundeneintraege: [alt], users: [MAX], subunternehmer: [] },
+    }));
+    const { container } = render(<SteView />);
+    fireEvent.click(screen.getByRole("button", { name: /Einträge \(1\)/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Bearbeiten/ }));
+    expect(felder(container).pause.value).toBe("30");
+    fireEvent.click(screen.getByRole("button", { name: /Abbrechen – neuen Eintrag erstellen/ }));
+    const f = felder(container);
+    expect(f.pause.value).toBe("0");
+    expect(f.fahrt.value).toBe("0");
+  });
+
+  it("bestehender Eintrag behält beim Bearbeiten seine gespeicherten Werte", async () => {
+    const alt = {
+      id: "e1", baustelleId: "b1", datum: "2026-11-10", beginn: "07:00", ende: "16:00", pause: 30,
+      fahrtzeit: 30, arbeit: "Putz", material: "", fotos: [], personTyp: "mitarbeiter", mitarbeiterId: "u1", freigegeben: false,
+    };
+    useApp.mockReturnValue(ctx({
+      chef: true, cu: { id: "c1", name: "Chef", role: "chef" }, sb: B1,
+      data: { baustellen: [B1], stundeneintraege: [alt], users: [MAX], subunternehmer: [] },
+    }));
+    const { container } = render(<SteView />);
+    fireEvent.click(screen.getByRole("button", { name: /Einträge \(1\)/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Bearbeiten/ }));
+    const { pause, fahrt } = felder(container);
+    expect(pause.value).toBe("30");
+    expect(fahrt.value).toBe("30");
+    await save(/Aktualisieren/);
+    expect(std.update.mock.calls[0][1]).toMatchObject({ pause: 30, fahrtzeit: 30 });
   });
 });
 
