@@ -51,7 +51,9 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
   const { calcLohn, calcTotal, calcKat } = aggregat;
   const total = calcTotal(b.id);
   const budget = b.budget || 0;
-  const pct = budget > 0 ? Math.min(100, Math.round((total / budget) * 100)) : 0;
+  // Echter Anteil — auch über 100 %, damit eine Budget-Überschreitung
+  // sichtbar ist (vorher stand dort höchstens "100% verbraucht").
+  const pct = budget > 0 ? Math.round((total / budget) * 100) : 0;
   const isOver = budget > 0 && total > budget;
   const ei = data.stundeneintraege.filter(
     (e) => e.baustelleId === b.id && (!e.personTyp || e.personTyp === "mitarbeiter"),
@@ -114,7 +116,7 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
           </div>
           {budget > 0 && (
             <div>
-              <PBar value={pct} />
+              <PBar value={Math.min(pct, 100)} />
               <div className="flex justify-between" style={{ marginTop: 4 }}>
                 <span style={{ fontSize: 12, color: isOver ? RED : P }}>
                   {pct}% verbraucht

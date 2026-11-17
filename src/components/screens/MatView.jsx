@@ -4,7 +4,7 @@ import { fK } from "../../utils/helpers";
 import { Empty, ScreenLayout, Card } from "../ui";
 
 const MatView = () => {
-  const { data, goBack } = useApp();
+  const { data, goBack, eName } = useApp();
   const mp = {};
   data.stundeneintraege.forEach((e) => {
     if (!e.material) return;
@@ -14,7 +14,8 @@ const MatView = () => {
     mp[k].push({
       m: e.material,
       d: e.datum,
-      v: data.users.find((u) => u.id === e.mitarbeiterId)?.name || "Unbekannt",
+      // eName kennt auch Subunternehmer und "Sonstige" (vorher "Unbekannt").
+      v: eName(e),
     });
   });
   return (
