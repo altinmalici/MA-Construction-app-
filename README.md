@@ -1,16 +1,27 @@
-# React + Vite
+# MA Construction – Baustellen-App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+PWA für das Baustellenmanagement von MA Construction (Innenausbau und Renovierung, München): Baustellen, Stundenerfassung mit Offline-Warteschlange, Lohnexport, Regieberichte, Bautagebuch, Mängel, Kosten, Fotos.
 
-Currently, two official plugins are available:
+Live: https://ma-construction-app.vercel.app (Vercel deployt jeden Push auf `main`).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Schnellstart
 
-## React Compiler
+```
+npm ci
+cp .env.example .env   # echte Werte eintragen
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Vor jedem Push: `npm test`, `npm run lint`, `npm run build`.
 
-## Expanding the ESLint configuration
+## Dokumentation
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `docs/SETUP.md` — lokales Setup, Umgebungsvariablen, Datenbank-Migrationen, Keep-Alive, Realtime
+- `docs/MASTERPLAN.md` — Roadmap und Status
+- `docs/AUDIT_2026-11.md` — Audit vom November 2026
+- `docs/AUTOPILOT_2026-11-16.md` — Abschlussbericht des Laufs vom 16.11.2026
+- `CLAUDE.md` — Projektregeln (Auth, Design, Arbeitsweise)
+
+## Technik
+
+React 19, Vite, Tailwind, Supabase (Postgres, Auth, Storage, Realtime), Vitest. SQL-Migrationen liegen in `supabase/` und werden von Hand im Supabase SQL-Editor ausgeführt.

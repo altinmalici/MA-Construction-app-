@@ -64,7 +64,12 @@ Reihenfolge für eine neue, leere Datenbank:
 14. `migration_pin_throttle.sql`
 15. `migration_error_log.sql`
 16. `migration_onboarding_pin_hash.sql`
-17. Dateien `migration_2026_11_16_*.sql` in der Reihenfolge aus `docs/AUTOPILOT_2026-11-16.md`
+17. `migration_2026_11_16_01_security_hardening.sql`
+18. `migration_2026_11_16_04_onboarding.sql` (braucht 17)
+19. `migration_2026_11_16_02_bautagebuch_wetter.sql`
+20. `migration_2026_11_16_03_pin_lookup_sperren.sql`
+
+Für die **bestehende** Datenbank gelten bei 17 bis 20 zusätzliche Zeitpunkte (zum Teil erst nach dem Deploy eines bestimmten Frontend-Stands) und Prüf-Abfragen: siehe `docs/AUTOPILOT_2026-11-16.md`, Abschnitt 3.
 
 Rollback-Skripte für einzelne Schritte liegen in `supabase/rollbacks/`.
 
@@ -97,8 +102,17 @@ Supabase-Dashboard → Database → Publications → `supabase_realtime` → Tab
 
 Ohne diesen Schritt läuft die App normal weiter, zeigt Änderungen anderer Nutzer aber erst nach dem nächsten Laden. Prüfschritte stehen in `docs/realtime/manual-smoke-test.md`.
 
-## 7. Weitere Dokumente
+## 7. Einstellungen im Code
+
+`src/config.js`:
+
+- `BACKGROUND_LOCK_MS` — Sperre nach so langer Zeit im Hintergrund (Standard 120 s).
+- `INACTIVITY_LOCK_MS` — Sperre nach so langer Zeit ohne Eingabe (Standard 15 min, `0` = aus).
+- `ONBOARDING_LINK_MODE` — über `VITE_ONBOARDING_LINK` (siehe Abschnitt 2).
+
+## 8. Weitere Dokumente
 
 - `docs/MASTERPLAN.md` — Roadmap und Status
 - `docs/AUDIT_2026-11.md` — aktueller Audit
-- `docs/AUTOPILOT_2026-11-16.md` — Nachtlauf-Protokoll mit den manuell auszuführenden Migrationen
+- `docs/AUTOPILOT_2026-11-16.md` — Abschlussbericht des Laufs vom 16.11.2026: PRs, Merge-Reihenfolge, manuell auszuführende Migrationen, iPhone-Checkliste
+- `docs/sql/onboarding_diagnose.sql` — nur lesende Abfragen zum Zustand der Mitarbeiter-Konten
