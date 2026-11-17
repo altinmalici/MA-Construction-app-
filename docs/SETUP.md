@@ -69,6 +69,7 @@ Reihenfolge für eine neue, leere Datenbank:
 19. `migration_2026_11_16_02_bautagebuch_wetter.sql`
 20. `migration_2026_11_16_03_pin_lookup_sperren.sql`
 21. `migration_2026_11_17_pause_default_0.sql`
+22. `migration_2026_11_17_error_log_limit.sql` (braucht 17)
 
 Für die **bestehende** Datenbank gelten bei 17 bis 20 zusätzliche Zeitpunkte (zum Teil erst nach dem Deploy eines bestimmten Frontend-Stands) und Prüf-Abfragen: siehe `docs/AUTOPILOT_2026-11-16.md`, Abschnitt 3.
 

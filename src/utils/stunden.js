@@ -17,7 +17,7 @@ export const snapPause = (v) => {
  * @returns {{fehler: string|null, stunden: number, lang: boolean}}
  *   fehler: Meldung für den Nutzer oder null; lang: Rückfrage nötig.
  */
-export function pruefeStunde(fd) {
+export function pruefeStunde(fd, { pauseBelassen = false } = {}) {
   const err = (fehler) => ({ fehler, stunden: 0, lang: false });
   if (!fd.baustelleId) return err("Baustelle wählen");
   if (fd.personTyp === "mitarbeiter" && !fd.mitarbeiterId) return err("Mitarbeiter wählen");
@@ -28,18 +28,26 @@ export function pruefeStunde(fd) {
     return err("Beginn und Ende angeben");
   if (fd.beginn === fd.ende) return err("Beginn und Ende sind gleich");
   // Mit der Pause prüfen, die auch gespeichert wird (15-Minuten-Raster).
-  const stunden = bStdNum(fd.beginn, fd.ende, snapPause(fd.pause));
+  const stunden = bStdNum(
+    fd.beginn,
+    fd.ende,
+    pauseBelassen ? Number(fd.pause) || 0 : snapPause(fd.pause),
+  );
   if (!(stunden > 0)) return err("Arbeitszeit ist 0 – Beginn, Ende und Pause prüfen");
   return { fehler: null, stunden, lang: stunden > LANGE_SCHICHT_STD };
 }
 
 // Aus dem Formular-State den zu speichernden Eintrag bauen.
-export function baueEintrag(fd, { id, fotos }) {
+// pauseBelassen: die Pause NICHT aufs 15-Minuten-Raster bringen — für das
+// Bearbeiten eines alten Eintrags, dessen Pause der Nutzer nicht angefasst
+// hat (z.B. 20 min aus der Zeit vor dem Raster). Sonst würde ein Eintrag,
+// bei dem nur die Tätigkeit korrigiert wird, still andere Stunden bekommen.
+export function baueEintrag(fd, { id, fotos, pauseBelassen = false }) {
   return {
     ...fd,
     id,
     fotos,
-    pause: snapPause(fd.pause),
+    pause: pauseBelassen ? Number(fd.pause) || 0 : snapPause(fd.pause),
     baustelleId: fd.baustelleId,
     mitarbeiterId: fd.personTyp === "mitarbeiter" ? fd.mitarbeiterId : null,
     subId: fd.personTyp === "sub" ? fd.subId : null,
