@@ -1,6 +1,6 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
-import { selectAll } from './_request.js';
+import { selectAll, requestWithRetry } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper. RPC-Calls (checkPinExists,
@@ -23,7 +23,7 @@ export async function getAll({ signal } = {}) {
         .order('id'),
     { signal },
     ),
-    supabase.rpc('kollegen_liste'),
+    requestWithRetry(() => supabase.rpc('kollegen_liste'), { signal }),
   ]);
   if (error) throw error;
   if (kollegen?.error && !istRpcFehlt(kollegen.error)) throw kollegen.error;

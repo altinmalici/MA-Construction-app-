@@ -82,6 +82,12 @@ describe("baustellen.getAll", () => {
     expect(r.map((b) => [b.id, b.budget, b.details.rechnungFirma])).toEqual([[1, 5000, "X"], [2, 5000, "X"]]);
   });
 
+  it("Funktion fehlt (Postgres-Code 42883): Tabelle wie bisher", async () => {
+    mock.responses["baustellen.select"] = { data: [bRow(1)], error: null };
+    mock.responses["rpc.meine_baustellen"] = { data: null, error: { code: "42883", message: "function meine_baustellen() does not exist" } };
+    expect(await baustellen.getAll()).toHaveLength(1);
+  });
+
   it("anderer Fehler der Funktion wird nicht verschluckt", async () => {
     mock.responses["baustellen.select"] = { data: [], error: null };
     mock.responses["rpc.meine_baustellen"] = { data: null, error: { code: "42501", message: "permission denied" } };

@@ -62,6 +62,33 @@ describe('Mitarbeiter', () => {
   });
 });
 
+describe('Sonderfaelle', () => {
+  it('kaputtes details-Feld (kein Objekt) sperrt den Mitarbeiter nicht aus', async () => {
+    await q(`UPDATE baustellen SET details = '[1,2]'::jsonb WHERE id = $1`, [b1]);
+    const r = await alsMax(() => q(`SELECT details FROM meine_baustellen()`));
+    expect(r).toEqual([{ details: {} }]);
+    await q(`UPDATE baustellen SET details = '{"raeume":"Bad","rechnungFirma":"Huber GmbH"}'::jsonb WHERE id = $1`, [b1]);
+  });
+
+  it('deaktivierter Nutzer bekommt weder Kollegen noch Baustellen', async () => {
+    await q(`UPDATE users SET is_active = false WHERE id = $1`, [max.id]);
+    expect(await alsMax(() => q(`SELECT * FROM kollegen_liste()`))).toEqual([]);
+    expect(await alsMax(() => q(`SELECT * FROM meine_baustellen()`))).toEqual([]);
+    await q(`UPDATE users SET is_active = true WHERE id = $1`, [max.id]);
+  });
+
+  it('Mitarbeiter kann weiter einen Mangel fuer seine Baustelle anlegen', async () => {
+    await alsMax(() => q(`INSERT INTO maengel (baustelle_id, titel) VALUES ($1, 'Riss')`, [b1]));
+    expect(await alsMax(() => q(`SELECT 1 FROM maengel`))).toHaveLength(1);
+  });
+
+  it('liegt noch eine andere Lese-Regel auf den Tabellen, bricht die Datei ab', async () => {
+    const d = await makeDb(['migration_2026_11_16_01_security_hardening.sql']);
+    await d.exec(`CREATE POLICY "allow_all" ON public.kosten FOR SELECT USING (true)`);
+    await expect(d.exec(sql)).rejects.toThrow(/unerwartete Lese-Regeln.*kosten\.allow_all/);
+  }, 120000);
+});
+
 describe('Chef und Fremde', () => {
   it('Chef liest weiter alles', async () => {
     expect((await chef(() => q(`SELECT stundensatz FROM users`))).length).toBeGreaterThanOrEqual(3);

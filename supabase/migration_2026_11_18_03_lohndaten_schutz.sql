@@ -24,6 +24,16 @@
 --   * kosten: nur noch der Chef.
 --   Der Chef liest und schreibt alles wie bisher.
 --
+-- Hinweise:
+--   * Den EIGENEN Stundensatz kann ein Mitarbeiter weiterhin lesen (eigene
+--     Zeile, wird beim Anmelden geladen).
+--   * Benachrichtigungen "Kosten: Betrag – Text" schliesst erst
+--     migration_2026_11_18_04_benachrichtigungen_pro_nutzer.sql – beide
+--     Dateien zusammen ausfuehren.
+--   * Am besten ausserhalb der Arbeitszeit ausfuehren (kurz nach dem
+--     Ausfuehren kann ein Mitarbeiter einmalig eine leere Baustellenliste
+--     sehen, bis er die App neu oeffnet).
+--
 -- Aendert KEINE Daten. Idempotent.
 -- =============================================================
 
@@ -41,7 +51,11 @@ SET search_path = public, extensions
 AS $$
   SELECT u.id, u.name, u.role, u.is_active
   FROM public.users u
-  WHERE get_my_user_id() IS NOT NULL
+  -- nur fuer angemeldete, nicht deaktivierte Nutzer mit Profil
+  WHERE EXISTS (
+    SELECT 1 FROM public.users me
+    WHERE me.auth_id = auth.uid() AND me.is_active IS NOT FALSE
+  )
   ORDER BY u.created_at, u.id;
 $$;
 REVOKE ALL ON FUNCTION public.kollegen_liste() FROM PUBLIC, anon;
@@ -63,11 +77,17 @@ AS $$
          b.ansprechpartner, b.telefon, b.zugang, b.startdatum, b.enddatum,
          -- alles, was mit "rechnung" beginnt, bleibt beim Chef
          (SELECT coalesce(jsonb_object_agg(t.k, t.v), '{}'::jsonb)
-          FROM jsonb_each(coalesce(b.details, '{}'::jsonb)) AS t(k, v)
+          FROM jsonb_each(
+            CASE WHEN jsonb_typeof(b.details) = 'object' THEN b.details ELSE '{}'::jsonb END
+          ) AS t(k, v)
           WHERE t.k NOT ILIKE 'rechnung%'),
          b.created_at
   FROM public.baustellen b
   WHERE b.id IN (SELECT my_baustelle_ids())
+    AND EXISTS (
+      SELECT 1 FROM public.users me
+      WHERE me.auth_id = auth.uid() AND me.is_active IS NOT FALSE
+    )
   ORDER BY b.created_at, b.id;
 $$;
 REVOKE ALL ON FUNCTION public.meine_baustellen() FROM PUBLIC, anon;
@@ -76,13 +96,35 @@ GRANT EXECUTE ON FUNCTION public.meine_baustellen() TO authenticated;
 -- ---- kosten --------------------------------------------------
 DROP POLICY IF EXISTS "mitarbeiter_select_assigned" ON public.kosten;
 
+-- ---- Kontrolle -----------------------------------------------
+-- Bricht ab (und macht alles rueckgaengig), falls auf einer der drei
+-- Tabellen noch eine andere Lese-Regel liegt, die die Daten offen liesse.
+DO $$
+DECLARE
+  v_rest TEXT;
+BEGIN
+  SELECT string_agg(tablename || '.' || policyname, ', ') INTO v_rest
+  FROM pg_policies
+  WHERE schemaname = 'public'
+    AND cmd IN ('SELECT', 'ALL')
+    AND (
+      (tablename = 'users' AND policyname NOT IN ('chef_all', 'mitarbeiter_select'))
+      OR (tablename IN ('baustellen', 'kosten') AND policyname <> 'chef_all')
+    );
+  IF v_rest IS NOT NULL THEN
+    RAISE EXCEPTION 'Abbruch: unerwartete Lese-Regeln vorhanden (%). Nichts wurde geaendert – bitte melden.', v_rest;
+  END IF;
+END $$;
+
 COMMIT;
 
 NOTIFY pgrst, 'reload schema';
 
 -- Verifikation (als Chef in der App: alles wie vorher; als Mitarbeiter:
 -- Baustellen und Kollegen-Namen sichtbar, Kosten-Bereich nicht):
---   SELECT policyname FROM pg_policies WHERE tablename IN ('users','baustellen','kosten') ORDER BY 1;
+--   SELECT tablename, policyname FROM pg_policies WHERE tablename IN ('users','baustellen','kosten') ORDER BY 1, 2;
+--   -- erwartet: baustellen chef_all | kosten chef_all | users chef_all,
+--   --           mitarbeiter_select, mitarbeiter_update_own
 -- Rollback:
 --   DROP POLICY "mitarbeiter_select" ON users;
 --   CREATE POLICY "mitarbeiter_select" ON users FOR SELECT USING (auth.uid() IS NOT NULL);

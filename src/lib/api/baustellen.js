@@ -1,5 +1,5 @@
 import { supabase } from '../supabase.js';
-import { selectAll } from './_request.js';
+import { selectAll, requestWithRetry } from './_request.js';
 
 // Whitelist allowed for partial single-field updates via updateField().
 // Other columns (kunde, adresse, budget, details, ...) must go through
@@ -31,18 +31,19 @@ export async function getAll({ signal } = {}) {
       () => supabase.from('baustellen').select('*').order('created_at').order('id'),
       { signal },
     ),
-    supabase.rpc('meine_baustellen'),
+    requestWithRetry(() => supabase.rpc('meine_baustellen'), { signal }),
   ]);
   if (error) throw error;
   if (meine?.error && !istFunktionFehlt(meine.error)) throw meine.error;
   const byId = new Map();
   (meine?.data || []).forEach(b => byId.set(b.id, b));
   tabelle.forEach(b => byId.set(b.id, b)); // vollständige Zeile geht vor
-  const bsList = [...byId.values()].sort(
-    (a, b) =>
-      String(a.created_at || '').localeCompare(String(b.created_at || '')) ||
-      String(a.id).localeCompare(String(b.id)),
-  );
+  const key = (b) => [String(b.created_at || ''), String(b.id)];
+  const bsList = [...byId.values()].sort((a, b) => {
+    const [ca, ia] = key(a);
+    const [cb, ib] = key(b);
+    return ca < cb ? -1 : ca > cb ? 1 : ia < ib ? -1 : ia > ib ? 1 : 0;
+  });
 
   // Fetch all junction entries at once
   const [mitRes, subRes] = await Promise.all([
