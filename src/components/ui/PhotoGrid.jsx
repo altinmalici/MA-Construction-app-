@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Camera, X, Loader2 } from "lucide-react";
+import { Camera, X, Loader2, ImageOff } from "lucide-react";
 import { RED } from "../../utils/helpers";
 import { getPhotoUrls } from "../../lib/storage";
 import Lightbox from "./Lightbox";
@@ -19,6 +19,18 @@ import Lightbox from "./Lightbox";
  */
 const PhotoGrid = ({ fotos, onAdd, onRemove, maxFotos = 5 }) => {
   const [urlMap, setUrlMap] = useState({});
+  // Pfade, für die das Signieren abgeschlossen ist (mit oder ohne URL).
+  // Ohne das drehte der Spinner endlos, wenn ein Foto nicht ladbar war
+  // (kein Netz, Datei gelöscht).
+  const [done, setDone] = useState(() => new Set());
+  // Zähler: bei wiederkehrendem Empfang erneut versuchen (ein kurzer
+  // Funkloch-Moment soll nicht dauerhaft "nicht ladbar" hinterlassen).
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const on = () => setRetry((n) => n + 1);
+    window.addEventListener("online", on);
+    return () => window.removeEventListener("online", on);
+  }, []);
   const [lightboxUrl, setLightboxUrl] = useState(null);
 
   // Storage-Pfade batch-signieren
@@ -29,11 +41,16 @@ const PhotoGrid = ({ fotos, onAdd, onRemove, maxFotos = 5 }) => {
     let cancelled = false;
     getPhotoUrls(paths, 3600)
       .then((map) => {
-        if (!cancelled) setUrlMap(map);
+        if (cancelled) return;
+        setUrlMap(map);
+        setDone(new Set(paths));
       })
       .catch((err) => {
         console.error("[PhotoGrid.getPhotoUrls]", err);
-        if (!cancelled) setUrlMap({});
+        if (cancelled) return;
+        // Bereits geladene Fotos behalten; nur die fehlenden gelten als
+        // "nicht ladbar".
+        setDone(new Set(paths));
       });
     return () => {
       cancelled = true;
@@ -41,7 +58,7 @@ const PhotoGrid = ({ fotos, onAdd, onRemove, maxFotos = 5 }) => {
     // Nur neu signieren, wenn sich die PFADE ändern — nicht bei jedem neuen
     // Array mit gleichem Inhalt (jedes Nachladen der Daten erzeugt eines).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [(fotos || []).filter((f) => typeof f === "string").join("|")]);
+  }, [(fotos || []).filter((f) => typeof f === "string").join("|"), retry]);
 
   // Liefert die anzuzeigende URL für einen Foto-Eintrag (String oder Objekt)
   const resolveSrc = (f) => {
@@ -54,8 +71,9 @@ const PhotoGrid = ({ fotos, onAdd, onRemove, maxFotos = 5 }) => {
     return null;
   };
 
-  const isPathPending = (f) =>
-    typeof f === "string" && !f.startsWith("data:") && !urlMap[f];
+  const isStoragePath = (f) => typeof f === "string" && !f.startsWith("data:");
+  const isPathPending = (f) => isStoragePath(f) && !urlMap[f] && !done.has(f);
+  const isPathFailed = (f) => isStoragePath(f) && !urlMap[f] && done.has(f);
 
   const count = fotos?.length || 0;
   const canAdd = onAdd && count < maxFotos;
@@ -96,6 +114,22 @@ const PhotoGrid = ({ fotos, onAdd, onRemove, maxFotos = 5 }) => {
                     size={14}
                     style={{ animation: "ma-spin 0.8s linear infinite" }}
                   />
+                </div>
+              ) : isPathFailed(f) ? (
+                <div
+                  role="img"
+                  aria-label={`Foto ${i + 1} nicht ladbar`}
+                  title="Foto nicht ladbar"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "100%",
+                    height: "100%",
+                    color: "#c7c7cc",
+                  }}
+                >
+                  <ImageOff size={18} />
                 </div>
               ) : (
                 src && (

@@ -113,6 +113,36 @@ export async function getPhotoUrl(path, expiresIn = 3600) {
  * 5-Foto-Mängel-Listen.
  * @returns {Promise<Object<string,string>>} Map path → signedUrl
  */
+/**
+ * Mehrere Fotos hochladen — alles oder nichts. Scheitert eines, werden die
+ * bereits hochgeladenen wieder entfernt (best-effort), damit keine
+ * verwaisten Dateien liegen bleiben, und der Fehler wird geworfen.
+ * @returns {Promise<string[]>} Storage-Pfade in Eingabe-Reihenfolge
+ */
+export async function uploadPhotos(blobs, baustelleId, entity, entityId) {
+  const results = await Promise.allSettled(
+    blobs.map((b) => uploadPhoto(b, baustelleId, entity, entityId)),
+  );
+  const failed = results.find((r) => r.status === 'rejected');
+  const paths = results.filter((r) => r.status === 'fulfilled').map((r) => r.value.path);
+  if (failed) {
+    await cleanupPhotos(paths);
+    throw failed.reason;
+  }
+  return paths;
+}
+
+/** Fotos entfernen, ohne je zu werfen (Aufräumen nach einem Fehler). */
+export async function cleanupPhotos(paths) {
+  if (!paths || paths.length === 0) return;
+  try {
+    await deletePhotos(paths);
+  } catch (e) {
+    // z.B. Mitarbeiter dürfen im Storage nicht löschen → Dateien bleiben.
+    console.warn('[storage.cleanupPhotos] Aufräumen nicht möglich:', e?.message);
+  }
+}
+
 // Zwischenspeicher für signierte URLs. Ohne ihn wurde nach JEDEM Nachladen
 // der Daten jedes Foto neu signiert — die URL änderte sich, und der Browser
 // lud alle Vorschaubilder erneut herunter (Datenvolumen auf der Baustelle).

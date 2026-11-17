@@ -43,45 +43,47 @@ export async function create(doc) {
 }
 
 /**
- * Atomic: File in Storage + Row in dokumente-Table.
- * Bei Storage-Fail wird die Row gerollbackt.
+ * Datei in den Storage + Zeile in dokumente.
+ *
+ * Reihenfolge: ID vorab vergeben → Datei hochladen → Zeile MIT Pfad anlegen.
+ * Scheitert das Anlegen der Zeile, wird die Datei wieder gelöscht. Früher
+ * wurde zuerst eine Zeile ohne Pfad angelegt; brach der Upload ab (App
+ * geschlossen, Netz weg), blieb ein Eintrag ohne Datei stehen.
  */
 export async function createWithFile({ file, baustelleId, typ = 'dokument' }) {
   if (!file) throw new Error('Datei fehlt');
   if (!baustelleId) throw new Error('baustelleId fehlt');
 
-  const groesseStr = formatFileSize(file.size);
-  const heute = todayIso();
+  const id = crypto.randomUUID();
+  const { path } = await uploadDocument(file, baustelleId, id);
 
-  // 1. Row anlegen (bekommt ID, noch ohne storage_path)
-  const { data: row, error: insertErr } = await supabase
+  const { error: insertErr } = await supabase
     .from('dokumente')
     .insert({
+      id,
       baustelle_id: baustelleId,
       name: file.name,
       typ,
-      groesse: groesseStr,
-      datum: heute,
+      groesse: formatFileSize(file.size),
+      datum: todayIso(),
+      storage_path: path,
     })
     .select()
     .single();
-  if (insertErr) throw insertErr;
-
-  // 2. Upload + 3. Path zurück in die Row
-  try {
-    const { path } = await uploadDocument(file, baustelleId, row.id);
-    const { error: updErr } = await supabase
-      .from('dokumente')
-      .update({ storage_path: path })
-      .eq('id', row.id);
-    if (updErr) throw updErr;
-    return { id: row.id, storagePath: path };
-  } catch (storageErr) {
-    // Rollback: Row löschen, Storage-File ist entweder noch nicht da
-    // oder bleibt orphan (wird bei manuellem Re-Upload überschrieben).
-    await supabase.from('dokumente').delete().eq('id', row.id);
-    throw storageErr;
+  if (insertErr) {
+    // Datei nur bei eindeutiger Ablehnung entfernen (Fehler-Code vom
+    // Server). Bei einem Netzfehler kann die Zeile trotzdem angelegt worden
+    // sein — dann würde das Löschen einen Eintrag ohne Datei hinterlassen.
+    if (insertErr.code) {
+      try {
+        await deleteDocument(path);
+      } catch (e) {
+        console.warn('[dokumente.createWithFile] Datei konnte nach Fehler nicht entfernt werden:', e);
+      }
+    }
+    throw insertErr;
   }
+  return { id, storagePath: path };
 }
 
 /**
