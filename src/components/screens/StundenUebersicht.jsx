@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Clock, Download } from "lucide-react";
 import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
-import { bStdNum, fStd, fK, P, isInMonth, isMitarbeiterEntry, shiftMonth } from "../../utils/helpers";
+import { bStdNum, lohnStd, fStd, fK, P, isInMonth, isMitarbeiterEntry, shiftMonth } from "../../utils/helpers";
 import { buildLohnCsv, downloadCsv } from "../../utils/lohnexport";
 import { ScreenLayout, Empty, IconButton, StundenDetailModal, Card } from "../ui";
 
@@ -52,7 +52,7 @@ const StundenUebersicht = () => {
         bucket = { std: 0, entries: [], byBs: {} };
         acc.set(e.mitarbeiterId, bucket);
       }
-      const std = bStdNum(e.beginn, e.ende, e.pause);
+      const std = lohnStd(e);
       bucket.std += std;
       bucket.entries.push(e);
       const k = baustelleById.get(e.baustelleId)?.kunde || "Unbekannt";
@@ -95,6 +95,8 @@ const StundenUebersicht = () => {
   const exportLohn = () => {
     const csv = buildLohnCsv({
       entries: me,
+      // Arbeitszeit ohne Fahrt — die Fahrtzeit rechnet der Export selbst
+      // als eigene Spalte dazu.
       hoursOf: (e) => bStdNum(e.beginn, e.ende, e.pause),
       userById: new Map(data.users.map((u) => [u.id, u])),
       baustelleById: new Map(data.baustellen.map((b) => [b.id, b])),
@@ -413,7 +415,7 @@ const StundenUebersicht = () => {
                         const bs = data.baustellen.find(
                           (x) => x.id === e.baustelleId,
                         );
-                        const h = bStdNum(e.beginn, e.ende, e.pause);
+                        const h = lohnStd(e);
                         return (
                           <button
                             key={e.id}

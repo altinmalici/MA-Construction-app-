@@ -3,7 +3,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { fehlerText } from "../../../utils/errors";
 import { useApp } from "../../../context/AppContext";
 import {
-  bStdNum,
+  lohnStd,
   fStd,
   fE,
   fK,
@@ -64,7 +64,7 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
   ei.forEach((e) => {
     const uid = e.mitarbeiterId;
     if (!byUser[uid]) byUser[uid] = { std: 0, kosten: 0 };
-    const std = bStdNum(e.beginn, e.ende, e.pause);
+    const std = lohnStd(e);
     const u = data.users.find((x) => x.id === uid);
     byUser[uid].std += std;
     byUser[uid].kosten += std * (u?.stundensatz || 45);
@@ -152,7 +152,7 @@ const Detail = ({ bsId, aggregat, onBack, onAddKosten }) => {
               <p style={{ fontSize: 24, fontWeight: 700, color: "#000" }}>
                 {(() => {
                   const h = ei.reduce(
-                    (s, e) => s + bStdNum(e.beginn, e.ende, e.pause),
+                    (s, e) => s + lohnStd(e),
                     0,
                   );
                   return fStd(h);

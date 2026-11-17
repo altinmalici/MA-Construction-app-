@@ -20,6 +20,17 @@ export const bStdNum = (b, e, p) => {
   return round15(Math.max(0, (diff - (Number(p) || 0)) / 60));
 };
 
+// Bezahlte Fahrtzeit eines Eintrags in Stunden (Viertelstunden-Raster).
+// Regel: Fahrtzeit wird nur bezahlt, wenn sie ausdrücklich eingetragen ist
+// (> 0). Dann zählt sie wie Arbeitszeit zum normalen Stundensatz.
+export const fahrtStd = (e) =>
+  round15(Math.max(0, Number(e?.fahrtzeit) || 0) / 60);
+
+// Bezahlte Stunden eines Eintrags = Arbeitszeit + eingetragene Fahrtzeit.
+// Grundlage für Stundenübersicht, Lohnexport und Lohnkosten. (Der
+// Regiebericht für den Kunden nennt weiterhin nur die Arbeitszeit.)
+export const lohnStd = (e) => bStdNum(e.beginn, e.ende, e.pause) + fahrtStd(e);
+
 // Stunden als deutscher Text: 8 → "8", 7.5 → "7,5", 7.75 → "7,75".
 // Zwei Nachkommastellen, weil Viertelstunden sonst falsch aussehen
 // (7,75 h wurde mit einer Stelle zu "7.8").
