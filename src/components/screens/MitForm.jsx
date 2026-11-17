@@ -5,6 +5,7 @@ import { genUsername, genPin, parseDecimal, istZahlEingabe, USERNAME_RE, IC, BTN
 import { ScreenLayout, Spinner, InviteCard } from "../ui";
 import { fehlerText } from "../../utils/errors";
 import { inviteLink } from "../../utils/invite";
+import { istRpcFehlt } from "../../lib/api/users";
 import { ONBOARDING_LINK_MODE } from "../../config";
 import { useSaving } from "../../hooks/useSaving";
 
@@ -85,7 +86,26 @@ const MitForm = () => {
             try {
               link = inviteLink(await actions.users.createOnboardingToken(id));
             } catch (linkErr) {
-              console.warn("[MitForm] Einladungs-Link nicht verfügbar, nutze PIN:", linkErr?.message);
+              if (istRpcFehlt(linkErr)) {
+                console.warn("[MitForm] Einladungs-Link nicht verfügbar, nutze PIN:", linkErr?.message);
+              } else {
+                // Unklar, ob der Link serverseitig schon angelegt wurde – dann
+                // wäre der Einladungs-PIN bereits ungültig. Einmal erneut
+                // versuchen (ein neuer Link ersetzt den alten); klappt auch
+                // das nicht, KEINEN womöglich toten PIN anzeigen.
+                try {
+                  link = inviteLink(await actions.users.createOnboardingToken(id));
+                } catch (zweiterErr) {
+                  console.error("[MitForm] Einladungs-Link", zweiterErr);
+                  show(
+                    'Mitarbeiter angelegt, aber die Einladung wurde nicht erstellt – unter Handwerker "Einladung senden" antippen',
+                    "error",
+                  );
+                  setEditUser(null);
+                  goBack();
+                  return;
+                }
+              }
             }
           }
           setMitSummary({ name: n.trim(), username, pin, link });

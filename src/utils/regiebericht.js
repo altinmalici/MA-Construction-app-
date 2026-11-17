@@ -87,12 +87,6 @@ export function buildReportHtml({ bs, datum, eintraege, berichtNr, forPrint, sig
     h += `</ul>`;
   }
 
-  // === FAHRTEN ===
-  h += sectionTitle("Fahrten");
-  h += `<table style="width:100%;border-collapse:collapse">`;
-  h += kvRow("An-/Abfahrt", "1×");
-  h += `</table>`;
-
   // === BEMERKUNGEN ===
   if (bemerkungen.length > 0) {
     h += sectionTitle("Bemerkungen");
