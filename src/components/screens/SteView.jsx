@@ -32,8 +32,11 @@ const SteView = () => {
     datum: todayIso(),
     beginn: "07:00",
     ende: "16:00",
-    pause: 30,
-    fahrtzeit: 30,
+    // Pause und Fahrtzeit starten bei 0: Der Mitarbeiter trägt ein, was
+    // tatsächlich anfiel. Früher waren pauschal je 30 Minuten vorausgefüllt
+    // und wurden oft unbemerkt mitgespeichert.
+    pause: 0,
+    fahrtzeit: 0,
     arbeit: "",
     material: "",
     fotos: [],
@@ -67,7 +70,7 @@ const SteView = () => {
       datum: e.datum,
       beginn: e.beginn,
       ende: e.ende,
-      pause: e.pause,
+      pause: e.pause ?? 0,
       fahrtzeit: e.fahrtzeit || 0,
       arbeit: e.arbeit,
       material: e.material || "",
@@ -643,6 +646,10 @@ const SteView = () => {
                         pause: Math.max(0, parseInt(e.target.value, 10) || 0),
                       })
                     }
+                    // Beim Antippen den Inhalt markieren: Sonst wird aus der
+                    // vorbelegten "0" beim Tippen "045" (oder, mit dem Cursor
+                    // vor der Null, 450 Minuten).
+                    onFocus={(e) => e.target.select()}
                     // 15-Minuten-Raster: beim Verlassen des Feldes einrasten.
                     onBlur={() => sFd((p) => ({ ...p, pause: snapPause(p.pause) }))}
                     className={IC}
@@ -664,6 +671,7 @@ const SteView = () => {
                     min="0"
                     inputMode="numeric"
                     value={fd.fahrtzeit}
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) =>
                       sFd({
                         ...fd,
