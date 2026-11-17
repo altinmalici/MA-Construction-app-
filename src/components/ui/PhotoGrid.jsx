@@ -38,7 +38,10 @@ const PhotoGrid = ({ fotos, onAdd, onRemove, maxFotos = 5 }) => {
     return () => {
       cancelled = true;
     };
-  }, [fotos]);
+    // Nur neu signieren, wenn sich die PFADE ändern — nicht bei jedem neuen
+    // Array mit gleichem Inhalt (jedes Nachladen der Daten erzeugt eines).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [(fotos || []).filter((f) => typeof f === "string").join("|")]);
 
   // Liefert die anzuzeigende URL für einen Foto-Eintrag (String oder Objekt)
   const resolveSrc = (f) => {
