@@ -660,7 +660,16 @@ const SteView = () => {
                     // vor der Null, 450 Minuten).
                     onFocus={(e) => e.target.select()}
                     // 15-Minuten-Raster: beim Verlassen des Feldes einrasten.
-                    onBlur={() => sFd((p) => ({ ...p, pause: snapPause(p.pause) }))}
+                    // Ausnahme: die unveränderte Pause eines alten Eintrags
+                    // bleibt stehen (sonst würde schon das Antippen des
+                    // Feldes die gespeicherte Arbeitszeit ändern).
+                    onBlur={() =>
+                      sFd((p) =>
+                        editId && Number(p.pause) === Number(origPauseRef.current)
+                          ? p
+                          : { ...p, pause: snapPause(p.pause) },
+                      )
+                    }
                     className={IC}
                   />
                 </div>

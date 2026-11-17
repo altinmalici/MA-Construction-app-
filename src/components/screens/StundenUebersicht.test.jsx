@@ -51,6 +51,7 @@ describe("StundenUebersicht – Summen", () => {
 
   it("nur auf dem Gerät wartende Einträge (_pending) zählen nicht mit", () => {
     mount([e("1"), e("2", { _pending: "wartet" })]);
+    expect(screen.getAllByText(/7,75h/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/15,5h/)).toBeNull();
   });
 });

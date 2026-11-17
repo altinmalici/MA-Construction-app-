@@ -43,37 +43,21 @@ const DokView = () => {
       return;
     }
     setDownloadingId(d.id);
-    // Fenster SOFORT im Tipp öffnen (noch vor dem Warten auf die signierte
-    // Adresse). Nach einem await gilt der Tipp für iOS nicht mehr als
-    // Nutzeraktion, und das Öffnen kann blockiert werden.
-    let win = null;
-    try {
-      win = window.open("", "_blank");
-    } catch {
-      win = null;
-    }
     try {
       const url = await dokumenteApi.getDocumentUrl(d.storagePath, 60);
-      if (win && !win.closed) {
-        win.location.href = url;
-      } else {
-        // Fenster wurde blockiert → wie bisher über einen Link versuchen.
-        const a = document.createElement("a");
-        a.href = url;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
+      // BUG-FU-2: window.open() scheitert in iOS-PWA praktisch immer
+      // (Popup-Blocker, kein User-Gesture-Context nach await). Anchor-
+      // Click ist robuster — Browser behandelt es als Download-Intent
+      // statt als neuen Tab.
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (err) {
       console.error("[DokView.download]", err);
-      // leeres Fenster nicht offen stehen lassen
-      try {
-        win?.close();
-      } catch {
-        /* egal */
-      }
       show(`Download fehlgeschlagen: ${fehlerText(err, "Bitte erneut versuchen.")}`, "error");
     } finally {
       // Defensive: Spinner-State explizit zurücksetzen, auch wenn der

@@ -278,6 +278,18 @@ describe("SteView – Chef bearbeitet", () => {
     expect(std.update.mock.calls[0][1]).toMatchObject({ pause: 20, arbeit: "Putz innen" });
   });
 
+  it("…auch wenn das Pause-Feld nur angetippt und wieder verlassen wird", async () => {
+    useApp.mockReturnValue(chefCtx(entry({ pause: 20 })));
+    const { container } = render(<SteView />);
+    openEdit();
+    const pause = container.querySelector('input[step="15"]');
+    fireEvent.focus(pause);
+    fireEvent.blur(pause);
+    expect(pause.value).toBe("20");
+    await save(/Aktualisieren/);
+    expect(std.update.mock.calls[0][1]).toMatchObject({ pause: 20 });
+  });
+
   it("…wird die Pause geändert, rastet sie auf 15 Minuten ein", async () => {
     useApp.mockReturnValue(chefCtx(entry({ pause: 20 })));
     const { container } = render(<SteView />);

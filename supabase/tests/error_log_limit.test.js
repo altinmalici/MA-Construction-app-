@@ -34,16 +34,34 @@ describe('error_log: Schutz vor Fuellen von aussen', () => {
     expect(r).toEqual({ m: 2000, s: 4000, u: 500, frisch: true });
   });
 
-  it('mehr als 200 Eintraege pro Stunde werden still verworfen – ohne Fehler fuer den Aufrufer', async () => {
-    const vorher = await count();
-    for (let i = 0; i < 230; i++) await insert(`Flut ${i}`);
-    const nachher = await count();
-    expect(nachher).toBe(200); // 2 aus den Tests oben + 198 weitere
-    expect(nachher).toBeGreaterThan(vorher);
+  // Jeder der folgenden Tests beginnt mit leerer Tabelle und frischem Zaehler.
+  const reset = async () => {
+    await q(`DELETE FROM error_log`);
+    await q(`DELETE FROM rpc_throttle WHERE key = 'errorlog:*'`);
+  };
+
+  it('mehr als 60 Eintraege pro Stunde werden still verworfen – ohne Fehler fuer den Aufrufer', async () => {
+    await reset();
+    for (let i = 0; i < 75; i++) await insert(`Flut ${i}`);
+    expect(await count()).toBe(60);
+  });
+
+  it('die Tabelle behaelt hoechstens die neuesten 2000 Eintraege', async () => {
+    await reset();
+    await q(`ALTER TABLE error_log DISABLE TRIGGER trg_error_log_guard`);
+    await q(`INSERT INTO error_log (message, created_at)
+             SELECT 'alt ' || g, now() - (g || ' seconds')::interval FROM generate_series(1, 2100) g`);
+    await q(`ALTER TABLE error_log ENABLE TRIGGER trg_error_log_guard`);
+    await insert('neuester');
+    expect(await count()).toBe(2000);
+    expect(await q(`SELECT 1 FROM error_log WHERE message = 'neuester'`)).toHaveLength(1);
+    // die aeltesten sind weg, die juengsten alten noch da
+    expect(await q(`SELECT 1 FROM error_log WHERE message = 'alt 2100'`)).toHaveLength(0);
+    expect(await q(`SELECT 1 FROM error_log WHERE message = 'alt 1'`)).toHaveLength(1);
   });
 
   it('Eintraege aelter als 90 Tage werden beim naechsten Schreiben entfernt', async () => {
-    await q(`UPDATE rpc_throttle SET count = 0 WHERE key = 'errorlog:*'`);
+    await reset();
     await q(`ALTER TABLE error_log DISABLE TRIGGER trg_error_log_guard`);
     await q(`INSERT INTO error_log (message, created_at) VALUES ('uralt', now() - interval '120 days')`);
     await q(`ALTER TABLE error_log ENABLE TRIGGER trg_error_log_guard`);
