@@ -211,3 +211,27 @@ Alle PRs #2 bis #11 sind gemerged, die Migrationen 1, 2 (Bautagebuch-Wetter) und
 **Nicht umgesetzt, weil ohne iPhone nicht prüfbar:** Dokument-Download in der installierten App (ein Umbau wurde nach dem Review zurückgenommen; es gilt weiter der bisherige Weg über einen Link-Klick).
 
 **Bekannte Grenzen dieser Runde:** Nur das Baustellen-Formular fragt vor dem Verlassen nach; verwaiste Fotos können bei Mitarbeitern liegen bleiben (sie dürfen im Speicher nicht löschen); Drucken des Regieberichts auf dem iPhone ist ungetestet.
+
+## 9. Nachtrag 2026-11-18 (dritte Runde: Entscheidungen zu Gruppe B)
+
+| PR | Inhalt |
+|---|---|
+| #17 | Eingetragene Fahrtzeit wird bezahlt (ab 18.11.2026, `FAHRTZEIT_BEZAHLT_AB`) |
+| #18 | Regiebericht: feste Bericht-Nummer, "An-/Abfahrt" entfernt; Einladungs-PIN entfällt mit Link |
+| #19 | vitest 5, vite-plugin-pwa 2, sharp 0.35 |
+| #20 | Stundensatz, Budget, Rechnungsdaten, Kosten für Mitarbeiter nicht mehr lesbar |
+| #21 | Benachrichtigungen pro Baustelle, eigenes "gelesen" |
+
+Unverändert entschieden: PIN bleibt 4-stellig, Bautagebuch nur Chef, keine Stunden für Kollegen, Fotos löscht nur der Chef.
+
+**Wartende Migrationen (nicht ausgeführt), in dieser Reihenfolge:**
+
+1. `migration_2026_11_17_pause_default_0.sql` — jederzeit.
+2. `migration_2026_11_17_error_log_limit.sql` — jederzeit.
+3. `migration_2026_11_18_01_regiebericht_nr.sql` — jederzeit (App zählt bis dahin wie bisher).
+4. `migration_2026_11_18_02_einladung_pin_entfaellt.sql` — jederzeit.
+5. `migration_2026_11_18_03_lohndaten_schutz.sql` — erst wenn alle Geräte die Version aus #20/#21 haben.
+6. `migration_2026_11_18_04_benachrichtigungen_pro_nutzer.sql` — zusammen mit 5.
+7. `migration_2026_11_16_03_pin_lookup_sperren.sql` — bleibt liegen.
+
+**Offen:** eigener Stundensatz bleibt für den Mitarbeiter lesbar; `npm audit` meldet noch 15 Punkte (happy-dom bräuchte ein weiteres Major-Upgrade); Drucken und Bericht-Nummer am iPhone ungetestet.
