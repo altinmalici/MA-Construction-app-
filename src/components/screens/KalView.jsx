@@ -2,12 +2,12 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, X, Save, Trash2 } from "lucide-react";
 import { fehlerText } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
-import { fDat, fK, IC, BTN, P, PD, shiftMonth } from "../../utils/helpers";
-import { ScreenLayout, Spinner, ConfirmModal, IconButton, Card } from "../ui";
+import { fDat, fK, IC, BTN, P, PD, shiftMonth, selectableBaustellen } from "../../utils/helpers";
+import { ScreenLayout, Spinner, ConfirmModal, IconButton, Card, BaustelleOptions } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const KalView = () => {
-  const { data, chef, actions, show, goBack, prevV } = useApp();
+  const { data, chef, cu, actions, show, goBack, prevV } = useApp();
   const { saving, withSaving } = useSaving();
   const [confirmDelete, setConfirmDelete] = useState(null);
   const h = new Date();
@@ -267,11 +267,9 @@ const KalView = () => {
                   className={IC}
                 >
                   <option value="">Optional</option>
-                  {data.baustellen.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.kunde}
-                    </option>
-                  ))}
+                  <BaustelleOptions
+                    auswahl={selectableBaustellen(data.baustellen, { chef, userId: cu?.id })}
+                  />
                 </select>
               </div>
               {data.users.filter((u) => u.role === "mitarbeiter").length >

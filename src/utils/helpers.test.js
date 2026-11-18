@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, vi, afterEach } from "vitest";
 import {
   istZahlEingabe,
   round15,
@@ -609,5 +609,55 @@ describe("genUsername – Buchstaben ohne Akzent-Zerlegung", () => {
     for (const n of ["Đorđe Đorđević", "Jörg Müller-Weiß", "Łukasz Żółć", "Max Muster"]) {
       expect(genUsername(n, [])).toMatch(USERNAME_RE);
     }
+  });
+});
+
+describe("selectableBaustellen – Baustellen-Auswahl für neue Einträge", () => {
+  const bs = [
+    { id: "g", kunde: "Geplant", status: "geplant", mitarbeiter: ["u1"] },
+    { id: "a", kunde: "Aktiv", status: "aktiv", mitarbeiter: ["u1"] },
+    { id: "x", kunde: "Fremd aktiv", status: "aktiv", mitarbeiter: ["u2"] },
+    { id: "f", kunde: "Fertig", status: "fertig", mitarbeiter: ["u1"] },
+    { id: "r", kunde: "Abgerechnet", status: "abgerechnet", mitarbeiter: ["u1"] },
+  ];
+  const ids = (l) => l.map((b) => b.id);
+  let sel;
+  beforeAll(async () => { ({ selectableBaustellen: sel } = await import("./helpers.js")); });
+
+  it("Mitarbeiter: nur eigene geplante/aktive – fertige und abgerechnete nicht", () => {
+    const r = sel(bs, { userId: "u1" });
+    expect(ids(r.offen)).toEqual(["g", "a"]);
+    expect(r.abgeschlossen).toEqual([]);
+    expect(ids(r.alle)).toEqual(["g", "a"]);
+  });
+
+  it("Chef: offene oben, fertige unter Abgeschlossen, abgerechnete nie", () => {
+    const r = sel(bs, { chef: true });
+    expect(ids(r.offen)).toEqual(["g", "a", "x"]);
+    expect(ids(r.abgeschlossen)).toEqual(["f"]);
+    expect(r.abgerechnet).toEqual([]);
+    expect(ids(r.alle)).not.toContain("r");
+  });
+
+  it("Bearbeiten: die Baustelle des Eintrags bleibt in der Liste – auch fertig oder abgerechnet", () => {
+    expect(ids(sel(bs, { userId: "u1", currentId: "f" }).alle)).toEqual(["g", "a", "f"]);
+    expect(ids(sel(bs, { userId: "u1", currentId: "r" }).alle)).toEqual(["g", "a", "r"]);
+    expect(ids(sel(bs, { chef: true, currentId: "r" }).abgeschlossen)).toEqual(["f", "r"]);
+    // auch eine Baustelle, der der Mitarbeiter inzwischen nicht mehr zugewiesen ist
+    expect(ids(sel(bs, { userId: "u1", currentId: "x" }).alle)).toContain("x");
+  });
+
+  it("genau eine wählbare Baustelle: `alle` hat Länge 1, obwohl es weitere (fertige) gibt", () => {
+    const r = sel([bs[1], bs[3], bs[4]], { userId: "u1" });
+    expect(ids(r.alle)).toEqual(["a"]);
+  });
+
+  it("mitAbgerechnet (nur Regiebericht): eigene Gruppe Abgerechnet", () => {
+    const r = sel(bs, { chef: true, mitAbgerechnet: true });
+    expect(ids(r.abgerechnet)).toEqual(["r"]);
+  });
+
+  it("leere oder fehlende Liste", () => {
+    expect(sel(undefined, { chef: true }).alle).toEqual([]);
   });
 });

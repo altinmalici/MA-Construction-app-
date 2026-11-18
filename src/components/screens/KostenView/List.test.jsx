@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
 
 vi.mock("../../../context/AppContext", () => ({ useApp: vi.fn() }));
 import { useApp } from "../../../context/AppContext";
@@ -65,5 +65,21 @@ describe("KostenView/List – Kacheln", () => {
     expect(screen.getAllByText("9h").length).toBeGreaterThan(0);
     // 9 h × 50 € = 450 €
     expect(screen.getAllByText(/450,00/).length).toBeGreaterThan(0);
+  });
+
+  it("„+ Kosten“ aus einer abgerechneten Baustelle: sie ist nicht vorbelegt und es wird nichts auf sie gespeichert", async () => {
+    const c = ctx();
+    c.data.baustellen = [...c.data.baustellen, { id: "r", kunde: "Abgerechnet AG", status: "abgerechnet", budget: 0, mitarbeiter: [] }];
+    c.actions = { ...(c.actions || {}), kosten: { create: vi.fn() } };
+    useApp.mockReturnValue(c);
+    const { container } = render(<KostenList onSelectBs={vi.fn()} prefillBs="r" />);
+    const select = container.querySelector("select");
+    expect(select.value).toBe("");
+    expect([...select.querySelectorAll("option")].map((o) => o.textContent)).not.toContain("Abgerechnet AG");
+    expect(select.querySelector('optgroup[label="Abgeschlossen"]').textContent).toContain("Fertig KG");
+    fireEvent.change(screen.getByPlaceholderText(/Beschreibung/i), { target: { value: "Fliesen" } });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Speichern|Hinzufügen|Kosten erfassen/ })); });
+    expect(c.actions.kosten.create).not.toHaveBeenCalled();
+    expect(c.show).toHaveBeenCalledWith(expect.stringContaining("Baustelle wählen"), "error");
   });
 });

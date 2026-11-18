@@ -14,8 +14,8 @@ afterEach(() => cleanup());
 const baseCtx = {
   data: {
     baustellen: [
-      { id: "b1", kunde: "Müller GmbH", mitarbeiter: ["u1"] },
-      { id: "b2", kunde: "Schmidt KG", mitarbeiter: [] },
+      { id: "b1", kunde: "Müller GmbH", status: "aktiv", mitarbeiter: ["u1"] },
+      { id: "b2", kunde: "Schmidt KG", status: "aktiv", mitarbeiter: [] },
     ],
     maengel: [
       {
@@ -108,7 +108,7 @@ describe("MngView role-based rendering", () => {
     expect(card).not.toBeNull();
     fireEvent.click(card);
     expect(setSb).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "b1", kunde: "Müller GmbH" }),
+      expect.objectContaining({ id: "b1", kunde: "Müller GmbH", status: "aktiv" }),
     );
     expect(nav).toHaveBeenCalledWith("bsd");
   });
@@ -116,7 +116,7 @@ describe("MngView role-based rendering", () => {
   it("e) Chef mit sb → Anlegen-Button sichtbar, Card NICHT clickable", () => {
     useApp.mockReturnValue({
       ...baseCtx,
-      sb: { id: "b1", kunde: "Müller GmbH" },
+      sb: { id: "b1", kunde: "Müller GmbH", status: "aktiv" },
       chef: true,
       cu: { id: "chef", role: "chef", name: "Boss" },
     });
@@ -124,5 +124,33 @@ describe("MngView role-based rendering", () => {
     expect(screen.getByLabelText("Mangel erfassen")).toBeInTheDocument();
     // im sb-Modus sind die Cards keine Buttons
     expect(screen.queryByRole("button", { name: /Wand undicht/i })).toBeNull();
+  });
+
+  it("Mitarbeiter in einer fertigen Baustelle: kein Anlegen-Button", () => {
+    const fertig = { id: "b1", kunde: "Müller GmbH", status: "fertig", mitarbeiter: ["u1"] };
+    useApp.mockReturnValue({
+      sb: fertig, chef: false, cu: { id: "u1", role: "mitarbeiter" },
+      data: { baustellen: [fertig], maengel: [], users: [], subunternehmer: [] },
+      actions: { maengel: {} }, show: vi.fn(), goBack: vi.fn(), trigPhoto: vi.fn(), addN: vi.fn(), setSb: vi.fn(), nav: vi.fn(),
+    });
+    render(<MngView />);
+    expect(screen.queryByRole("button", { name: "Mangel erfassen" })).toBeNull();
+  });
+
+  it("Chef in einer fertigen Baustelle darf nachtragen, in einer abgerechneten nicht", () => {
+    const mk = (status) => {
+      const b = { id: "b1", kunde: "Müller GmbH", status, mitarbeiter: [] };
+      useApp.mockReturnValue({
+        sb: b, chef: true, cu: { id: "c1", role: "chef" },
+        data: { baustellen: [b], maengel: [], users: [], subunternehmer: [] },
+        actions: { maengel: {} }, show: vi.fn(), goBack: vi.fn(), trigPhoto: vi.fn(), addN: vi.fn(), setSb: vi.fn(), nav: vi.fn(),
+      });
+      const r = render(<MngView />);
+      const da = !!screen.queryByRole("button", { name: "Mangel erfassen" });
+      r.unmount();
+      return da;
+    };
+    expect(mk("fertig")).toBe(true);
+    expect(mk("abgerechnet")).toBe(false);
   });
 });

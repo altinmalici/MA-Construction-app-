@@ -33,7 +33,7 @@ const mount = (eintraege) => {
   useApp.mockReturnValue({
     goBack: vi.fn(), show: vi.fn(),
     data: {
-      baustellen: [{ id: "b1", kunde: "Huber", adresse: "A-Str. 1" }, { id: "b2", kunde: "Maier", adresse: "B-Str. 2" }],
+      baustellen: [{ id: "b1", kunde: "Huber", status: "aktiv", adresse: "A-Str. 1" }, { id: "b2", kunde: "Maier", status: "aktiv", adresse: "B-Str. 2" }],
       stundeneintraege: eintraege,
     },
   });
@@ -112,7 +112,7 @@ describe("RegView – Bericht-Nummer", () => {
     show = vi.fn();
     useApp.mockReturnValue({
       goBack: vi.fn(), show,
-      data: { baustellen: [{ id: "b1", kunde: "Huber", adresse: "A-Str. 1" }], stundeneintraege: eintraege },
+      data: { baustellen: [{ id: "b1", kunde: "Huber", status: "aktiv", adresse: "A-Str. 1" }], stundeneintraege: eintraege },
     });
     return render(<RegView />);
   };

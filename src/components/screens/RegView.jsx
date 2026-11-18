@@ -14,8 +14,9 @@ import {
   BTN,
   IC,
   P,
+  selectableBaustellen,
 } from "../../utils/helpers";
-import { ScreenLayout, SigPad, Card } from "../ui";
+import { ScreenLayout, SigPad, Card, BaustelleOptions } from "../ui";
 import { buildReportHtml } from "../../utils/regiebericht";
 import * as regApi from "../../lib/api/regiebericht";
 import { fehlerText, istNetzFehler } from "../../utils/errors";
@@ -53,7 +54,10 @@ const RegView = () => {
   // auf dem Bericht einer anderen Baustelle oder eines anderen Tages landen.
   const [sigState, sSigState] = useState({ key: "", sig: null });
   const [biWahl, sBi] = useState("");
-  const bi = biWahl || data.baustellen[0]?.id || "";
+  // Regieberichte werten vorhandene Einträge aus – deshalb sind hier auch
+  // abgeschlossene und abgerechnete Baustellen wählbar (eigene Gruppen).
+  const auswahl = selectableBaustellen(data.baustellen, { chef: true, mitAbgerechnet: true });
+  const bi = biWahl || auswahl.alle[0]?.id || "";
   const sigKey = `${bi}|${vonDatum}|${bisDatum}`;
   const sig = sigState.key === sigKey ? sigState.sig : null;
   const sSig = (v) => sSigState({ key: sigKey, sig: v });
@@ -535,11 +539,7 @@ const RegView = () => {
             borderRadius: 12,
           }}
         >
-          {data.baustellen.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.kunde}
-            </option>
-          ))}
+          <BaustelleOptions auswahl={auswahl} />
         </select>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>

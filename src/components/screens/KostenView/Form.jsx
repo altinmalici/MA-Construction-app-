@@ -1,6 +1,6 @@
 import { Receipt } from "lucide-react";
-import { BTN, CS, IC } from "../../../utils/helpers";
-import { Spinner } from "../../ui";
+import { BTN, CS, IC, selectableBaustellen } from "../../../utils/helpers";
+import { Spinner, BaustelleOptions } from "../../ui";
 import { KAT_LABELS, KAT_COLORS } from "./aggregations.js";
 
 /**
@@ -29,11 +29,7 @@ const Form = ({ kf, sKf, baustellen, saving, onSave }) => (
       style={{ background: "rgba(118,118,128,0.12)", border: "none" }}
     >
       <option value="">Baustelle *</option>
-      {baustellen.map((b) => (
-        <option key={b.id} value={b.id}>
-          {b.kunde}
-        </option>
-      ))}
+      <BaustelleOptions auswahl={selectableBaustellen(baustellen, { chef: true })} />
     </select>
     <div style={{ display: "flex", gap: 8 }}>
       {["material", "subunternehmer", "sonstiges"].map((k) => (

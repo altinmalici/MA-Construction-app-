@@ -10,8 +10,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const B1 = { id: "b1", kunde: "Huber", mitarbeiter: ["u1"] };
-const B2 = { id: "b2", kunde: "Maier", mitarbeiter: [] };
+const B1 = { id: "b1", kunde: "Huber", status: "aktiv", mitarbeiter: ["u1"] };
+const B2 = { id: "b2", kunde: "Maier", status: "aktiv", mitarbeiter: [] };
 
 let create, show;
 const ctx = (over = {}) => ({

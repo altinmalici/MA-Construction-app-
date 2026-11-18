@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Plus, X, Save, ClipboardList, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fDat, todayIso, IC, BTN, RED } from "../../utils/helpers";
+import { fDat, todayIso, IC, BTN, RED, selectableBaustellen } from "../../utils/helpers";
 import { fehlerText } from "../../utils/errors";
-import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton, Card, WI } from "../ui";
+import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton, Card, WI, BaustelleOptions } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const WETTER = [
@@ -37,15 +37,20 @@ const BtbView = () => {
   // nicht geladen, blieb sie leer — und bei nur EINER Baustelle war die
   // Auswahl ausgeblendet, sodass Speichern immer mit "Baustelle wählen"
   // scheiterte.
-  const myBs = chef
-    ? data.baustellen
-    : data.baustellen.filter((b) => b.mitarbeiter?.includes(cu?.id));
+  const auswahl = selectableBaustellen(data.baustellen, { chef, userId: cu?.id });
+  const myBs = auswahl.alle;
   // Eine früher gewählte Baustelle zählt nur, solange es sie noch gibt.
   const gewaehlt = myBs.some((b) => b.id === bf.baustelleId)
     ? bf.baustelleId
     : "";
   const baustelleId =
-    sb?.id || gewaehlt || (myBs.length === 1 ? myBs[0].id : "");
+    // Auch die Baustelle, aus der man kommt, zählt nur, wenn sie für neue
+    // Einträge wählbar ist (abgerechnete sind es nie).
+    sb
+      ? myBs.some((b) => b.id === sb.id)
+        ? sb.id
+        : ""
+      : gewaehlt || (myBs.length === 1 ? myBs[0].id : "");
   // Neueste zuerst — nach Datum, nicht nach Anlage-Reihenfolge.
   // reverse() vorab: bei gleichem Datum steht der zuletzt angelegte oben.
   const sorted = [...ls].reverse().sort((a, b) =>
@@ -62,9 +67,11 @@ const BtbView = () => {
     withSaving(async () => {
       if (!baustelleId) {
         show(
-          myBs.length === 0
-            ? "Keine Baustelle vorhanden – bitte zuerst eine Baustelle anlegen"
-            : "Baustelle wählen",
+          sb
+            ? "Diese Baustelle ist abgerechnet – neue Einträge sind hier nicht möglich"
+            : myBs.length === 0
+              ? "Keine offene Baustelle vorhanden"
+              : "Baustelle wählen",
           "error",
         );
         return;
@@ -163,11 +170,7 @@ const BtbView = () => {
               }}
             >
               <option value="">Baustelle...</option>
-              {myBs.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.kunde}
-                </option>
-              ))}
+              <BaustelleOptions auswahl={auswahl} />
             </select>
           )}
           {/* Bei genau einer Baustelle (oder aus der Baustelle heraus geöffnet)

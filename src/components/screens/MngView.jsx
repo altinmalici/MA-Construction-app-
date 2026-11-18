@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Plus, X, AlertCircle, CheckCircle, Trash2, Building2 } from "lucide-react";
 import { fehlerText, istNetzFehler } from "../../utils/errors";
 import { useApp } from "../../context/AppContext";
-import { fK, IC, BTN, CS, P, RED, GREEN, todayIso } from "../../utils/helpers";
+import { fK, IC, BTN, CS, P, RED, GREEN, todayIso, selectableBaustellen } from "../../utils/helpers";
 import { ScreenLayout, Empty, Bdg, PhotoGrid, Spinner, ConfirmModal, IconButton } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 import { uploadPhotos, cleanupPhotos } from "../../lib/storage";
@@ -30,6 +30,11 @@ const MngView = () => {
     : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
   // Globaler Modus (!sb) ist read-only und für Mitarbeiter ganz gesperrt.
   const globalView = !sb;
+  // Neue Mängel nur auf wählbaren Baustellen: Mitarbeiter geplant/aktiv,
+  // Chef zusätzlich fertig; abgerechnet nie.
+  const darfErfassen =
+    !!sb &&
+    selectableBaustellen(data.baustellen, { chef, userId: cu?.id }).alle.some((b) => b.id === sb.id);
   const blockedMitarbeiter = globalView && !chef;
   let ls = sb
     ? data.maengel.filter((m) => m.baustelleId === sb.id)
@@ -42,6 +47,10 @@ const MngView = () => {
     withSaving(async () => {
       if (!sb?.id) {
         show("Baustelle fehlt", "error");
+        return;
+      }
+      if (!darfErfassen) {
+        show("Baustelle ist abgeschlossen – bitte beim Chef melden.", "error");
         return;
       }
       if (!mf.titel.trim()) {
@@ -168,7 +177,7 @@ const MngView = () => {
       title={globalView ? "Mängel-Übersicht" : "Mängelmanagement"}
       onBack={goBack}
       right={
-        !globalView && (
+        !globalView && darfErfassen && (
           <IconButton
             icon={sf ? X : Plus}
             variant={sf ? "default" : "primary"}

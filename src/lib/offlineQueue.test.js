@@ -106,3 +106,12 @@ describe("offlineQueue – fehlgeschlagene Einträge", () => {
     expect(q.gehoertZu(own, null, false)).toBe(false);
   });
 });
+
+describe("Server lehnt ab, weil die Baustelle abgeschlossen ist", () => {
+  it("gilt als Dauerfehler mit klarer Meldung (bleibt in der Warteschlange, wird nicht endlos wiederholt)", async () => {
+    const { dauerfehlerText } = await import("./offlineQueue.js");
+    expect(dauerfehlerText({ code: "P0001", message: "Baustelle ist abgeschlossen – bitte beim Chef melden." })).toBe("Baustelle ist abgeschlossen – bitte beim Chef melden.");
+    expect(dauerfehlerText(new TypeError("Failed to fetch"))).toBeNull();
+  });
+});
+
