@@ -72,6 +72,7 @@ Reihenfolge für eine neue, leere Datenbank:
 22. `migration_2026_11_17_error_log_limit.sql` (braucht 17)
 23. `migration_2026_11_18_01_regiebericht_nr.sql`
 24. `migration_2026_11_18_02_einladung_pin_entfaellt.sql` (braucht 18)
+25. `migration_2026_11_18_03_lohndaten_schutz.sql` (erst wenn alle Geräte die App-Version mit `kollegen_liste`/`meine_baustellen` geladen haben)
 
 Für die **bestehende** Datenbank gelten bei 17 bis 20 zusätzliche Zeitpunkte (zum Teil erst nach dem Deploy eines bestimmten Frontend-Stands) und Prüf-Abfragen: siehe `docs/AUTOPILOT_2026-11-16.md`, Abschnitt 3.
 
