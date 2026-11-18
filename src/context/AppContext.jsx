@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { ohneGemeinsamesGelesen } from "../lib/api/benachrichtigungen";
 import { AlertCircle } from "lucide-react";
 import { useAppData } from "../lib/useAppData.js";
 import { useRealtime } from "../lib/useRealtime.js";
@@ -67,7 +68,7 @@ export function AppProvider({ children }) {
     [mergeIncomingRow],
   );
   const onNotifUpdate = useCallback(
-    (row) => mergeIncomingRow("benachrichtigungen", row, "UPDATE"),
+    (row) => mergeIncomingRow("benachrichtigungen", ohneGemeinsamesGelesen(row), "UPDATE"),
     [mergeIncomingRow],
   );
   const onNotifDelete = useCallback(

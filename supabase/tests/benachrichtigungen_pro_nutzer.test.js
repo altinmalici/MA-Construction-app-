@@ -20,9 +20,10 @@ beforeAll(async () => {
   nora = await addMitarbeiter(db, 'Nora Neu', 'n.neu', '1002');
   await q(`INSERT INTO baustellen_mitarbeiter (baustelle_id, user_id) VALUES ($1, $2), ($1, $3), ($4, $3)`, [b1, max.id, nora.id, b2]);
   // Bestand vor der Migration
-  alt = (await q(`INSERT INTO benachrichtigungen (text, baustelle_id, gelesen) VALUES ('alt gelesen', $1, true) RETURNING id`, [b1]))[0].id;
-  await q(`INSERT INTO benachrichtigungen (text, baustelle_id, gelesen) VALUES ('alt offen', $1, false)`, [b1]);
-  await q(`INSERT INTO benachrichtigungen (text, baustelle_id) VALUES ('nur zwei', $1)`, [b2]);
+  alt = (await q(`INSERT INTO benachrichtigungen (typ, text, baustelle_id, gelesen) VALUES ('mangel', 'alt gelesen', $1, true) RETURNING id`, [b1]))[0].id;
+  await q(`INSERT INTO benachrichtigungen (typ, text, baustelle_id, gelesen) VALUES ('stunden', 'alt offen', $1, false)`, [b1]);
+  await q(`INSERT INTO benachrichtigungen (typ, text, baustelle_id) VALUES ('mangel', 'nur zwei', $1)`, [b2]);
+  await q(`INSERT INTO benachrichtigungen (typ, text, baustelle_id) VALUES ('info', 'Kosten: 1.200,00 – Fliesen', $1)`, [b1]);
   await q(`INSERT INTO benachrichtigungen (text) VALUES ('ohne baustelle')`);
   await db.exec(sql);
   await db.exec(sql); // wiederholbar
@@ -37,7 +38,7 @@ describe('Benachrichtigungen pro Nutzer', () => {
   it('Mitarbeiter sieht nur seine Baustellen; ohne Baustelle sieht nur der Chef', async () => {
     expect((await alsMax(meine)).map((r) => r.text)).toEqual(['alt gelesen', 'alt offen']);
     expect((await alsNora(meine)).map((r) => r.text)).toEqual(['alt gelesen', 'alt offen', 'nur zwei']);
-    expect((await chef(meine)).map((r) => r.text)).toEqual(['alt gelesen', 'alt offen', 'nur zwei', 'ohne baustelle']);
+    expect((await chef(meine)).map((r) => r.text)).toEqual(['Kosten: 1.200,00 – Fliesen', 'alt gelesen', 'alt offen', 'nur zwei', 'ohne baustelle']);
     expect(await alsMax(() => q(`SELECT text FROM benachrichtigungen ORDER BY text`))).toHaveLength(2);
   });
 
@@ -47,7 +48,7 @@ describe('Benachrichtigungen pro Nutzer', () => {
     expect((await alsNora(meine)).find((r) => r.text === 'alt offen').gelesen).toBe(false);
     expect((await chef(meine)).find((r) => r.text === 'alt offen').gelesen).toBe(false);
     // Max hat nichts fuer fremde Baustellen markiert
-    expect(await q(`SELECT 1 FROM benachrichtigungen_gelesen g JOIN benachrichtigungen b ON b.id = g.benachrichtigung_id WHERE g.user_id = $1 AND b.text IN ('nur zwei', 'ohne baustelle')`, [max.id])).toHaveLength(0);
+    expect(await q(`SELECT 1 FROM benachrichtigungen_gelesen g JOIN benachrichtigungen b ON b.id = g.benachrichtigung_id WHERE g.user_id = $1 AND b.text IN ('nur zwei', 'ohne baustelle', 'Kosten: 1.200,00 – Fliesen')`, [max.id])).toHaveLength(0);
     await alsMax(() => q(`SELECT benachrichtigungen_alle_gelesen()`)); // doppelt schadet nicht
   });
 
@@ -59,12 +60,13 @@ describe('Benachrichtigungen pro Nutzer', () => {
   });
 
   it('Mitarbeiter: anlegen nur fuer eigene Baustellen, aendern und loeschen gar nicht', async () => {
-    await expect(alsMax(() => q(`INSERT INTO benachrichtigungen (text, baustelle_id) VALUES ('x', $1)`, [b2]))).rejects.toThrow(/row-level security/);
+    await expect(alsMax(() => q(`INSERT INTO benachrichtigungen (typ, text, baustelle_id) VALUES ('mangel', 'x', $1)`, [b2]))).rejects.toThrow(/row-level security/);
     await expect(alsMax(() => q(`INSERT INTO benachrichtigungen (text) VALUES ('x')`))).rejects.toThrow(/row-level security/);
+    await expect(alsMax(() => q(`INSERT INTO benachrichtigungen (typ, text, baustelle_id) VALUES ('info', 'x', $1)`, [b1]))).rejects.toThrow(/row-level security/);
     await alsMax(() => q(`UPDATE benachrichtigungen SET text = 'gehackt'`));
     await alsMax(() => q(`DELETE FROM benachrichtigungen`));
     expect(await q(`SELECT 1 FROM benachrichtigungen WHERE text = 'gehackt'`)).toHaveLength(0);
-    expect((await q(`SELECT count(*)::int AS n FROM benachrichtigungen`))[0].n).toBe(5);
+    expect((await q(`SELECT count(*)::int AS n FROM benachrichtigungen`))[0].n).toBe(6);
   });
 
   it('niemand kann fuer andere "gelesen" setzen oder fremde Lese-Eintraege sehen', async () => {
@@ -72,6 +74,17 @@ describe('Benachrichtigungen pro Nutzer', () => {
     const r = await alsMax(() => q(`SELECT DISTINCT user_id FROM benachrichtigungen_gelesen`));
     expect(r).toEqual([{ user_id: max.id }]);
     await expect(as(db, 'anon', null, () => q(`SELECT * FROM meine_benachrichtigungen()`))).rejects.toThrow(/permission denied/);
+  });
+
+  it('Kosten-Meldungen (Typ info) der eigenen Baustelle sieht ein Mitarbeiter nicht', async () => {
+    expect(JSON.stringify(await alsNora(meine))).not.toContain('Kosten');
+    expect(await alsNora(() => q(`SELECT 1 FROM benachrichtigungen WHERE typ = 'info'`))).toHaveLength(0);
+  });
+
+  it('Meldung ohne angemeldeten Nutzer (z.B. beim Einloesen eines Einladungs-Links) wird angelegt, niemand gilt als Leser', async () => {
+    const id = (await q(`INSERT INTO benachrichtigungen (typ, text) VALUES ('info', 'system') RETURNING id`))[0].id;
+    expect(await q(`SELECT 1 FROM benachrichtigungen_gelesen WHERE benachrichtigung_id = $1`, [id])).toHaveLength(0);
+    await q(`DELETE FROM benachrichtigungen WHERE id = $1`, [id]);
   });
 
   it('Chef loescht eine Benachrichtigung → Lese-Eintraege verschwinden mit', async () => {

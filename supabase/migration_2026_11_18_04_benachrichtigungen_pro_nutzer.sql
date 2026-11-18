@@ -9,8 +9,9 @@
 -- Benachrichtigung aendern.
 --
 -- Danach:
---   * Mitarbeiter sehen nur Benachrichtigungen ihrer zugewiesenen Baustellen
---     (solche ohne Baustelle sieht nur der Chef). Der Chef sieht alle.
+--   * Mitarbeiter sehen nur Mangel- und Stunden-Meldungen ihrer zugewiesenen
+--     Baustellen. Alles andere (Kosten mit Betrag, Meldungen ohne
+--     Baustelle) sieht nur der Chef. Der Chef sieht alle.
 --   * "gelesen" merkt sich jeder Nutzer fuer sich (neue Tabelle
 --     benachrichtigungen_gelesen).
 --   * Mitarbeiter koennen Benachrichtigungen nur noch fuer ihre eigenen
@@ -24,6 +25,8 @@
 -- Zeitpunkt: nach dem zugehoerigen PR; am besten, wenn alle Geraete die neue
 -- App-Version haben. Mit einer aelteren Version funktioniert alles weiter,
 -- nur bleibt dort der Zaehler ungelesener Meldungen stehen.
+-- Neu zugewiesene oder neu angelegte Mitarbeiter sehen die bisherigen
+-- Meldungen ihrer Baustelle zunaechst als ungelesen ("Alle gelesen" antippen).
 -- Idempotent.
 -- =============================================================
 
@@ -58,12 +61,14 @@ ON CONFLICT DO NOTHING;
 
 -- ---- Sichtbarkeit / Schreibrechte der Mitarbeiter --------------
 DROP POLICY IF EXISTS "mitarbeiter_select" ON public.benachrichtigungen;
+-- Nur Mangel- und Stunden-Meldungen: "info" enthaelt u.a. Kosten mit Betrag
+-- ("Kosten: 1.200,00 EUR – Fliesen") und bleibt beim Chef.
 CREATE POLICY "mitarbeiter_select" ON public.benachrichtigungen FOR SELECT
-  USING (baustelle_id IN (SELECT my_baustelle_ids()));
+  USING (typ IN ('mangel', 'stunden') AND baustelle_id IN (SELECT my_baustelle_ids()));
 
 DROP POLICY IF EXISTS "mitarbeiter_insert" ON public.benachrichtigungen;
 CREATE POLICY "mitarbeiter_insert" ON public.benachrichtigungen FOR INSERT
-  WITH CHECK (baustelle_id IN (SELECT my_baustelle_ids()));
+  WITH CHECK (typ IN ('mangel', 'stunden') AND baustelle_id IN (SELECT my_baustelle_ids()));
 
 DROP POLICY IF EXISTS "mitarbeiter_update" ON public.benachrichtigungen;
 

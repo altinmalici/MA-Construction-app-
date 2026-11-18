@@ -17,12 +17,30 @@ const mapRow = (r) => ({
   gelesen: r.gelesen,
 });
 
+// true, sobald meine_benachrichtigungen() einmal geantwortet hat: Dann ist
+// "gelesen" pro Nutzer, und das alte gemeinsame Häkchen der Tabelle zählt
+// nicht mehr.
+let proNutzer = false;
+
+// Für Realtime-UPDATEs: Im Pro-Nutzer-Betrieb darf das gemeinsame Häkchen
+// (z.B. von einem Gerät mit alter App-Version gesetzt) MEIN "gelesen" nicht
+// überschreiben.
+export function ohneGemeinsamesGelesen(row) {
+  if (!proNutzer || !row) return row;
+  const rest = { ...row };
+  delete rest.gelesen;
+  return rest;
+}
+
 export async function getAll({ signal } = {}) {
   // Neu: meine_benachrichtigungen() liefert die für mich sichtbaren
   // Benachrichtigungen mit MEINEM "gelesen". Fehlt die Funktion, gilt wie
   // bisher das gemeinsame Häkchen aus der Tabelle.
   const neu = await requestWithRetry(() => supabase.rpc('meine_benachrichtigungen'), { signal });
-  if (!neu.error) return (neu.data || []).map(mapRow);
+  if (!neu.error) {
+    proNutzer = true;
+    return (neu.data || []).map(mapRow);
+  }
   if (!istFunktionFehlt(neu.error)) throw neu.error;
 
   // 6-04: Retry/Abort/Timeout-Wrapper.

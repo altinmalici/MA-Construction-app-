@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../supabase.js", async () => (await import("../../test/supabaseMock.js")).moduleMock());
 import { mock } from "../../test/supabaseMock.js";
-import { getAll, create, markAllRead, remove, removeAll } from "./benachrichtigungen.js";
+import { getAll, create, markAllRead, remove, removeAll, ohneGemeinsamesGelesen } from "./benachrichtigungen.js";
 
 const FEHLT = { data: null, error: { code: "PGRST202", message: "Could not find the function" } };
 const ROW = { id: "n1", typ: "stunden", text: "T", baustelle_id: "b1", datum: "2026-11-16T10:00:00Z", gelesen: false };
@@ -30,6 +30,10 @@ describe("benachrichtigungen – vor der Migration (Funktionen fehlen)", () => {
     expect(c.filters).toContainEqual(["eq", "gelesen", false]);
   });
 
+  it("Realtime-Update übernimmt das gemeinsame Häkchen wie bisher", () => {
+    expect(ohneGemeinsamesGelesen({ id: "n1", gelesen: true })).toEqual({ id: "n1", gelesen: true });
+  });
+
   it("Fehler des alten Wegs werden geworfen", async () => {
     mock.responses["benachrichtigungen.update"] = { error: { code: "42501", message: "rls" } };
     await expect(markAllRead()).rejects.toMatchObject({ code: "42501" });
@@ -41,6 +45,12 @@ describe("benachrichtigungen – nach der Migration", () => {
     mock.responses["rpc.meine_benachrichtigungen"] = { data: [{ ...ROW, gelesen: true }], error: null };
     expect(await getAll()).toEqual([{ ...MAPPED, gelesen: true }]);
     expect(mock.find("benachrichtigungen", "select")).toBeUndefined();
+  });
+
+  it("Realtime-Update eines Geräts mit alter Version überschreibt MEIN gelesen nicht", async () => {
+    mock.responses["rpc.meine_benachrichtigungen"] = { data: [], error: null };
+    await getAll();
+    expect(ohneGemeinsamesGelesen({ id: "n1", text: "T", gelesen: true })).toEqual({ id: "n1", text: "T" });
   });
 
   it("markAllRead setzt nur MEIN gelesen – kein Update des gemeinsamen Häkchens", async () => {
@@ -64,7 +74,7 @@ describe("benachrichtigungen – unabhängig von der Migration", () => {
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
     const c = mock.find("benachrichtigungen", "insert");
     expect(c.payload).toEqual({ id, typ: "info", text: "Hallo", baustelle_id: null, datum: "2026-11-16T10:00:00Z", gelesen: false });
-    expect(c.filters || []).not.toContainEqual(expect.arrayContaining(["select"]));
+    expect(c.returning).toBeUndefined();
   });
 
   it("create: Fehler wird geworfen", async () => {

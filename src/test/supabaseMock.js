@@ -25,6 +25,7 @@ function builder(table) {
     delete() { call.op = "delete"; mock.calls.push(call); return b; },
     select(cols) {
       if (!call.op) { call.op = "select"; call.payload = cols; mock.calls.push(call); }
+      else call.returning = true; // .insert()/.update() mit Zurücklesen
       return b;
     },
     order(col, opts) { call.filters.push(["order", col, opts]); return b; },
