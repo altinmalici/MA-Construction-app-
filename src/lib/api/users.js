@@ -1,12 +1,18 @@
 import { supabase } from '../supabase.js';
 import { stripUndefined } from '../../utils/objects.js';
-import { selectAll } from './_request.js';
+import { selectAll, requestWithRetry } from './_request.js';
 
 export async function getAll({ signal } = {}) {
   // 6-04: Retry/Abort/Timeout-Wrapper. RPC-Calls (checkPinExists,
   // resetOnboardingPin, toggleActive, create*) bleiben unwrapped —
   // Brief: nur supabase.from().select() wird gewickelt, keine RPCs.
-  const { data, error } = await selectAll(
+  // Zwei Quellen (supabase/migration_2026_11_18_03_lohndaten_schutz.sql):
+  //  * Tabelle users – Chef: alle Zeilen; Mitarbeiter nach der Migration nur
+  //    noch die eigene (vorher alle).
+  //  * kollegen_liste() – Namen aller Nutzer ohne Stundensatz. Fehlt die
+  //    Funktion (Migration nicht angewandt), reicht die Tabelle wie bisher.
+  const [{ data, error }, kollegen] = await Promise.all([
+    selectAll(
     () =>
       supabase
         .from('users')
@@ -16,18 +22,29 @@ export async function getAll({ signal } = {}) {
         .order('created_at')
         .order('id'),
     { signal },
-  );
+    ),
+    requestWithRetry(() => supabase.rpc('kollegen_liste'), { signal }),
+  ]);
   if (error) throw error;
-  return data.map(u => ({
-    id: u.id,
-    name: u.name,
-    role: u.role,
-    stundensatz: u.stundensatz,
-    username: u.username,
-    isOnboarded: u.is_onboarded,
-    isActive: u.is_active,
-    onboardingPinExpiry: u.onboarding_pin_expiry,
-  }));
+  if (kollegen?.error && !istRpcFehlt(kollegen.error)) throw kollegen.error;
+  const byId = new Map();
+  (kollegen?.data || []).forEach(u => {
+    byId.set(u.id, { id: u.id, name: u.name, role: u.role, isActive: u.is_active });
+  });
+  // Zeilen aus der Tabelle sind vollständig und gehen vor.
+  data.forEach(u => {
+    byId.set(u.id, {
+      id: u.id,
+      name: u.name,
+      role: u.role,
+      stundensatz: u.stundensatz,
+      username: u.username,
+      isOnboarded: u.is_onboarded,
+      isActive: u.is_active,
+      onboardingPinExpiry: u.onboarding_pin_expiry,
+    });
+  });
+  return [...byId.values()];
 }
 
 export async function create({ name, role, pin, stundensatz, username }) {
