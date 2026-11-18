@@ -7,7 +7,7 @@ import { useApp } from "../../context/AppContext";
 import { uploadPhotos, cleanupPhotos } from "../../lib/storage";
 import MngView from "./MngView.jsx";
 
-const B1 = { id: "b1", kunde: "Huber", mitarbeiter: ["u1"] };
+const B1 = { id: "b1", kunde: "Huber", status: "aktiv", mitarbeiter: ["u1"] };
 let maengel, show, addN, reload, photoCb;
 
 const mount = () => {

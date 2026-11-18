@@ -36,6 +36,15 @@ BEGIN
   IF auth.uid() IS NULL OR coalesce(is_chef(), false) THEN
     RETURN NEW;
   END IF;
+  -- Beim Aendern zaehlt auch die BISHERIGE Baustelle: Ein Eintrag einer
+  -- abgeschlossenen Baustelle laesst sich nicht auf eine offene umhaengen.
+  IF TG_OP = 'UPDATE' AND OLD.baustelle_id IS DISTINCT FROM NEW.baustelle_id THEN
+    SELECT b.status INTO v_status FROM public.baustellen b WHERE b.id = OLD.baustelle_id;
+    IF v_status IS NOT NULL AND v_status NOT IN ('geplant', 'aktiv') THEN
+      RAISE EXCEPTION 'Baustelle ist abgeschlossen – bitte beim Chef melden.'
+        USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
   SELECT b.status INTO v_status FROM public.baustellen b WHERE b.id = NEW.baustelle_id;
   IF v_status IS NOT NULL AND v_status NOT IN ('geplant', 'aktiv') THEN
     RAISE EXCEPTION 'Baustelle ist abgeschlossen – bitte beim Chef melden.'

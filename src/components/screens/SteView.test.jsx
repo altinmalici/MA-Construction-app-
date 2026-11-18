@@ -337,6 +337,22 @@ describe("SteView – nur offene Baustellen wählbar", () => {
     expect(document.querySelectorAll("select")[0].value).toBe("");
   });
 
+  it("…auch nicht, wenn genau EINE andere offen ist: es wird nicht still auf die andere gebucht", async () => {
+    useApp.mockReturnValue(ctx({ sb: FERTIG, data: daten([B1, FERTIG]) }));
+    render(<SteView />);
+    expect(document.querySelectorAll("select")[0].value).toBe("");
+    expect(screen.getByText("Baustelle ist abgeschlossen – bitte beim Chef melden.")).toBeInTheDocument();
+    await save();
+    expect(std.create).not.toHaveBeenCalled();
+  });
+
+  it("Mitarbeiter, dessen Baustellen alle abgeschlossen sind, bekommt den passenden Hinweis", () => {
+    useApp.mockReturnValue(ctx({ data: daten([FERTIG]) }));
+    render(<SteView />);
+    expect(screen.getByText("Deine Baustellen sind abgeschlossen – bitte beim Chef melden.")).toBeInTheDocument();
+    expect(screen.queryByText(/noch keine Baustelle zugewiesen/)).toBeNull();
+  });
+
   it("Chef sieht fertige unter „Abgeschlossen“, abgerechnete gar nicht", () => {
     useApp.mockReturnValue(ctx({ chef: true, cu: CHEF, data: daten([B1, FERTIG, ABGER]) }));
     render(<SteView />);

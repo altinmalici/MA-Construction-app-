@@ -3,7 +3,7 @@ import { Plus, X, Download, Trash2, Receipt, User } from "lucide-react";
 import { csvRow, deNum, deDate, downloadCsv } from "../../../utils/lohnexport";
 import { fehlerText } from "../../../utils/errors";
 import { useApp } from "../../../context/AppContext";
-import { lohnStd, fStd, todayIso, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal } from "../../../utils/helpers";
+import { lohnStd, fStd, todayIso, fE, P, RED, GREEN, BTN, CS, IC, isMitarbeiterEntry, parseDecimal, selectableBaustellen } from "../../../utils/helpers";
 import { ScreenLayout, PBar, Empty, IconButton } from "../../ui";
 import { useSaving } from "../../../hooks/useSaving";
 import { useKostenAggregat, KAT_LABELS, KAT_COLORS } from "./aggregations.js";
@@ -51,9 +51,22 @@ const List = ({ onSelectBs, prefillBs }) => {
   const totalGezeigt = bsList.reduce((s, b) => s + calcTotal(b.id), 0);
   const budgetGezeigt = bsList.reduce((s, b) => s + (Number(b.budget) || 0), 0);
 
+  // Eine vorbelegte Baustelle zählt nur, wenn sie für neue Einträge wählbar
+  // ist (abgerechnete sind es nie) – sonst würde gespeichert, was das
+  // Auswahlfeld gar nicht anzeigt.
+  const kostBaustelleId = selectableBaustellen(data.baustellen, { chef: true }).alle.some(
+    (b) => b.id === kf.baustelleId,
+  )
+    ? kf.baustelleId
+    : "";
+
   const saveKost = () =>
     withSaving(async () => {
-      if (!kf.baustelleId || !kf.beschreibung.trim() || !kf.betrag) {
+      if (!kostBaustelleId) {
+        show("Baustelle wählen (abgerechnete Baustellen sind nicht möglich)", "error");
+        return;
+      }
+      if (!kf.beschreibung.trim() || !kf.betrag) {
         show("Alle Felder ausfüllen", "error");
         return;
       }
@@ -64,7 +77,7 @@ const List = ({ onSelectBs, prefillBs }) => {
       }
       try {
         await actions.kosten.create({
-          baustelleId: kf.baustelleId,
+          baustelleId: kostBaustelleId,
           kategorie: kf.kategorie,
           beschreibung: kf.beschreibung,
           betrag: parseDecimal(kf.betrag),
@@ -74,7 +87,7 @@ const List = ({ onSelectBs, prefillBs }) => {
         addN(
           "info",
           `Kosten: ${fE(parseDecimal(kf.betrag))} – ${kf.beschreibung}`,
-          kf.baustelleId,
+          kostBaustelleId,
         );
         show("Kosten erfasst");
         setSf(false);
@@ -162,7 +175,7 @@ const List = ({ onSelectBs, prefillBs }) => {
       {/* Neuer Kosteneintrag — extrahiert in KostenView/Form.jsx */}
       {sf && (
         <KostenForm
-          kf={kf}
+          kf={{ ...kf, baustelleId: kostBaustelleId }}
           sKf={sKf}
           baustellen={data.baustellen}
           saving={saving}

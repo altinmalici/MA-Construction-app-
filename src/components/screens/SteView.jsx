@@ -73,11 +73,16 @@ const SteView = () => {
   // Eine vorbelegte Baustelle (z.B. aus der Baustellen-Ansicht) zählt nur,
   // wenn sie wählbar ist. Bei genau einer möglichen ist sie automatisch
   // gewählt.
-  const baustelleId = mb.some((b) => String(b.id) === String(fd.baustelleId))
-    ? fd.baustelleId
-    : mb.length === 1
-      ? mb[0].id
-      : "";
+  // Ist eine NICHT wählbare Baustelle vorbelegt (man kommt aus einer
+  // abgeschlossenen), wird nichts automatisch gewählt – sonst landete der
+  // Eintrag unbemerkt auf einer anderen Baustelle.
+  const vorbelegungGesperrt =
+    !!fd.baustelleId && !mb.some((b) => String(b.id) === String(fd.baustelleId));
+  const baustelleId = vorbelegungGesperrt
+    ? ""
+    : fd.baustelleId || (mb.length === 1 ? mb[0].id : "");
+  const hatZugewiesene =
+    chef || data.baustellen.some((b) => (b.mitarbeiter || []).includes(cu.id));
 
   const startEdit = (e) => {
     setEditId(e.id);
@@ -240,7 +245,7 @@ const SteView = () => {
   // Einträge für die gewählte Baustelle. Kommt man aus einer abgeschlossenen
   // Baustelle (nicht mehr wählbar für NEUE Einträge), bleiben ihre
   // bisherigen Einträge hier sichtbar und bearbeitbar.
-  const listenBaustelleId = baustelleId || fd.baustelleId;
+  const listenBaustelleId = fd.baustelleId || baustelleId;
   const bsEintraege = listenBaustelleId
     ? data.stundeneintraege.filter((e) => e.baustelleId === listenBaustelleId)
     : [];
@@ -439,7 +444,19 @@ const SteView = () => {
                 <option value="">Baustelle wählen...</option>
                 <BaustelleOptions auswahl={auswahl} />
               </select>
-              {!chef && mb.length === 0 && (
+              {vorbelegungGesperrt && (
+                <p style={{ fontSize: 13, color: RED, marginTop: 8, lineHeight: 1.4 }}>
+                  {chef
+                    ? "Diese Baustelle ist abgerechnet – neue Einträge sind hier nicht möglich."
+                    : "Baustelle ist abgeschlossen – bitte beim Chef melden."}
+                </p>
+              )}
+              {!chef && mb.length === 0 && hatZugewiesene && !vorbelegungGesperrt && (
+                <p style={{ fontSize: 13, color: RED, marginTop: 8, lineHeight: 1.4 }}>
+                  Deine Baustellen sind abgeschlossen – bitte beim Chef melden.
+                </p>
+              )}
+              {!chef && mb.length === 0 && !hatZugewiesene && (
                 <p
                   style={{
                     fontSize: 13,

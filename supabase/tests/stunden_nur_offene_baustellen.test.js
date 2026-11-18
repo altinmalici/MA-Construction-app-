@@ -41,6 +41,8 @@ describe('Stunden nur auf offenen Baustellen', () => {
     await expect(alsMax(() => q(`UPDATE stundeneintraege SET baustelle_id = $2 WHERE id = $1`, [id, bs.fertig]))).rejects.toThrow(MELDUNG);
     await q(`UPDATE baustellen SET status = 'fertig' WHERE id = $1`, [bs.aktiv]);
     await expect(alsMax(() => q(`UPDATE stundeneintraege SET arbeit = 'Putz 2' WHERE id = $1`, [id]))).rejects.toThrow(MELDUNG);
+    // auch wegschieben von der fertigen auf eine offene Baustelle geht nicht
+    await expect(alsMax(() => q(`UPDATE stundeneintraege SET baustelle_id = $2 WHERE id = $1`, [id, bs.geplant]))).rejects.toThrow(MELDUNG);
     // loeschen bleibt moeglich
     await alsMax(() => q(`DELETE FROM stundeneintraege WHERE id = $1`, [id]));
     expect(await q(`SELECT 1 FROM stundeneintraege WHERE id = $1`, [id])).toHaveLength(0);

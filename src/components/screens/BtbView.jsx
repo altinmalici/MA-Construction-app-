@@ -44,7 +44,13 @@ const BtbView = () => {
     ? bf.baustelleId
     : "";
   const baustelleId =
-    sb?.id || gewaehlt || (myBs.length === 1 ? myBs[0].id : "");
+    // Auch die Baustelle, aus der man kommt, zählt nur, wenn sie für neue
+    // Einträge wählbar ist (abgerechnete sind es nie).
+    sb
+      ? myBs.some((b) => b.id === sb.id)
+        ? sb.id
+        : ""
+      : gewaehlt || (myBs.length === 1 ? myBs[0].id : "");
   // Neueste zuerst — nach Datum, nicht nach Anlage-Reihenfolge.
   // reverse() vorab: bei gleichem Datum steht der zuletzt angelegte oben.
   const sorted = [...ls].reverse().sort((a, b) =>
@@ -61,9 +67,11 @@ const BtbView = () => {
     withSaving(async () => {
       if (!baustelleId) {
         show(
-          myBs.length === 0
-            ? "Keine Baustelle vorhanden – bitte zuerst eine Baustelle anlegen"
-            : "Baustelle wählen",
+          sb
+            ? "Diese Baustelle ist abgerechnet – neue Einträge sind hier nicht möglich"
+            : myBs.length === 0
+              ? "Keine offene Baustelle vorhanden"
+              : "Baustelle wählen",
           "error",
         );
         return;
