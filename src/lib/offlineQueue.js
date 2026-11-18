@@ -90,6 +90,11 @@ export function dauerfehlerText(err) {
   if (!err) return null;
   if (err.code && DAUERFEHLER[err.code]) return DAUERFEHLER[err.code];
   if (/row-level security/i.test(String(err.message || ""))) return DAUERFEHLER[42501];
+  // Server-Regel (migration_2026_11_18_05): Mitarbeiter buchen nur auf
+  // offene Baustellen. Wiederholen bringt nichts, solange sie fertig ist.
+  if (/Baustelle ist abgeschlossen/i.test(String(err.message || ""))) {
+    return "Baustelle ist abgeschlossen – bitte beim Chef melden.";
+  }
   return null;
 }
 

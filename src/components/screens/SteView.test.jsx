@@ -8,7 +8,7 @@ import SteView from "./SteView.jsx";
 import { uploadPhotos } from "../../lib/storage";
 import { clearQueue, getPending } from "../../lib/offlineQueue.js";
 
-const B1 = { id: "b1", kunde: "Huber", mitarbeiter: ["u1"] };
+const B1 = { id: "b1", kunde: "Huber", status: "aktiv", mitarbeiter: ["u1"] };
 const MAX = { id: "u1", name: "Max", role: "mitarbeiter" };
 let std, show, nav, addN;
 
@@ -309,3 +309,55 @@ describe("SteView – Chef bearbeitet", () => {
     expect(show.mock.calls[0][0]).toMatch(/Nicht gespeichert: Keine Verbindung/);
   });
 });
+
+describe("SteView – nur offene Baustellen wählbar", () => {
+  const FERTIG = { id: "bf", kunde: "Fertig KG", status: "fertig", mitarbeiter: ["u1"] };
+  const ABGER = { id: "br", kunde: "Abgerechnet AG", status: "abgerechnet", mitarbeiter: ["u1"] };
+  const OFFEN2 = { id: "b2", kunde: "Maier", status: "geplant", mitarbeiter: ["u1"] };
+  const optionen = () => [...document.querySelectorAll("select")[0].querySelectorAll("option")].map((o) => o.textContent);
+  const CHEF = { id: "c1", name: "Chef", role: "chef" };
+  const daten = (baustellen, stundeneintraege = []) => ({ baustellen, stundeneintraege, users: [MAX], subunternehmer: [] });
+
+  it("Mitarbeiter sieht fertige und abgerechnete Baustellen nicht", () => {
+    useApp.mockReturnValue(ctx({ data: daten([B1, OFFEN2, FERTIG, ABGER]) }));
+    render(<SteView />);
+    expect(optionen()).toEqual(["Baustelle wählen...", "Huber", "Maier"]);
+    expect(document.querySelector("optgroup")).toBeNull();
+  });
+
+  it("Mitarbeiter mit einer offenen und einer fertigen Baustelle: die offene ist automatisch gewählt", () => {
+    useApp.mockReturnValue(ctx({ data: daten([B1, FERTIG]) }));
+    render(<SteView />);
+    expect(document.querySelectorAll("select")[0].value).toBe("b1");
+  });
+
+  it("Mitarbeiter kommt aus einer fertigen Baustelle: sie ist NICHT vorbelegt", () => {
+    useApp.mockReturnValue(ctx({ sb: FERTIG, data: daten([B1, OFFEN2, FERTIG]) }));
+    render(<SteView />);
+    expect(document.querySelectorAll("select")[0].value).toBe("");
+  });
+
+  it("Chef sieht fertige unter „Abgeschlossen“, abgerechnete gar nicht", () => {
+    useApp.mockReturnValue(ctx({ chef: true, cu: CHEF, data: daten([B1, FERTIG, ABGER]) }));
+    render(<SteView />);
+    const gruppe = document.querySelector('optgroup[label="Abgeschlossen"]');
+    expect([...gruppe.querySelectorAll("option")].map((o) => o.textContent)).toEqual(["Fertig KG"]);
+    expect(optionen()).not.toContain("Abgerechnet AG");
+  });
+
+  it("Bearbeiten eines alten Eintrags behält dessen (inzwischen abgerechnete) Baustelle", async () => {
+    const alt = {
+      id: "e1", baustelleId: "br", datum: "2026-11-10", beginn: "07:00", ende: "16:00", pause: 30, fahrtzeit: 0,
+      arbeit: "Putz", material: "", fotos: [], personTyp: "mitarbeiter", mitarbeiterId: "u1", freigegeben: false,
+    };
+    useApp.mockReturnValue(ctx({ chef: true, cu: CHEF, sb: ABGER, data: daten([B1, FERTIG, ABGER], [alt]) }));
+    render(<SteView />);
+    fireEvent.click(screen.getByRole("button", { name: /Einträge \(1\)/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Bearbeiten/ }));
+    expect(document.querySelectorAll("select")[0].value).toBe("br");
+    expect(optionen()).toContain("Abgerechnet AG");
+    await save(/Aktualisieren/);
+    expect(std.update.mock.calls[0][1]).toMatchObject({ baustelleId: "br" });
+  });
+});
+

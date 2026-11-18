@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Plus, X, Save, ClipboardList, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { fDat, todayIso, IC, BTN, RED } from "../../utils/helpers";
+import { fDat, todayIso, IC, BTN, RED, selectableBaustellen } from "../../utils/helpers";
 import { fehlerText } from "../../utils/errors";
-import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton, Card, WI } from "../ui";
+import { Empty, ScreenLayout, Spinner, ConfirmModal, IconButton, Card, WI, BaustelleOptions } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 
 const WETTER = [
@@ -37,9 +37,8 @@ const BtbView = () => {
   // nicht geladen, blieb sie leer — und bei nur EINER Baustelle war die
   // Auswahl ausgeblendet, sodass Speichern immer mit "Baustelle wählen"
   // scheiterte.
-  const myBs = chef
-    ? data.baustellen
-    : data.baustellen.filter((b) => b.mitarbeiter?.includes(cu?.id));
+  const auswahl = selectableBaustellen(data.baustellen, { chef, userId: cu?.id });
+  const myBs = auswahl.alle;
   // Eine früher gewählte Baustelle zählt nur, solange es sie noch gibt.
   const gewaehlt = myBs.some((b) => b.id === bf.baustelleId)
     ? bf.baustelleId
@@ -163,11 +162,7 @@ const BtbView = () => {
               }}
             >
               <option value="">Baustelle...</option>
-              {myBs.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.kunde}
-                </option>
-              ))}
+              <BaustelleOptions auswahl={auswahl} />
             </select>
           )}
           {/* Bei genau einer Baustelle (oder aus der Baustelle heraus geöffnet)

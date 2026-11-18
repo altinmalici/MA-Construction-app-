@@ -17,6 +17,7 @@ const EIGENE_MELDUNGEN = [
 // Meldungen unserer RPCs, die serverseitig ohne Umlaute stehen oder für den
 // Nutzer umformuliert werden sollen: [Muster, Anzeige].
 const SERVER_TEXT = [
+  [/Baustelle ist abgeschlossen/i, "Baustelle ist abgeschlossen – bitte beim Chef melden."],
   [/Einladung ungueltig oder abgelaufen/i, "Einladung ungültig oder abgelaufen."],
   [/Einladung kann nicht eingeloest werden/i, "Die Einladung kann nicht eingelöst werden: Konto ist nicht bereit – bitte beim Bauleiter melden."],
   [/Konto ist nicht bereit/i, 'Konto ist nicht bereit – bitte zuerst „Zugang reparieren“ antippen.'],

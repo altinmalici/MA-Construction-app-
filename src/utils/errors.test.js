@@ -57,3 +57,11 @@ describe("fehlerText – Meldungen der Onboarding-RPCs", () => {
     expect(fehlerText({ message: "Die Anmelde-Adresse gehoert bereits einem anderen Mitarbeiter" })).toBe("Der Benutzername gehört bereits einem anderen Mitarbeiter.");
   });
 });
+
+describe("Server-Regel: abgeschlossene Baustelle", () => {
+  it("zeigt die Meldung des Servers unverändert", async () => {
+    const { fehlerText } = await import("./errors.js");
+    expect(fehlerText({ code: "P0001", message: "Baustelle ist abgeschlossen – bitte beim Chef melden." })).toBe("Baustelle ist abgeschlossen – bitte beim Chef melden.");
+  });
+});
+

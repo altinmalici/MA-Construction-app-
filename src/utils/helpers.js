@@ -334,3 +334,33 @@ export const COLORS = {
   profil: "#3c3c43",
   benachrichtigungen: RED,
 };
+
+// ── Baustellen-Auswahl für NEUE Einträge ────────────────────────────────
+// Zentrale Regel, welche Baustellen in einem Auswahlfeld erscheinen:
+//  * Mitarbeiter: nur eigene Baustellen mit Status "geplant" oder "aktiv".
+//  * Chef: "geplant"/"aktiv" oben, darunter Gruppe "Abgeschlossen"
+//    (Status "fertig", für Nachträge). "abgerechnet" ist nie wählbar.
+//  * currentId: Die Baustelle eines Eintrags, der gerade BEARBEITET wird,
+//    bleibt immer in der Liste (auch wenn fertig/abgerechnet).
+//  * mitAbgerechnet: nur für Auswertungen über vorhandene Einträge
+//    (Regiebericht) – dort müssen auch abgerechnete Baustellen druckbar sein.
+// Ergebnis: { offen, abgeschlossen, abgerechnet, alle } – `alle` ist die
+// flache Liste in Anzeige-Reihenfolge (z.B. für "genau eine Baustelle").
+export const BS_OFFEN = ["geplant", "aktiv"];
+export function selectableBaustellen(
+  baustellen,
+  { chef = false, userId = null, currentId = null, mitAbgerechnet = false } = {},
+) {
+  const offen = [];
+  const abgeschlossen = [];
+  const abgerechnet = [];
+  (baustellen || []).forEach((b) => {
+    const eigene = chef || (b.mitarbeiter || []).includes(userId);
+    const aktuell = currentId != null && String(b.id) === String(currentId);
+    if (eigene && BS_OFFEN.includes(b.status)) offen.push(b);
+    else if (chef && b.status === "fertig") abgeschlossen.push(b);
+    else if (chef && mitAbgerechnet && b.status === "abgerechnet") abgerechnet.push(b);
+    else if (aktuell) (b.status === "abgerechnet" && mitAbgerechnet ? abgerechnet : abgeschlossen).push(b);
+  });
+  return { offen, abgeschlossen, abgerechnet, alle: [...offen, ...abgeschlossen, ...abgerechnet] };
+}

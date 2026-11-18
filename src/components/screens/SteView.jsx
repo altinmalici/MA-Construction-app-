@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Check, Save, Edit3, Trash2 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { CS, BTN, RED, IC, fDat, bStd, fStd, todayIso } from "../../utils/helpers";
-import { ScreenLayout, PhotoGrid, TimePicker, Spinner, ConfirmModal } from "../ui";
+import { CS, BTN, RED, IC, fDat, bStd, fStd, todayIso, selectableBaustellen } from "../../utils/helpers";
+import { ScreenLayout, PhotoGrid, TimePicker, Spinner, ConfirmModal, BaustelleOptions } from "../ui";
 import { useSaving } from "../../hooks/useSaving";
 import { uploadPhotos } from "../../lib/storage";
 import { enqueueStunde } from "../../lib/offlineQueue";
@@ -59,11 +59,25 @@ const SteView = () => {
   const [confirmFreigabe, setConfirmFreigabe] = useState(false);
   const [editFreigegeben, setEditFreigegeben] = useState(false);
   if (!cu) return null;
-  const mb = chef
-    ? data.baustellen
-    : data.baustellen.filter((b) => b.mitarbeiter.includes(cu.id));
-  // Bei genau einer möglichen Baustelle ist sie automatisch gewählt.
-  const baustelleId = fd.baustelleId || (mb.length === 1 ? mb[0].id : "");
+  // Wählbare Baustellen (zentrale Regel, siehe selectableBaustellen). Beim
+  // Bearbeiten bleibt die Baustelle des Eintrags in der Liste.
+  const editBaustelleId = editId
+    ? data.stundeneintraege.find((e) => e.id === editId)?.baustelleId ?? null
+    : null;
+  const auswahl = selectableBaustellen(data.baustellen, {
+    chef,
+    userId: cu.id,
+    currentId: editBaustelleId,
+  });
+  const mb = auswahl.alle;
+  // Eine vorbelegte Baustelle (z.B. aus der Baustellen-Ansicht) zählt nur,
+  // wenn sie wählbar ist. Bei genau einer möglichen ist sie automatisch
+  // gewählt.
+  const baustelleId = mb.some((b) => String(b.id) === String(fd.baustelleId))
+    ? fd.baustelleId
+    : mb.length === 1
+      ? mb[0].id
+      : "";
 
   const startEdit = (e) => {
     setEditId(e.id);
@@ -223,9 +237,12 @@ const SteView = () => {
     }
   };
 
-  // Einträge für gewählte Baustelle
-  const bsEintraege = baustelleId
-    ? data.stundeneintraege.filter((e) => e.baustelleId === baustelleId)
+  // Einträge für die gewählte Baustelle. Kommt man aus einer abgeschlossenen
+  // Baustelle (nicht mehr wählbar für NEUE Einträge), bleiben ihre
+  // bisherigen Einträge hier sichtbar und bearbeitbar.
+  const listenBaustelleId = baustelleId || fd.baustelleId;
+  const bsEintraege = listenBaustelleId
+    ? data.stundeneintraege.filter((e) => e.baustelleId === listenBaustelleId)
     : [];
 
   if (saved)
@@ -420,11 +437,7 @@ const SteView = () => {
                 className={IC}
               >
                 <option value="">Baustelle wählen...</option>
-                {mb.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.kunde}
-                  </option>
-                ))}
+                <BaustelleOptions auswahl={auswahl} />
               </select>
               {!chef && mb.length === 0 && (
                 <p
